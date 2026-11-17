@@ -29,7 +29,11 @@ object NgrComponentDownloader {
     fun download(
         component: NgrComponentCatalog.Component,
         privateDirectory: File,
-        limits: Limits = Limits()
+        limits: Limits = Limits(),
+        connectionFactory: (URI) -> HttpsURLConnection = {
+            it.toURL().openConnection() as? HttpsURLConnection
+                ?: throw SecurityException("Download did not use HTTPS")
+        }
     ): Result {
         if (!component.id.matches(Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"))) {
             return Result(false, error = "Component ID is invalid")
@@ -57,8 +61,7 @@ object NgrComponentDownloader {
                 val normalized = current.normalize()
                 require(visited.add(normalized.toString())) { "Redirect loop detected" }
 
-                val connection = normalized.toURL().openConnection() as? HttpsURLConnection
-                    ?: throw SecurityException("Download did not use HTTPS")
+                val connection = connectionFactory(normalized)
                 try {
                     connection.instanceFollowRedirects = false
                     connection.requestMethod = "GET"
