@@ -7,7 +7,7 @@ Mark complete only when evidence exists.
 - [x] Confirm NGR-arm64-debug artifact upload in Actions run #56.
 - [ ] Install latest diagnostics APK on Snapdragon/Adreno Android device.
 - [ ] Verify app launch, Vulkan physical-device enumeration and controller hotplug.
-- [ ] Exercise NGRPACK picker/import/list/update/remove and restart recovery on device; capture exported log for any failure.
+- [ ] Exercise NGRPACK, folder import and ordinary ZIP import/list/update/remove and restart recovery on device; capture exported log for any failure.
 
 ## P1 — NGRPACK trust and security
 - [x] Manifest schema parity, strict metadata typing and unknown-property rejection.
@@ -17,8 +17,13 @@ Mark complete only when evidence exists.
 - [x] Bounded extraction into app-private staging and streamed-byte rechecks.
 - [x] Full post-extraction SHA-256 and manifest validation.
 - [x] Atomic directory replacement with backup/rollback and interrupted-install recovery.
+- [x] Add Android SAF folder picker and ordinary ZIP picker alongside the existing NGRPACK importer.
+- [x] Add bounded folder/ZIP scanner, Windows PE and Linux ELF detection, automatic manifest generation and SHA-256 inventory.
+- [ ] Verify folder/ZIP import builder and Android UI in latest CI; resolve any compiler/test failures.
+- [ ] Device-test importing the user's Lethal Company ZIP and selecting a valid game root/entry point.
 - [x] Package inventory, update and removal; corrupt package folders remain safely removable.
 - [ ] Review local-header vs central-directory consistency, malformed UTF-8 names and archive edge cases.
+- [ ] Add explicit primary-executable selection when multiple PE/ELF candidates are detected.
 - [ ] Define manifest version migration.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
 
