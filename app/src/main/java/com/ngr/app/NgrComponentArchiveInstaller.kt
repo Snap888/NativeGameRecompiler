@@ -43,7 +43,7 @@ object NgrComponentArchiveInstaller {
             !isSafeRelativePath(component.installSubdirectory)) {
             return Result(false, error = "Component ID or install subdirectory is unsafe")
         }
-        if (component.sha256.length != 64 || !component.sha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
+        if (!component.sha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
             return Result(false, error = "Component SHA-256 metadata is invalid")
         }
         if (!archive.isFile || archive.length() <= 0L) return Result(false, error = "Component archive is missing or empty")
@@ -52,36 +52,54 @@ object NgrComponentArchiveInstaller {
             return Result(false, error = "Staging parent is not a writable directory")
         }
 
-        val expectedHash = component.sha256.lowercase()
-        val actualHash = try { sha256(archive, limits.maxArchiveBytes) }
-        catch (e: Exception) { return Result(false, error = "Unable to hash component archive: ${e.message ?: "I/O error"}") }
-        if (actualHash != expectedHash) return Result(false, error = "Component archive SHA-256 mismatch")
+        var snapshot: File? = null
+        var staging: File? = null
+        try {
+            // Work from an app-private snapshot so validation and extraction see identical bytes.
+            snapshot = File.createTempFile("ngr-${component.id}-", ".zip", stagingParent)
+            var copiedBytes = 0L
+            FileInputStream(archive).use { input ->
+                FileOutputStream(snapshot, false).use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        copiedBytes += count
+                        if (copiedBytes > limits.maxArchiveBytes) {
+                            throw SecurityException("Component archive exceeds size limit while copying")
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                    output.fd.sync()
+                }
+            }
+            if (copiedBytes <= 0L) return Result(false, error = "Component archive is empty")
+            val expectedHash = component.sha256.lowercase()
+            if (sha256(snapshot, limits.maxArchiveBytes) != expectedHash) {
+                return Result(false, error = "Component archive SHA-256 mismatch")
+            }
 
-        val inspectionLimits = NgrPackArchiveInspector.Limits(
-            maxArchiveBytes = limits.maxArchiveBytes,
-            maxEntries = limits.maxEntries,
-            maxPathChars = limits.maxPathChars,
-            maxManifestBytes = 1024L * 1024,
-            maxFileBytes = limits.maxFileBytes,
-            maxTotalBytes = limits.maxTotalBytes,
-            maxCompressionRatio = limits.maxCompressionRatio
-        )
-        val inspection = NgrPackArchiveInspector.inspect(archive, inspectionLimits, requireManifest = false)
-        if (!inspection.valid) return Result(false, error = inspection.errors.joinToString("; "))
+            val inspectionLimits = NgrPackArchiveInspector.Limits(
+                maxArchiveBytes = limits.maxArchiveBytes,
+                maxEntries = limits.maxEntries,
+                maxPathChars = limits.maxPathChars,
+                maxManifestBytes = 1024L * 1024,
+                maxFileBytes = limits.maxFileBytes,
+                maxTotalBytes = limits.maxTotalBytes,
+                maxCompressionRatio = limits.maxCompressionRatio
+            )
+            val inspection = NgrPackArchiveInspector.inspect(snapshot, inspectionLimits, requireManifest = false)
+            if (!inspection.valid) return Result(false, error = inspection.errors.joinToString("; "))
 
-        val root = try {
-            File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
+            staging = File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
                 if (!it.delete() || !it.mkdir()) throw IllegalStateException("Unable to create staging directory")
             }
-        } catch (e: Exception) {
-            return Result(false, error = "Unable to create component staging directory: ${e.message ?: "I/O error"}")
-        }
-        val rootCanonical = root.canonicalFile
-        var files = 0
-        var totalBytes = 0L
+            val root = staging
+            val rootCanonical = root.canonicalFile
+            var files = 0
+            var totalBytes = 0L
 
-        try {
-            ZipFile(archive).use { zip ->
+            ZipFile(snapshot).use { zip ->
                 val entries = zip.entries()
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
@@ -143,8 +161,10 @@ object NgrComponentArchiveInstaller {
             }
             return Result(true, root, extractedFiles = files, extractedBytes = totalBytes)
         } catch (e: Exception) {
-            deleteTree(root)
+            staging?.let(::deleteTree)
             return Result(false, error = "Component extraction failed: ${e.message ?: "I/O error"}")
+        } finally {
+            snapshot?.delete()
         }
     }
 
