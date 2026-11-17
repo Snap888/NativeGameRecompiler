@@ -434,3 +434,11 @@ This is the durable project memory. Update it in every development session.
 2. Install the green build and verify Details shows `Lethal Company.exe`, Windows, x86_64.
 3. Test a folder/ZIP containing at least two usable EXEs and confirm the chooser selection persists in the installed manifest/details.
 4. Continue ABI v1 host-side negotiation/validation and test backend fixture only after this import UI stage is stable.
+
+
+### CI result — executable chooser stage
+- Actions run #129 [44178745011](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44178745011) completed successfully for code/test commit `6b546a682a316cdc96a1d96c96065ebe6599be14`.
+- Confirmed all steps passed: JDK/Android SDK/NDK/CMake/Gradle setup, JVM unit tests, arm64-v8a debug APK build and artifact upload.
+- Artifact: `NGR-arm64-debug`, ID `14371675507`, size 1,344,874 bytes, SHA-256 `525ef7b9e040b6fdcb344c3a6c0ec24f0112ef24e59e8698e52152a047dea173`; expires 2026-12-01.
+- The candidate enumeration/explicit selection regression test passed, including persisted Windows/x86_64 source metadata after package installation.
+- CI confirms compilation and JVM behavior only. The new chooser and Details UI still require device validation with a multi-executable archive.
