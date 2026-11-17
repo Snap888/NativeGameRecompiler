@@ -25,6 +25,7 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 - Package manager: atomic install/update, backup/rollback, interrupted-install recovery, inventory and removal.
 - Android UI: Document Picker import/update, installed package list and removal, including corrupt-package cleanup.
 - JVM regression tests for manifest validation, ZIP inspection, package installation/update/removal and recovery.
+- Versioned execution-backend ABI v1 C header contract, compiled as both C and C++; the runtime plugin loader and lifecycle are not yet implemented.
 - Latest successful CI: [run #56](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44161661718). APK artifact is available from the run page.
 - GitHub Actions workflow configured to run unit tests and build arm64-v8a debug APK.
 
