@@ -50,7 +50,7 @@ object NgrPackArchiveInspector {
         val unixMode: Int
     )
 
-    fun inspect(archive: File, limits: Limits = Limits()): Result {
+    fun inspect(archive: File, limits: Limits = Limits(), requireManifest: Boolean = true): Result {
         val errors = mutableListOf<String>()
         if (!archive.isFile || archive.length() <= 0L) return Result(false, listOf("NGRPACK archive is missing or empty"))
         if (archive.length() > limits.maxArchiveBytes) return Result(false, listOf("NGRPACK archive exceeds size limit"))
@@ -152,7 +152,7 @@ object NgrPackArchiveInspector {
             errors += "Unable to inspect ZIP entry: ${e.message ?: "read error"}"
         }
 
-        if (infos.none { !it.directory && it.path == "ngr-manifest.json" }) {
+        if (requireManifest && infos.none { !it.directory && it.path == "ngr-manifest.json" }) {
             val nestedManifests = infos.filter { !it.directory && it.path.substringAfterLast('/') == "ngr-manifest.json" }
                 .map { it.path }.take(8)
             val topLevel = infos.map { it.path.substringBefore('/') }.distinct().take(12)
