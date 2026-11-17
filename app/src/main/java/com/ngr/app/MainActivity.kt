@@ -7,8 +7,12 @@ import android.provider.OpenableColumns
 import android.net.Uri
 import android.os.Bundle
 import android.view.InputDevice
+import android.view.View
 import android.hardware.input.InputManager
 import android.widget.Button
+import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -26,6 +30,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var devices: TextView
     private lateinit var inputManager: InputManager
     private lateinit var packageManager: NgrPackPackageManager
+    private lateinit var profileStore: NgrEnvironmentProfileStore
+    private lateinit var profileStatus: TextView
+    private lateinit var profileList: LinearLayout
     private lateinit var packageStatus: TextView
     private lateinit var packageList: LinearLayout
     private val packageWorker = Executors.newSingleThreadExecutor()
@@ -48,6 +55,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("app", "MainActivity.onCreate")
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
+        profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -85,6 +93,16 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
 
+        root.addView(TextView(this).apply { text = "\nWindows runtime environments"; textSize = 18f })
+        root.addView(Button(this).apply {
+            text = "Create environment profile"
+            setOnClickListener { showCreateEnvironmentProfileDialog() }
+        })
+        profileStatus = TextView(this).apply { textSize = 12f }
+        root.addView(profileStatus)
+        profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(profileList)
+
         root.addView(TextView(this).apply { text = "\nDiagnostics"; textSize = 18f })
         root.addView(Button(this).apply { text = "View runtime log"; setOnClickListener { showLogs() } })
         root.addView(Button(this).apply { text = "Save log to storage"; setOnClickListener { saveLogs() } })
@@ -101,6 +119,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         inputManager.registerInputDeviceListener(this, null)
         refresh()
         refreshPackages()
+        refreshProfiles()
     }
 
     override fun onPause() {
@@ -127,6 +146,139 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
     }
 
+    private fun showCreateEnvironmentProfileDialog() {
+        val nameInput = EditText(this).apply {
+            hint = "Profile name"
+            setSingleLine(true)
+        }
+        val modeGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val standard = RadioButton(this).apply {
+            id = View.generateViewId()
+            text = "Windows x86_64 — Box64"
+            isChecked = true
+        }
+        val arm64ec = RadioButton(this).apply {
+            id = View.generateViewId()
+            text = "Windows ARM64EC — FEXCore"
+        }
+        modeGroup.addView(standard)
+        modeGroup.addView(arm64ec)
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 12, 40, 0)
+            addView(nameInput)
+            addView(TextView(this@MainActivity).apply { text = "Architecture mode"; textSize = 14f })
+            addView(modeGroup)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("New runtime profile")
+            .setView(form)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Create") { _, _ ->
+                val displayName = nameInput.text.toString().trim()
+                if (displayName.isEmpty()) {
+                    Toast.makeText(this, "Enter a profile name", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val profileId = "env-" + UUID.randomUUID().toString().take(8)
+                val profile = if (modeGroup.checkedRadioButtonId == arm64ec.id) {
+                    NgrEnvironmentProfile(
+                        profileId = profileId,
+                        displayName = displayName,
+                        containerMode = NgrEnvironmentProfile.ContainerMode.ARM64EC,
+                        cpuTranslator = NgrEnvironmentProfile.CpuTranslator.FEXCORE,
+                        fexCoreComponentId = "fexcore-unselected"
+                    )
+                } else {
+                    NgrEnvironmentProfile(
+                        profileId = profileId,
+                        displayName = displayName,
+                        containerMode = NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64,
+                        cpuTranslator = NgrEnvironmentProfile.CpuTranslator.BOX64
+                    )
+                }
+                val result = profileStore.save(profile)
+                if (result.success) {
+                    Toast.makeText(this, "Environment profile created", Toast.LENGTH_SHORT).show()
+                    refreshProfiles()
+                } else {
+                    Toast.makeText(this, "Profile creation failed: ${result.error}", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
+
+    private fun refreshProfiles() {
+        if (!::profileStore.isInitialized || !::profileList.isInitialized) return
+        val loaded = profileStore.loadAll()
+        profileStatus.text = buildString {
+            append("${loaded.profiles.size} saved profile(s)")
+            if (loaded.errors.isNotEmpty()) append("\n${loaded.errors.size} invalid profile file(s) — see runtime log")
+        }
+        loaded.errors.forEach { NgrLogger.warn("environment.profile", it) }
+        profileList.removeAllViews()
+        loaded.profiles.forEach { profile ->
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 12, 0, 12)
+            }
+            val readiness = profile.validateLaunchReady()
+            item.addView(TextView(this).apply {
+                text = "${profile.displayName}\n${profile.containerMode} · ${profile.cpuTranslator}\n" +
+                    if (readiness.isEmpty()) "Ready for component resolution" else "Draft — ${readiness.joinToString("; ")}"
+                textSize = 13f
+            })
+            val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            actions.addView(Button(this).apply {
+                text = "Details"
+                setOnClickListener { showEnvironmentProfileDetails(profile) }
+            })
+            actions.addView(Button(this).apply {
+                text = "Delete"
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Delete profile?")
+                        .setMessage(profile.displayName)
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete") { _, _ ->
+                            val result = profileStore.delete(profile.profileId)
+                            if (!result.success) Toast.makeText(this@MainActivity, result.error, Toast.LENGTH_LONG).show()
+                            refreshProfiles()
+                        }
+                        .show()
+                }
+            })
+            item.addView(actions)
+            profileList.addView(item)
+        }
+    }
+
+    private fun showEnvironmentProfileDetails(profile: NgrEnvironmentProfile) {
+        val details = listOf(
+            "Profile ID: ${profile.profileId}",
+            "Mode: ${profile.containerMode}",
+            "Wine/Proton: ${profile.wineLayerId ?: "not selected"}",
+            "Box64: ${profile.box64ComponentId ?: "not selected"}",
+            "Box86: ${profile.box86ComponentId ?: "not selected"}",
+            "FEXCore: ${profile.fexCoreComponentId ?: "not selected"}",
+            "FEX UnixLibs: ${profile.fexUnixLibsComponentId ?: "not selected"}",
+            "WOWBox64: ${profile.wowBox64ComponentId ?: "not selected"}",
+            "DXVK: ${profile.dxvkComponentId ?: "not selected"}",
+            "VKD3D-Proton: ${profile.vkd3dComponentId ?: "not selected"}",
+            "Graphics: ${profile.graphicsProvider} · Turnip: ${profile.turnipComponentId ?: "system/default"}",
+            "Display: ${profile.displayBackend} · ${profile.desktopWidth}×${profile.desktopHeight} @ ${profile.dpi} DPI",
+            "Audio: ${profile.audioBackend}",
+            "vkBasalt/ReShade effects: ${if (profile.reshade.enabled) "enabled" else "disabled"}",
+            "Environment variables: ${profile.environmentVariables.size}",
+            "Game overrides: ${profile.gameOverrides.size}",
+            "Launch readiness: ${profile.validateLaunchReady().let { if (it.isEmpty()) "valid" else it.joinToString("; ") }}"
+        ).joinToString("\n")
+        AlertDialog.Builder(this)
+            .setTitle(profile.displayName)
+            .setMessage(details)
+            .setPositiveButton("Close", null)
+            .show()
+    }
     private fun choosePackageArchive() {
         chooseZipDocument(REQUEST_NGRPACK, "Opening NGRPACK document picker")
     }
