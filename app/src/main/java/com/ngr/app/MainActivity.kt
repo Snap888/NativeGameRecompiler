@@ -260,6 +260,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
 
     private fun showEditEnvironmentProfileDialog(profile: NgrEnvironmentProfile) {
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 8, 32, 8) }
         fun field(label: String, value: String?, inputType: Int = InputType.TYPE_CLASS_TEXT): EditText {
             val input = EditText(this).apply {
                 setSingleLine(true)
@@ -270,7 +271,6 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             form.addView(input)
             return input
         }
-        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 8, 32, 8) }
         val wine = field("Wine / Proton layer ID", profile.wineLayerId)
         val box64 = field("Box64 component ID", profile.box64ComponentId)
         val box86 = field("Box86 component ID (optional)", profile.box86ComponentId)
