@@ -77,7 +77,7 @@ object NgrComponentDownloader {
                         require(isAllowedHttpsUri(current)) { "Redirect attempted HTTPS downgrade or unsafe URL" }
                         continue
                     }
-                    if (status !in 200..299) throw IllegalStateException("Component server returned HTTP $status")
+                    if (status != 200) throw IllegalStateException("Component server returned HTTP $status")
 
                     val encoding = connection.getHeaderField("Content-Encoding")
                     if (!encoding.isNullOrBlank() && !encoding.equals("identity", ignoreCase = true)) {
