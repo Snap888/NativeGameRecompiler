@@ -10,6 +10,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NgrGamePackageBuilderTest {
+    private fun peX64(): ByteArray = ByteArray(128).also { bytes ->
+        bytes[0] = 0x4d
+        bytes[1] = 0x5a
+        bytes[0x3c] = 64
+        bytes[64] = 0x50
+        bytes[65] = 0x45
+        bytes[66] = 0
+        bytes[67] = 0
+        bytes[68] = 0x64
+        bytes[69] = 0x86.toByte()
+    }
+
     @Test fun buildsManifestAndHashesFromGameFolder() {
         val base = createTempDir(prefix = "ngr-builder-folder-")
         val game = File(base, "Lethal Company")
@@ -17,7 +29,7 @@ class NgrGamePackageBuilderTest {
         val data = File(game, "Lethal Company_Data/level0")
         try {
             assertTrue(data.mkdirs())
-            exe.writeBytes(byteArrayOf(0x4d, 0x5a, 0, 0))
+            exe.writeBytes(peX64())
             File(data, "sharedassets0.assets").writeText("game-data")
             val archive = File(base, "generated.ngrpack")
             val built = NgrGamePackageBuilder().buildFromFolder(game, archive)
@@ -42,7 +54,7 @@ class NgrGamePackageBuilderTest {
         try {
             ZipOutputStream(FileOutputStream(source)).use { zip ->
                 zip.putNextEntry(ZipEntry("Lethal Company/Lethal Company.exe"))
-                zip.write(byteArrayOf(0x4d, 0x5a, 1, 2))
+                zip.write(peX64())
                 zip.closeEntry()
                 zip.putNextEntry(ZipEntry("Lethal Company/data/game.dat"))
                 zip.write("payload".toByteArray())
