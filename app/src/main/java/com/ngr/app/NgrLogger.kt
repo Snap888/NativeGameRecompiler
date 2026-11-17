@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.UUID
 
 /** Bounded persistent diagnostic log. Logs contain technical metadata, not file contents. */
 object NgrLogger {
@@ -16,6 +17,7 @@ object NgrLogger {
     private const val MAX_LINE = 12_000
     private val lock = Any()
     @Volatile private var logFile: File? = null
+    private var sessionId: String = "uninitialized"
 
     fun initialize(context: Context) {
         synchronized(lock) {
@@ -25,6 +27,7 @@ object NgrLogger {
                 return
             }
             logFile = File(directory, "ngr-runtime.log")
+            sessionId = UUID.randomUUID().toString().take(8)
             writeLocked("INFO", "app", "Diagnostic logging initialized; file=${logFile?.name}")
         }
     }
@@ -66,7 +69,7 @@ object NgrLogger {
         val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date())
-        val line = "$timestamp $level/$safeCategory [${Thread.currentThread().name}] ${message.replace("\r", "").take(MAX_LINE)}\n"
+        val line = "$timestamp $level/$safeCategory session=$sessionId [${Thread.currentThread().name}] ${message.replace("\r", "").take(MAX_LINE)}\n"
         when (level) {
             "ERROR" -> Log.e(TAG, line.trimEnd())
             "WARN" -> Log.w(TAG, line.trimEnd())
