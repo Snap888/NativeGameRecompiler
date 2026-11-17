@@ -114,6 +114,37 @@ class NgrGamePackageBuilderTest {
         } finally { base.deleteRecursively() }
     }
 
+    @Test fun prefersGameExecutableAndIgnoresUninstaller() {
+        val base = createTempDir(prefix = "ngr-builder-entrypoint-")
+        val game = File(base, "Lethal Company")
+        try {
+            assertTrue(game.mkdirs())
+            File(game, "unins000.exe").writeBytes(peX86())
+            File(game, "Lethal Company.exe").writeBytes(peX64())
+            val result = NgrGamePackageBuilder().buildFromFolder(game, File(base, "game.ngrpack"))
+            assertTrue(result.errors.joinToString(), result.success)
+            assertEquals("Lethal Company.exe", result.entryPoint)
+            assertEquals("x86_64", result.architecture)
+        } finally { base.deleteRecursively() }
+    }
+
+    @Test fun rejectsFolderContainingOnlyUninstallerExecutable() {
+        val base = createTempDir(prefix = "ngr-builder-uninstaller-")
+        val game = File(base, "Lethal Company")
+        try {
+            assertTrue(game.mkdirs())
+            File(game, "unins000.exe").writeBytes(peX86())
+            val result = NgrGamePackageBuilder().buildFromFolder(game, File(base, "game.ngrpack"))
+            assertFalse(result.success)
+            assertTrue(result.errors.joinToString().contains("Only installer, uninstaller or helper"))
+        } finally { base.deleteRecursively() }
+    }
+
+    private fun peX86(): ByteArray = peX64().also { bytes ->
+        bytes[68] = 0x4c
+        bytes[69] = 0x01
+    }
+
     @Test fun rejectsFolderWithoutRecognizedExecutable() {
         val base = createTempDir(prefix = "ngr-builder-noexe-")
         val game = File(base, "data-only")
