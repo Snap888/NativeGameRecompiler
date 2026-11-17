@@ -62,9 +62,11 @@ class NgrComponentInstallPipeline(private val store: NgrComponentStore) {
                 return Result(false, error = promoted.error ?: "Component activation failed")
             }
             staging = null
+            val payloadDirectory = store.activeComponentPath(component)
+                ?: throw IllegalStateException("Activated component payload directory is missing")
             Result(
                 success = true,
-                activeDirectory = promoted.installedDirectory,
+                activeDirectory = payloadDirectory,
                 version = promoted.activeVersion
             )
         } catch (e: Exception) {
