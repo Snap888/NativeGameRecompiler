@@ -320,6 +320,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 name.contains('\\\\') || name.contains(':') || name.contains('\u0000'))
                 throw IOException("Unsafe file name in selected folder")
             val childRelative = if (relative.isEmpty()) name else "$relative/$name"
+            if (childRelative.count { it == '/' } >= 64)
+                throw IOException("Game folder nesting exceeds 64 levels")
             if (childRelative.length > NgrPackArchiveInspector.Limits().maxPathChars)
                 throw IOException("Game path exceeds maximum length: $childRelative")
             val key = childRelative.lowercase(Locale.ROOT)
