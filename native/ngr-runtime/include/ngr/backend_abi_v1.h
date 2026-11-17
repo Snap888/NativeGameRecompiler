@@ -148,6 +148,15 @@ typedef NgrStatusV1 (*NgrBackendGetApiV1Fn)(
 
 #define NGR_HOST_API_V1_REQUIRED_SIZE ((uint32_t)sizeof(NgrHostApiV1))
 #define NGR_BACKEND_API_V1_REQUIRED_SIZE ((uint32_t)sizeof(NgrBackendApiV1))
+NGR_BACKEND_ABI_EXPORT NgrStatusV1 ngr_backend_get_api_v1(
+    const NgrHostApiV1* host_api,
+    uint32_t requested_abi_major,
+    NgrBackendApiV1* out_api
+);
+
+#define NGR_PACKAGE_REF_V1_REQUIRED_SIZE ((uint32_t)sizeof(NgrPackageRefV1))
+#define NGR_BACKEND_CONFIG_V1_REQUIRED_SIZE ((uint32_t)sizeof(NgrBackendConfigV1))
+#define NGR_PROBE_RESULT_V1_REQUIRED_SIZE ((uint32_t)sizeof(NgrProbeResultV1))
 
 #ifdef __cplusplus
 } /* extern "C" */
