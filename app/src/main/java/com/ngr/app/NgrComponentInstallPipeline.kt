@@ -19,13 +19,17 @@ class NgrComponentInstallPipeline(private val store: NgrComponentStore) {
         downloadLimits: NgrComponentDownloader.Limits = NgrComponentDownloader.Limits(),
         archiveLimits: NgrComponentArchiveInstaller.Limits = NgrComponentArchiveInstaller.Limits()
     ): Result {
-        val downloaded = NgrComponentDownloader.download(component, store.downloadDirectory(), downloadLimits)
-        if (!downloaded.success) return Result(false, error = downloaded.error ?: "Component download failed")
-        val archive = downloaded.file ?: return Result(false, error = "Downloader returned no verified file")
         return try {
-            installVerifiedArchive(component, archive, archiveLimits)
-        } finally {
-            archive.delete()
+            val downloaded = NgrComponentDownloader.download(component, store.downloadDirectory(), downloadLimits)
+            if (!downloaded.success) return Result(false, error = downloaded.error ?: "Component download failed")
+            val archive = downloaded.file ?: return Result(false, error = "Downloader returned no verified file")
+            try {
+                installVerifiedArchive(component, archive, archiveLimits)
+            } finally {
+                archive.delete()
+            }
+        } catch (e: Exception) {
+            Result(false, error = e.message ?: "Component download/install failed")
         }
     }
 
@@ -38,25 +42,33 @@ class NgrComponentInstallPipeline(private val store: NgrComponentStore) {
         archive: File,
         archiveLimits: NgrComponentArchiveInstaller.Limits = NgrComponentArchiveInstaller.Limits()
     ): Result {
-        val extracted = NgrComponentArchiveInstaller.extractZip(
-            archive,
-            component,
-            store.stagingDirectory(),
-            archiveLimits
-        )
-        if (!extracted.success) return Result(false, error = extracted.error ?: "Component extraction failed")
-        val staging = extracted.stagingDirectory
-            ?: return Result(false, error = "Component extractor returned no staging directory")
+        var staging: File? = null
+        return try {
+            val extracted = NgrComponentArchiveInstaller.extractZip(
+                archive,
+                component,
+                store.stagingDirectory(),
+                archiveLimits
+            )
+            if (!extracted.success) return Result(false, error = extracted.error ?: "Component extraction failed")
+            staging = extracted.stagingDirectory
+                ?: return Result(false, error = "Component extractor returned no staging directory")
 
-        val promoted = store.installAndActivate(component, staging)
-        if (!promoted.success) {
-            store.discardStagingDirectory(staging)
-            return Result(false, error = promoted.error ?: "Component activation failed")
+            val promoted = store.installAndActivate(component, staging)
+            if (!promoted.success) {
+                store.discardStagingDirectory(staging)
+                staging = null
+                return Result(false, error = promoted.error ?: "Component activation failed")
+            }
+            staging = null
+            Result(
+                success = true,
+                activeDirectory = promoted.installedDirectory,
+                version = promoted.activeVersion
+            )
+        } catch (e: Exception) {
+            staging?.let(store::discardStagingDirectory)
+            Result(false, error = e.message ?: "Component install failed")
         }
-        return Result(
-            success = true,
-            activeDirectory = promoted.installedDirectory,
-            version = promoted.activeVersion
-        )
     }
 }
