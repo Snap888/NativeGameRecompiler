@@ -1,5 +1,6 @@
 package com.ngr.app
 
+import java.io.File
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -36,7 +37,7 @@ class NgrEnvironmentProfileStoreTest {
             val invalid = profile().copy(environmentVariables = mapOf("LD_PRELOAD" to "evil.so"))
             assertFalse(store.save(invalid).success)
             assertFalse(store.delete("../desktop").success)
-            assertEquals(null, store.get("../desktop"))
+            assertTrue(store.get("../desktop") == null)
         } finally {
             root.deleteRecursively()
         }
