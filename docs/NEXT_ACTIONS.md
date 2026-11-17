@@ -19,7 +19,7 @@ Mark complete only when evidence exists.
 - [x] Atomic directory replacement with backup/rollback and interrupted-install recovery.
 - [x] Add Android SAF folder picker and ordinary ZIP picker alongside the existing NGRPACK importer.
 - [x] Add bounded folder/ZIP scanner, Windows PE and Linux ELF detection, automatic manifest generation and SHA-256 inventory.
-- [ ] Verify folder/ZIP import builder and Android UI in latest CI; resolve any compiler/test failures.
+- [x] Verify folder/ZIP import builder and Android UI in CI run #108; JVM tests, arm64-v8a APK build and artifact upload passed.
 - [ ] Device-test importing the user's Lethal Company ZIP and selecting a valid game root/entry point.
 - [x] Package inventory, update and removal; corrupt package folders remain safely removable.
 - [ ] Review local-header vs central-directory consistency, malformed UTF-8 names and archive edge cases.
