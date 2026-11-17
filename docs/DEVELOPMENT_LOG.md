@@ -680,3 +680,14 @@ This is the durable project memory. Update it in every development session.
 - Confirmed driver providers are separate: Android AdrenoTools packages and Linux-runtime ICD packages. Container selection is passed into the launch environment; system Vulkan must remain untouched.
 - Confirmed DXVK async/cache and VKD3D feature-level options are environment configuration, not evidence of runtime availability.
 - Detailed source mapping appended to `docs/WINNATIVE_INTEGRATION_PLAN.md`.
+
+
+## 2026-11-18 — Reproducible component version pins
+
+- Extended `NgrEnvironmentProfile` with `componentVersions: Map<String,String>`, validating component IDs and safe version strings.
+- Extended the profile JSON codec to persist pinned versions. Older schema-v1 profiles without the optional map decode as an empty map, preserving backward compatibility.
+- Added profile editor UI for entering `component-id=version` pins and displays the number of pinned components in profile details.
+- Extended `NgrComponentResolver` to compare a requested pin against the catalog version before download, or against verified installed-version metadata when the component is already installed. A pin cannot be silently satisfied by an unversioned installed ID.
+- Added codec tests for round-trip and invalid pins; resolver tests cover catalog mismatch, installed mismatch and missing installed-version metadata.
+- Commits: `e4a87dd1` model, `22bb69dd` codec, `9119e2d3` tests, `2257cd53` resolver, `31e28ed3` resolver tests, `25f31ed8` editor UI.
+- CI runs #252–#257 are pending/in progress at the time of this entry. No new APK is claimed for version-pin support until the latest code run passes all tests/build/artifact steps.
