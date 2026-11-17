@@ -70,6 +70,28 @@ class NgrGamePackageBuilderTest {
         } finally { base.deleteRecursively() }
     }
 
+    @Test fun repeatedImportUsesStablePackageIdAndUpdatesExistingGame() {
+        val base = createTempDir(prefix = "ngr-builder-update-")
+        val game = File(base, "SameGame")
+        try {
+            assertTrue(game.mkdirs())
+            File(game, "SameGame.exe").writeBytes(peX64())
+            val builder = NgrGamePackageBuilder()
+            val firstArchive = File(base, "first.ngrpack")
+            val secondArchive = File(base, "second.ngrpack")
+            val first = builder.buildFromFolder(game, firstArchive)
+            val second = builder.buildFromFolder(game, secondArchive)
+            assertTrue(first.errors.joinToString(), first.success)
+            assertTrue(second.errors.joinToString(), second.success)
+            val packages = File(base, "packages")
+            val manager = NgrPackPackageManager(packages)
+            assertTrue(manager.install(firstArchive).success)
+            assertTrue(manager.install(secondArchive).success)
+            assertEquals(1, manager.listInstalled().packages.size)
+            assertEquals("import.samegame", manager.listInstalled().packages.single().packageId.substringBeforeLast('.'))
+        } finally { base.deleteRecursively() }
+    }
+
     @Test fun detectsLinuxElfArchitecture() {
         val base = createTempDir(prefix = "ngr-builder-elf-")
         val game = File(base, "LinuxGame")
