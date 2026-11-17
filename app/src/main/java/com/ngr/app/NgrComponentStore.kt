@@ -46,7 +46,10 @@ class NgrComponentStore(private val privateRoot: File) {
             }
             validateTree(staged.toPath())
 
-            val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), component.id)
+            val componentsRoot = File(privateRoot, COMPONENTS_DIRECTORY)
+            Files.createDirectories(componentsRoot.toPath())
+            require(!Files.isSymbolicLink(componentsRoot.toPath())) { "Components directory must not be a symbolic link" }
+            val componentRoot = File(componentsRoot, component.id)
             Files.createDirectories(componentRoot.toPath())
             require(!Files.isSymbolicLink(componentRoot.toPath())) { "Component store path must not be a symbolic link" }
             val versions = File(componentRoot, VERSIONS_DIRECTORY)
@@ -132,6 +135,10 @@ class NgrComponentStore(private val privateRoot: File) {
             val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), componentId)
             if (!componentRoot.exists()) return Result(true)
             require(!Files.isSymbolicLink(componentRoot.toPath())) { "Component root is a symbolic link" }
+            val componentsRoot = componentRoot.parentFile
+            require(componentsRoot == null || !Files.isSymbolicLink(componentsRoot.toPath())) {
+                "Components directory is a symbolic link"
+            }
             writeState(componentRoot, State(null, null))
             deleteTree(componentRoot.toPath())
             Result(true)
@@ -153,6 +160,17 @@ class NgrComponentStore(private val privateRoot: File) {
     }
 
     private fun readState(componentRoot: File): State {
+        val componentsRoot = componentRoot.parentFile
+        if (componentsRoot != null && componentsRoot.exists()) {
+            require(!Files.isSymbolicLink(componentsRoot.toPath()) && componentsRoot.isDirectory) {
+                "Components directory is invalid"
+            }
+        }
+        if (componentRoot.exists()) {
+            require(!Files.isSymbolicLink(componentRoot.toPath()) && componentRoot.isDirectory) {
+                "Component directory is invalid"
+            }
+        }
         val stateFile = File(componentRoot, STATE_FILE)
         if (!stateFile.exists()) return State(null, null)
         require(!Files.isSymbolicLink(stateFile.toPath()) && stateFile.isFile && stateFile.length() <= 512L) {
