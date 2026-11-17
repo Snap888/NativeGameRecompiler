@@ -98,4 +98,14 @@ class NgrComponentCatalogTest {
         assertTrue(errors.any { it.contains("SPDX") })
         assertFalse(errors.isEmpty())
     }
+
+    @Test fun rejectsWindowsAndNulPathSeparators() {
+        val invalid = component().copy(installSubdirectory = "runtime\\\\..\\\\outside")
+        val errors = NgrComponentCatalog(
+            catalogId = "community",
+            revision = "1",
+            components = listOf(invalid)
+        ).validate()
+        assertTrue(errors.any { it.contains("unsafe install subdirectory") })
+    }
 }
