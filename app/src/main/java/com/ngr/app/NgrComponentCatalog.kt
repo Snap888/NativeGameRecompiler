@@ -1,6 +1,5 @@
 package com.ngr.app
 
-import java.net.URI
 import java.util.Locale
 
 /**
@@ -101,16 +100,16 @@ data class NgrComponentCatalog(
             val uri = URI(value)
             uri.scheme.equals("https", ignoreCase = true) &&
                 !uri.host.isNullOrBlank() && uri.userInfo == null &&
-                uri.port in -1..65535 && uri.rawPath?.contains("\\u0000") != true
+                uri.port in -1..65535 && !value.contains(0.toChar())
         } catch (_: Exception) {
             false
         }
 
         private fun isSafeRelativePath(value: String): Boolean {
             if (value.isBlank() || value.length > 512 || value.startsWith("/") ||
-                value.startsWith("\\\\") || value.contains('\\\\') || value.contains(':') ||
-                value.contains('\\u0000')) return false
-            val segments = value.split('/')
+            if (value.isBlank() || value.length > 512 || value.startsWith("/") ||
+                value.startsWith("\\") || value.contains('\\') || value.contains(':') ||
+                value.contains(0.toChar())) return false
             return segments.all { it.isNotBlank() && it != "." && it != ".." }
         }
     }
