@@ -13,11 +13,15 @@ const std::vector<Capability>& capabilities() {
   {"package.ngrpack.signature-verification","planned","Signed release-package trust verification; unsigned payload execution is prohibited"},
   {"backend.plugin-abi","planned","C ABI v1 contract defined; loader, conformance tests and lifecycle integration remain"},
   {"backend.n64recomp","planned","Static recompilation proof of concept; not integrated"},
-  {"backend.fex","planned","Dynamic Linux x86-64 translation; not integrated"},
+  {"backend.fexcore.arm64ec","planned","FEXCore ARM64EC compatibility path; not integrated"},
+  {"runtime.wine","planned","Wine/Proton Windows compatibility runtime; not integrated"},
+  {"environment.manager","planned","Versioned container, component and per-game environment profiles; not integrated"},
   {"backend.box64","planned","Dynamic Linux x86-64 translation; not integrated"},
   {"graphics.turnip-provider","planned","Isolated Adreno Vulkan provider; not integrated"},
   {"graphics.dxvk","planned","D3D8-11 translation layer; not integrated"},
   {"graphics.vkd3d-proton","planned","D3D12 translation layer; not integrated"},
+  {"graphics.wayland","planned","Gated Wine Wayland compositor path; compatible Wine driver and Turnip required"},
+  {"graphics.reshade","planned","ReShade injection and shader profile management; not integrated"},
   {"audio.oboe","planned","Android low-latency audio backend; not integrated"}
  };
  return items;
