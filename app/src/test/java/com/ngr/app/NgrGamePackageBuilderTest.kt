@@ -128,6 +128,34 @@ class NgrGamePackageBuilderTest {
         } finally { base.deleteRecursively() }
     }
 
+    @Test fun exposesExecutableCandidatesAndHonorsExplicitSelection() {
+        val base = createTempDir(prefix = "ngr-builder-choice-")
+        val game = File(base, "MultiGame")
+        try {
+            assertTrue(game.mkdirs())
+            File(game, "Launcher.exe").writeBytes(peX64())
+            File(game, "Game-Win64-Shipping.exe").writeBytes(peX64())
+            val builder = NgrGamePackageBuilder()
+            val scanArchive = File(base, "scan.ngrpack")
+            val scan = builder.buildFromFolder(game, scanArchive, "MultiGame")
+            assertTrue(scan.errors.joinToString(), scan.success)
+            assertEquals(2, scan.candidates.size)
+            assertTrue(scan.candidates.any { it.path == "Launcher.exe" && it.architecture == "x86_64" })
+            assertTrue(scan.candidates.any { it.path == "Game-Win64-Shipping.exe" && it.platform == "windows" })
+
+            val selectedArchive = File(base, "selected.ngrpack")
+            val selected = builder.buildFromFolder(game, selectedArchive, "MultiGame", "Launcher.exe")
+            assertTrue(selected.errors.joinToString(), selected.success)
+            assertEquals("Launcher.exe", selected.entryPoint)
+
+            val installed = NgrPackPackageManager(File(base, "packages")).install(selectedArchive)
+            assertTrue(installed.errors.joinToString(), installed.success)
+            assertEquals("windows", installed.packageInfo?.sourcePlatform)
+            assertEquals("x86_64", installed.packageInfo?.sourceArchitecture)
+            assertEquals("Launcher.exe", installed.packageInfo?.entryPoint)
+        } finally { base.deleteRecursively() }
+    }
+
     @Test fun rejectsFolderContainingOnlyUninstallerExecutable() {
         val base = createTempDir(prefix = "ngr-builder-uninstaller-")
         val game = File(base, "Lethal Company")
