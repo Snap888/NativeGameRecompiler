@@ -114,7 +114,7 @@ object NgrPackArchiveInspector {
                         if (total > limits.maxTotalBytes - size) errors += "Archive exceeds total uncompressed size limit"
                         else total += size
                         if (size > 0 && compressed == 0L) errors += "Invalid zero-size compressed payload: $normalized"
-                        else if (compressed > 0 && size / compressed.coerceAtLeast(1) > limits.maxCompressionRatio)
+                        else if (compressed > 0 && size > compressed * limits.maxCompressionRatio)
                             errors += "ZIP compression ratio exceeds limit: $normalized"
                     }
                     infos += EntryInfo(normalized, isDirectory, compressed, size)
