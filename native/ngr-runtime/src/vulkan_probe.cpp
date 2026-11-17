@@ -5,13 +5,15 @@
 #include <vector>
 namespace ngr {
 std::string vulkan_probe() {
-    VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
+    VkApplicationInfo app{};
+    app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     app.pApplicationName = "Native Game Recompiler";
     app.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
     app.pEngineName = "NGR Runtime";
     app.engineVersion = VK_MAKE_VERSION(0, 1, 0);
     app.apiVersion = VK_API_VERSION_1_0;
-    VkInstanceCreateInfo create{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+    VkInstanceCreateInfo create{};
+    create.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     create.pApplicationInfo = &app;
     VkInstance instance = VK_NULL_HANDLE;
     VkResult result = vkCreateInstance(&create, nullptr, &instance);
