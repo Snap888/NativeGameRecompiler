@@ -48,9 +48,15 @@ object NgrManifestValidator {
                 hashedPaths += path
                 if (!sha256Pattern.matches(expected)) { errors += "Invalid SHA-256 for $path"; continue }
                 val root = packageRoot.canonicalFile
+                var unresolved = root.toPath()
+                var hasSymlink = false
+                for (segment in path.replace('\\\\', '/').split('/')) {
+                    unresolved = unresolved.resolve(segment)
+                    if (Files.isSymbolicLink(unresolved)) { hasSymlink = true; break }
+                }
+                if (hasSymlink) { errors += "Symbolic links are not allowed: $path"; continue }
                 val file = File(packageRoot, path).canonicalFile
                 if (!file.toPath().startsWith(root.toPath())) { errors += "Path escapes package root: $path"; continue }
-                if (Files.isSymbolicLink(file.toPath())) { errors += "Symbolic links are not allowed: $path"; continue }
                 if (!file.isFile) errors += "Package file does not exist: $path"
                 else if (verifyHashes && sha256(file) != expected.lowercase()) errors += "SHA-256 mismatch: $path"
             }
