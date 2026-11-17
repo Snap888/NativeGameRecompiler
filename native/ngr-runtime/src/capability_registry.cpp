@@ -1,4 +1,6 @@
 #include "ngr/capability_registry.hpp"
+#include "ngr/backend_abi_v1.h"
+static_assert(NGR_BACKEND_ABI_V1_MAJOR == 1u, "NGR backend ABI version must be explicit");
 #include <sstream>
 namespace ngr {
 const std::vector<Capability>& capabilities() {
