@@ -670,3 +670,13 @@ This is the durable project memory. Update it in every development session.
 - Runs #239 (`44190109701`) and #240 (`44190235891`) failed because the temporary duplicate-parser test asserted an error message from the duplicate decoder; that decoder and its test suite have been removed in favor of `NgrComponentCatalogParser`.
 - Run #241 (`44190262305`) failed compiling the new required-component-cycle test because the catalog constructor was called positionally with schemaVersion first. Corrected the test to use named arguments in commit `b7563d5948e598a4af2705adab2a2028afe3ce53`.
 - Verify the parser cleanup and cycle test fixes in the newest CI before treating catalog validation as green.
+
+
+### WinNative CPU/graphics configuration mapping
+- Inspected pinned donor sources for `Box64PresetManager`, `FEXCorePresetManager`, `FEXCoreManager`, `WineInfo`, `GuestProgramLauncherComponent`, `DXVKConfigUtils`, `GraphicsDriverCatalog`, `AdrenotoolsManager` and `DriverPackages`.
+- Confirmed Box64 presets are environment maps with distinct dynarec safety/performance settings and custom presets in SharedPreferences.
+- Confirmed FEXCore has a separate preset family, SMC-check alias normalization and per-executable AppConfig overrides.
+- Confirmed standard x86_64 guest command is Box64-wrapped; ARM64EC uses native ARM64 Wine directly and chooses HODLL based on FEXCore vs WOWBox64. This architecture-specific routing must be represented explicitly in NGR.
+- Confirmed driver providers are separate: Android AdrenoTools packages and Linux-runtime ICD packages. Container selection is passed into the launch environment; system Vulkan must remain untouched.
+- Confirmed DXVK async/cache and VKD3D feature-level options are environment configuration, not evidence of runtime availability.
+- Detailed source mapping appended to `docs/WINNATIVE_INTEGRATION_PLAN.md`.
