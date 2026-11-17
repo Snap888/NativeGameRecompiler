@@ -39,6 +39,10 @@ object NgrComponentArchiveInstaller {
         if (component.archiveFormat != NgrComponentCatalog.ArchiveFormat.ZIP) {
             return Result(false, error = "Only ZIP component archives are supported by this installer")
         }
+        if (!component.id.matches(Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")) ||
+            !isSafeRelativePath(component.installSubdirectory)) {
+            return Result(false, error = "Component ID or install subdirectory is unsafe")
+        }
         if (component.sha256.length != 64 || !component.sha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
             return Result(false, error = "Component SHA-256 metadata is invalid")
         }
@@ -144,6 +148,12 @@ object NgrComponentArchiveInstaller {
         }
     }
 
+    private fun isSafeRelativePath(value: String): Boolean {
+        if (value.isBlank() || value.length > 512 || value.startsWith("/") ||
+            value.startsWith("\\") || value.contains('\\') || value.contains(':') ||
+            value.contains(0.toChar())) return false
+        return value.split('/').all { it.isNotBlank() && it != "." && it != ".." }
+    }
     private fun sha256(file: File, maxBytes: Long): String {
         val digest = MessageDigest.getInstance("SHA-256")
         var total = 0L
