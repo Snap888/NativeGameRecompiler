@@ -4,7 +4,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
 import java.security.MessageDigest
-import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
 
 /**
