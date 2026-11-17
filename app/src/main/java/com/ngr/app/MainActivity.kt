@@ -317,7 +317,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         for (child in children) {
             val name = child.name ?: throw IOException("A selected file has no name")
             if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
-                name.contains('\\\\') || name.contains(':') || name.contains('\u0000'))
+                name.contains('\\') || name.contains(':') || name.contains('\u0000'))
                 throw IOException("Unsafe file name in selected folder")
             val childRelative = if (relative.isEmpty()) name else "$relative/$name"
             if (childRelative.count { it == '/' } >= 64)
