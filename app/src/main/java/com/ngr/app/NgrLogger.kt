@@ -25,14 +25,14 @@ object NgrLogger {
                 return
             }
             logFile = File(directory, "ngr-runtime.log")
-            writeLocked("INFO", "app", "Diagnostic logging initialized; file=\${logFile?.name}")
+            writeLocked("INFO", "app", "Diagnostic logging initialized; file=${logFile?.name}")
         }
     }
 
     fun info(category: String, message: String) = write("INFO", category, message)
     fun warn(category: String, message: String) = write("WARN", category, message)
     fun error(category: String, message: String, error: Throwable? = null) {
-        val details = if (error == null) message else "$message: \${error.javaClass.simpleName}: \${error.message}\n" +
+        val details = if (error == null) message else "$message: ${error.javaClass.simpleName}: ${error.message}\n" +
             error.stackTraceToString().take(8_000)
         write("ERROR", category, details)
     }
@@ -43,7 +43,7 @@ object NgrLogger {
         runCatching {
             val content = file.readText(Charsets.UTF_8)
             if (content.length <= maxChars) content else content.takeLast(maxChars)
-        }.getOrElse { "Unable to read log: \${it.message}" }
+        }.getOrElse { "Unable to read log: ${it.message}" }
     }
 
     fun copyTo(destination: File) = synchronized(lock) {
@@ -61,11 +61,12 @@ object NgrLogger {
     }
 
     private fun writeLocked(level: String, category: String, message: String) {
+        if (logFile == null) return
         val safeCategory = category.replace(Regex("[^A-Za-z0-9_.-]"), "_").take(40)
         val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date())
-        val line = "$timestamp $level/$safeCategory [\${Thread.currentThread().name}] \${message.replace("\\r", "").take(MAX_LINE)}\n"
+        val line = "$timestamp $level/$safeCategory [${Thread.currentThread().name}] ${message.replace("\r", "").take(MAX_LINE)}\n"
         when (level) {
             "ERROR" -> Log.e(TAG, line.trimEnd())
             "WARN" -> Log.w(TAG, line.trimEnd())
