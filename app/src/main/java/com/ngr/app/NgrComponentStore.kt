@@ -85,7 +85,9 @@ class NgrComponentStore(private val privateRoot: File) {
             val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), componentId)
             val state = readState(componentRoot)
             val previous = state.previous ?: return Result(false, error = "No previous component version is available")
-            val previousDirectory = File(File(componentRoot, VERSIONS_DIRECTORY), previous)
+            val versionsRoot = File(componentRoot, VERSIONS_DIRECTORY)
+            require(!Files.isSymbolicLink(versionsRoot.toPath()) && versionsRoot.isDirectory) { "Version store directory is unsafe" }
+            val previousDirectory = File(versionsRoot, previous)
             require(previousDirectory.isDirectory && !Files.isSymbolicLink(previousDirectory.toPath())) {
                 "Previous component version is missing or unsafe"
             }
@@ -101,7 +103,9 @@ class NgrComponentStore(private val privateRoot: File) {
         return try {
             val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), componentId)
             val version = readState(componentRoot).current ?: return null
-            File(File(componentRoot, VERSIONS_DIRECTORY), version).takeIf {
+            val versionsRoot = File(componentRoot, VERSIONS_DIRECTORY)
+            if (Files.isSymbolicLink(versionsRoot.toPath()) || !versionsRoot.isDirectory) return null
+            File(versionsRoot, version).takeIf {
                 it.isDirectory && !Files.isSymbolicLink(it.toPath())
             }
         } catch (_: Exception) {
@@ -117,7 +121,9 @@ class NgrComponentStore(private val privateRoot: File) {
             require(version != state.current && version != state.previous) {
                 "Cannot remove active or rollback component version"
             }
-            val versionsRoot = File(componentRoot, VERSIONS_DIRECTORY).canonicalFile
+            val versionsDirectory = File(componentRoot, VERSIONS_DIRECTORY)
+            require(!Files.isSymbolicLink(versionsDirectory.toPath()) && versionsDirectory.isDirectory) { "Version store directory is unsafe" }
+            val versionsRoot = versionsDirectory.canonicalFile
             val target = File(versionsRoot, version)
             require(target.canonicalFile.parentFile == versionsRoot && target.isDirectory) {
                 "Component version directory is missing or unsafe"
