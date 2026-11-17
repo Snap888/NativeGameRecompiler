@@ -542,3 +542,11 @@ This is the durable project memory. Update it in every development session.
 3. Define archive extraction limits and safe install staging independently of donor code.
 4. Finish source mapping for launch pipeline, Wine layer resolution, driver install/activation, Box64 settings and ReShade injection.
 5. Produce SPDX/provenance inventory from WinNative LICENSE, CREDITS, submodules and each binary/component upstream before copying code or binaries.
+
+
+### CI correction — Kotlin path literal regression
+- Run #145 (`44181554144`) and run #146 (`44181583098`) both reached `:app:compileDebugKotlin` and failed because the initial catalog model contained invalid Kotlin escape sequences in the Windows-separator/NUL path checks. No unit tests ran and no APK was produced by either run.
+- Corrected the checks to use a valid escaped backslash character and `0.toChar()` for NUL detection; restored the missing path-segment validation after reviewing the edited function.
+- Added a regression test for Windows-style traversal paths.
+- Fix commits: `94f0ccdc11052ec90d4febe7595d09fe426089f6`, `ee33c0084849700e590d33f016052dacf7bc06a0`, and test `f9b2b5bd6b6247864355d2d3f2b0cfa458af6dc9`.
+- Runs for the corrected commits were queued/in progress at the time of this note. The catalog feature remains CI-unverified until the latest run passes JVM tests and APK packaging.
