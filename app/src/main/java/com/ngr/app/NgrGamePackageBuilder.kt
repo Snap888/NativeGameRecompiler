@@ -81,6 +81,7 @@ class NgrGamePackageBuilder(
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
                 if (attrs.isSymbolicLink || Files.isSymbolicLink(dir)) throw IOException("Symbolic links are not allowed in game folders")
                 val relative = source.relativize(dir)
+                if (relative.nameCount > 64) throw IOException("Game folder nesting exceeds 64 levels")
                 if (relative.toString().isNotEmpty()) {
                     val target = destination.resolve(relative.toString()).normalize()
                     if (!target.startsWith(destination)) throw IOException("Game folder path escapes import root")
@@ -122,6 +123,7 @@ class NgrGamePackageBuilder(
                 val raw = entry.name
                 val relative = (if (entry.isDirectory) raw.removeSuffix("/") else raw).replace('\\', '/')
                 validateRelativePath(relative)
+                if (relative.count { it == '/' } >= 64) throw IOException("ZIP folder nesting exceeds 64 levels")
                 val target = destination.resolve(relative).normalize()
                 if (!target.startsWith(destination) || target == destination) throw IOException("ZIP path escapes import root: $raw")
                 if (entry.isDirectory) {
