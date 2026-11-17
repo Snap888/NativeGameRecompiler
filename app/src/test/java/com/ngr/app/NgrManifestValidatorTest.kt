@@ -120,4 +120,20 @@ class NgrManifestValidatorTest {
         } finally { root.deleteRecursively() }
     }
 
+
+    @Test fun rejectsUnlistedPayloadFiles() {
+        val root = createTempDir(prefix = "ngr-unlisted-")
+        try {
+            val payload = File(root, "bin/game.so")
+            payload.parentFile!!.mkdirs()
+            payload.writeText("hello")
+            val extra = File(root, "extras/unhashed.dat")
+            extra.parentFile!!.mkdirs()
+            extra.writeText("not covered by manifest")
+            val result = NgrManifestValidator.validate(manifest(), root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("Unlisted package file") })
+        } finally { root.deleteRecursively() }
+    }
+
 }
