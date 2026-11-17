@@ -504,3 +504,41 @@ This is the durable project memory. Update it in every development session.
 - Source commits: `0091a8526f097a7c28c14a96cc6e33653d6294b0`; tests: `5969959ba40a2c7e75c6f625ca023b5e76e62198`.
 - Native capability registry now explicitly lists Wine runtime, Environment Manager, FEXCore/ARM64EC, Wayland and ReShade as planned (not available): `fc742d1b4cf356e3228fcf79abbeaabb0c285060`.
 - CI for the new Kotlin model/tests must pass before this milestone is marked build-verified.
+
+
+## Session 2026-11-18 — WinNative source audit and component catalog model
+
+### Repository and donor pin
+- NGR main head at session start: `44cddb6f80757e89542e8b5e89f8a998c355690c`.
+- WinNative donor tree inspected at commit `99c3305d163780de5ca39b493aefcde436acad5c` (tree SHA).
+- The donor audit is now source-based for the files listed below; it is still not a complete transitive dependency/license audit.
+
+### Source-level findings
+- Container model and lifecycle: `app/src/main/runtime/container/Container.java` and `ContainerManager.java`. Container configuration is a persisted JSON-backed set of Wine version, screen size, environment variables, DX wrapper, graphics driver, audio driver, Box64/FEXCore versions and presets, drives, CPU lists and per-game executable/arguments. Container activation changes an active-user symlink; NGR must not copy that global mutable activation design without isolating each profile.
+- Proton catalog/install: `runtime/linux/LinuxProtons.kt`. Proton builds are represented with ID/name/URL/SHA-256/size and installed into Steam compatibilitytools.d; this is a useful provenance pattern, but NGR still needs an immutable typed catalog and safe staging/rollback.
+- CPU translation: `runtime/compat/box64/Box64PresetManager.java` and `runtime/compat/fexcore/FEXCoreManager.java`; Container persists separate Box64 and FEXCore presets/versions. Do not model them as interchangeable flags.
+- Graphics drivers: `runtime/system/GraphicsDriverCatalog.kt` queries built-in driver support and AdrenoTools installed drivers. This confirms an existing provider abstraction, not permission to alter Android's system Vulkan loader.
+- Wayland: `runtime/display/wayland/WineWaylandSupport.java` requires Adreno and matching Wine `winewayland.so` plus Wayland Turnip ICD/library. It explicitly warns against copying winewayland.so from a different Wine build. NGR's gate must verify actual installed artifacts, not accept profile booleans as proof.
+- ReShade: `runtime/reshade/ReshadeManager.java` scans local effect folders and reflects .fx uniforms; `ReshadeDownloader.kt` downloads effect archives. The downloader currently uses optional MD5, extracts directly into the live effect root and deletes an existing folder before extraction; this is not suitable as-is for NGR's trusted component installer.
+- Component recipes: `runtime/content/component/ComponentInstaller.kt` supports recipe-driven downloads, extraction, DLL copies/overrides and registry changes. Its ZIP extraction joins entry names directly under the output directory without a canonical-path containment check, and destination resolution can produce absolute paths. NGR MUST NOT port this extraction/path-resolution code; build a new bounded, path-safe staging installer.
+- Environment variables: `runtime/wine/EnvVars.java` stores ordered KEY=value pairs and has an escaped serialization form. NGR needs explicit validation and a structured map rather than copying its space-split parser.
+
+### NGR implementation
+- Added `NgrComponentCatalog.kt`: typed component IDs/types, versions, upstream commit, target ABI set, archive format, HTTPS download/source URLs, SHA-256, SPDX identifier, dependencies/conflicts, compatibility constraints, install subdirectory and rollback slot.
+- Catalog validation rejects duplicate/unsafe IDs, unsupported schema, absent target ABI, non-HTTPS or credential-bearing URLs, malformed SHA-256, invalid license identifiers, unsafe relative install paths, invalid commit IDs, self-dependencies/conflicts and unknown dependency/conflict references.
+- Added `NgrComponentCatalogTest.kt` covering valid metadata and the validation/security cases above.
+- This is a metadata model only. No catalog parser, downloader, archive extractor, installer, activation, rollback or runtime loader is implemented.
+
+### CI
+- Previous source/test baseline commit `5969959ba40a2c7e75c6f625ca023b5e76e62198` is covered by successful Actions run #142: `44180861281`.
+- Catalog model commit `492282799227bf424a619e9a3dc68112ed2b3323` triggered run #145 `44181554144`.
+- Catalog test commit `38f64afef93eec3f87cc55b80a049664bd791f2b` triggered run #146 `44181583098`.
+- Runs #145 and #146 were still in progress at journal update time. Do not mark the catalog model/tests CI-verified until #146 is green.
+- No APK is claimed for the catalog stage until a successful artifact is confirmed.
+
+### Next
+1. Confirm run #146 JVM tests, arm64 APK build and artifact upload; fix any failure.
+2. Extend catalog validation with dependency-cycle detection and catalog JSON parsing tests.
+3. Define archive extraction limits and safe install staging independently of donor code.
+4. Finish source mapping for launch pipeline, Wine layer resolution, driver install/activation, Box64 settings and ReShade injection.
+5. Produce SPDX/provenance inventory from WinNative LICENSE, CREDITS, submodules and each binary/component upstream before copying code or binaries.
