@@ -39,7 +39,8 @@ Product: Android app/runtime for launching game builds that have been legally an
 - Stage 2: native capability registry, JNI report, strict extracted-package manifest validator and JVM regression tests. CI passed.
 - Stage 3: read-only NGRPACK ZIP inspector, bounded staging extraction, streamed size checks, full manifest/SHA-256 validation, atomic install/update with rollback/recovery, package inventory/removal and Android Document Picker UI. CI run #56 passed.
 - Latest artifact: `NGR-arm64-debug`, Actions run #56, artifact ID `14364325521`, archive SHA-256 `7dcc9170b639ef32cfdca761ada80afb1dba2e04ea0748b57d5c7eb605cf1cff`.
-- Physical-device validation remains pending. No static/dynamic game backend, plugin ABI or game execution is implemented.
+- Backend execution ABI v1 C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h`, with C/C++ compile checks and ADR 0003. Loader, runtime negotiation, registry and conformance tests are not implemented; capability remains planned.
+- Physical-device validation remains pending. No static/dynamic game backend or game execution is implemented.
 - Package signing/trust policy and sandbox are not implemented; never execute package payloads.
 - Next priority: install/test APK on Snapdragon/Adreno device, then define signed package trust policy and stable backend ABI.
 
