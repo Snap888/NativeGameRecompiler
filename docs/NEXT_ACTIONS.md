@@ -4,67 +4,65 @@ Mark complete only when evidence exists.
 
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
-- [x] Confirm NGR-arm64-debug artifact upload in Actions run #56.
+- [x] Confirm NGR-arm64-debug artifact upload in Actions run #129.
 - [ ] Install latest diagnostics APK on Snapdragon/Adreno Android device.
-- [ ] Verify app launch, Vulkan physical-device enumeration and controller hotplug.
-- [x] Exercise folder/ordinary ZIP import, install, update, remove and inventory on device; Lethal Company ZIP retest passes with correct Windows x86_64 entry point.
-- [ ] Exercise restart recovery and legacy NGRPACK import on device.
+- [ ] Verify app launch, Vulkan enumeration and controller hotplug.
+- [x] Exercise folder/ordinary ZIP import, install, update, remove and inventory on device; Lethal Company imports pass with correct Windows x86_64 entry point.
+- [ ] Exercise restart recovery and multi-EXE chooser on device.
 
 ## P1 — NGRPACK trust and security
-- [x] Manifest schema parity, strict metadata typing and unknown-property rejection.
-- [x] Reject path traversal, slash/backslash collisions, symlink roots/components and non-regular files.
-- [x] Reject unlisted payload files; require entryPoint in the hashed file list.
-- [x] ZIP central-directory inspection, symlink/special-file rejection, ZIP Slip defense and archive/entry/manifest/total-size/compression-ratio limits.
-- [x] Bounded extraction into app-private staging and streamed-byte rechecks.
-- [x] Full post-extraction SHA-256 and manifest validation.
-- [x] Atomic directory replacement with backup/rollback and interrupted-install recovery.
-- [x] Add Android SAF folder picker and ordinary ZIP picker alongside the existing NGRPACK importer.
-- [x] Add bounded folder/ZIP scanner, Windows PE and Linux ELF detection, automatic manifest generation and SHA-256 inventory.
-- [x] Use deterministic package IDs so repeated imports update the same library entry.
-- [x] Verify folder/ZIP import builder and Android UI in CI run #108; JVM tests, arm64-v8a APK build and artifact upload passed.
-- [x] Verify deterministic package identity and repeat-import update path in CI run #113; APK artifact uploaded.
-- [x] Device-test folder and ordinary ZIP import of Lethal Company: both install, validate hashes and inventory successfully; repeat import updates same package.
-- [x] Re-test Lethal Company after entry-point fix; device selects Lethal Company.exe (Windows x86_64) and package installation succeeds.
-- [x] Package inventory, update and removal; corrupt package folders remain safely removable.
+- [x] Strict manifest/schema, path/hash checks, ZIP inspection, bounded extraction, SHA-256 validation, atomic install/update and rollback/recovery.
+- [x] Folder/ordinary ZIP import, generated manifest, executable detection, candidate chooser and package Details metadata.
 - [ ] Review local-header vs central-directory consistency, malformed UTF-8 names and archive edge cases.
-- [ ] Show selected entry point, platform and architecture in installed package details; preserve and validate on update.
-- [x] Add explicit primary-executable selection for multiple usable PE/ELF candidates; chooser displays path/platform/architecture and selection is revalidated by the builder.
-- [x] Exclude common installer/uninstaller/helper EXEs and rank candidates by game-name match; regression tests and CI run #122 pass.
 - [ ] Define manifest version migration.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
 
 ## P2 — Backend ABI and runtime
-- [x] Define ABI v1 C contract for execution backends and compile-check public header as C and C++ (CI #71 green).
+- [x] Define ABI v1 C contract and compile-check public header as C and C++.
 - [ ] Implement host-side ABI negotiation and validation (major/minor, struct sizes, IDs, required callbacks).
 - [ ] Add trusted built-in/test backend fixture; never load NGRPACK game payloads as plugins.
-- [ ] Implement backend registry and lifecycle: probe, create, load, start, request_stop, wait, destroy.
-- [ ] Add conformance tests for ABI mismatch, truncated structs, missing callbacks, invalid string views and stop/destroy ordering.
-- [x] Add structured logging with session IDs, bounded persistent files, in-app viewer and SAF export (CI verification pending).
+- [ ] Implement backend registry and lifecycle with conformance tests.
 - [ ] Add native crash/error reporting and cleanup rules.
-- [ ] Do not mark plugin ABI available until loader and conformance tests pass.
 
-## P3 — First static recompiler proof of concept
+## P3 — WinNative runtime and Environment Manager
+- [x] Record target architecture and donor integration plan in docs/WINNATIVE_INTEGRATION_PLAN.md.
+- [ ] Complete file-by-file source audit of WinNative container model/manager, launch pipeline, Wine/Proton layer resolver, WCP installer, catalog parser and environment variable UI.
+- [ ] Audit Box64/Box86 presets, FEXCore/FEX unixlibs, ARM64EC routing and WOWBox64 compatibility.
+- [ ] Audit DXVK/VKD3D/D8VK/D7VK selection and component install/rollback.
+- [ ] Audit AdrenoTools/Turnip provider selection and Vulkan isolation.
+- [ ] Audit ReShade injection, shader catalogs, presets and texture packages; distinguish catalog availability from runtime support.
+- [ ] Review GPL-3.0 and every transitive component license; confirm NGR licensing strategy before copying donor code.
+- [ ] Pin donor commit and create component provenance/SPDX inventory.
+- [ ] Design versioned component catalog model with ABI, hashes, license, constraints, install layout and rollback metadata.
+- [ ] Implement container profiles, Wine prefix lifecycle and global/per-game override schema.
+- [ ] Implement secure catalog download, archive inspection, install, activation, rollback and uninstall.
+- [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
+- [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
+- [ ] Add DXVK/VKD3D and isolated Turnip provider.
+- [ ] Add ReShade/shader activation after injection compatibility is verified.
+- [ ] Add Wayland only for validated Wine/Proton + Wayland Turnip combinations; X11 first.
+
+## P4 — Static recompiler
 - [ ] Pin N64Recomp upstream commit and review SPDX/transitive licenses.
 - [ ] Obtain legally distributable test input and metadata.
 - [ ] Build toolchain reproducibly in CI.
 - [ ] Generate C/C++ from test input and compile for Android ARM64.
 - [ ] Implement only runtime services required by that test.
 - [ ] Validate correctness before performance tuning.
+- [ ] Keep static-recompiled backend independent of Wine and the compatibility environment.
 
-## P4 — Graphics and input expansion
+## P5 — Graphics, input and audio
 - [ ] Add Vulkan extension/feature report.
-- [ ] Design per-game graphics-provider selection and fallback.
-- [ ] Evaluate isolated Turnip loading without replacing system libraries.
 - [ ] Evaluate GameActivity and Oboe when render/audio loops exist.
 - [ ] Add actual touch mapping after first runnable backend.
 
 ## Definition of done
 - Code committed to correct repository and branch.
 - Tests/build run and result recorded.
-- Limitations and follow-up tasks recorded in DEVELOPMENT_LOG.md.
+- Development log and this list updated.
+- Distinguish implemented, partially implemented, planned and verified.
 - No fabricated success claims or unverified APK links.
 
-
 ## Current validation gate
-- [x] CI run #129 (commit `6b546a682a316cdc96a1d96c96065ebe6599be14`) passes JVM tests, arm64-v8a APK build and artifact upload; artifact ID `14371675507`.
+- [x] CI run #129 (code/test commit `6b546a682a316cdc96a1d96c96065ebe6599be14`) passes JVM tests, arm64-v8a APK build and artifact upload; artifact ID `14371675507`.
 - [ ] Device-test executable chooser with a multi-EXE game archive and verify Details for Lethal Company reports `Lethal Company.exe`, Windows, x86_64.
