@@ -159,3 +159,8 @@ The following first implementation now exists in NGR:
 - `NgrPackArchiveInspector.EntryInfo` now exposes a validated executable bit from Unix ZIP mode metadata.
 
 The installer intentionally does not yet download, activate, load or execute components. TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout checks, atomic version promotion, rollback and uninstall remain future work. Do not advertise unsupported archive formats as installable yet.
+
+
+### HTTPS download implementation
+
+NGR now has an HTTPS-only component downloader with manual bounded redirects, no HTTPS downgrade, timeouts, Content-Length and streaming-size checks, identity-only response encoding, SHA-256 verification and private temporary-file output. It deliberately stops at a verified file; the separate ZIP staging installer handles extraction. Live network integration tests and the full download-to-install orchestration remain outstanding.
