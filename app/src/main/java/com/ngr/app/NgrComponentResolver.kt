@@ -22,7 +22,8 @@ object NgrComponentResolver {
         profile: NgrEnvironmentProfile,
         requestedIds: Set<String>,
         installedIds: Set<String> = emptySet(),
-        capabilities: RuntimeCapabilities
+        capabilities: RuntimeCapabilities,
+        installedVersions: Map<String, String> = emptyMap()
     ): Plan {
         val errors = mutableListOf<String>()
         errors += catalog.validate()
@@ -51,7 +52,16 @@ object NgrComponentResolver {
         val resolved = mutableSetOf<String>()
 
         fun include(id: String) {
+            val pinnedVersion = profile.componentVersions[id]
             if (id in installedIds) {
+                if (pinnedVersion != null) {
+                    val installedVersion = installedVersions[id]
+                    if (installedVersion == null) {
+                        errors += "Pinned component $id has no verified installed version metadata"
+                    } else if (installedVersion != pinnedVersion) {
+                        errors += "Installed component $id version $installedVersion does not match pinned version $pinnedVersion"
+                    }
+                }
                 alreadyInstalled.add(id)
                 return
             }
@@ -64,6 +74,9 @@ object NgrComponentResolver {
             if (!visiting.add(id)) {
                 errors += "Component dependency cycle encountered while resolving: $id"
                 return
+            }
+            if (pinnedVersion != null && component.version != pinnedVersion) {
+                errors += "Catalog component $id version ${component.version} does not match pinned version $pinnedVersion"
             }
             if (component.targetAbis.none { it in compatibleAbis }) {
                 errors += "Component $id is incompatible with profile architecture ${profile.containerMode}"
