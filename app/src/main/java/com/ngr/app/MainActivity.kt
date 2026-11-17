@@ -8,8 +8,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.InputDevice
 import android.view.View
+import android.text.InputType
 import android.hardware.input.InputManager
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -230,6 +232,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             })
             val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             actions.addView(Button(this).apply {
+                text = "Edit"
+                setOnClickListener { showEditEnvironmentProfileDialog(profile) }
+            })
+            actions.addView(Button(this).apply {
                 text = "Details"
                 setOnClickListener { showEnvironmentProfileDetails(profile) }
             })
@@ -253,6 +259,112 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         }
     }
 
+    private fun showEditEnvironmentProfileDialog(profile: NgrEnvironmentProfile) {
+        fun field(label: String, value: String?, inputType: Int = InputType.TYPE_CLASS_TEXT): EditText {
+            val input = EditText(this).apply {
+                setSingleLine(true)
+                setText(value.orEmpty())
+                this.inputType = inputType
+            }
+            form.addView(TextView(this).apply { text = label; textSize = 12f })
+            form.addView(input)
+            return input
+        }
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 8, 32, 8) }
+        val wine = field("Wine / Proton layer ID", profile.wineLayerId)
+        val box64 = field("Box64 component ID", profile.box64ComponentId)
+        val box86 = field("Box86 component ID (optional)", profile.box86ComponentId)
+        val fex = field("FEXCore component ID", profile.fexCoreComponentId)
+        val fexUnix = field("FEX UnixLibs component ID", profile.fexUnixLibsComponentId)
+        val wow = field("WOWBox64 component ID", profile.wowBox64ComponentId)
+        val dxvk = field("DXVK component ID", profile.dxvkComponentId)
+        val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
+        val turnip = field("Turnip component ID", profile.turnipComponentId)
+        val width = field("Desktop width", profile.desktopWidth.toString(), InputType.TYPE_CLASS_NUMBER)
+        val height = field("Desktop height", profile.desktopHeight.toString(), InputType.TYPE_CLASS_NUMBER)
+        val dpi = field("DPI", profile.dpi.toString(), InputType.TYPE_CLASS_NUMBER)
+        val displayGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val x11 = RadioButton(this).apply { id = View.generateViewId(); text = "X11"; isChecked = profile.displayBackend == NgrEnvironmentProfile.DisplayBackend.X11 }
+        val wayland = RadioButton(this).apply { id = View.generateViewId(); text = "Wayland"; isChecked = profile.displayBackend == NgrEnvironmentProfile.DisplayBackend.WAYLAND }
+        displayGroup.addView(x11); displayGroup.addView(wayland)
+        form.addView(TextView(this).apply { text = "Display backend"; textSize = 12f })
+        form.addView(displayGroup)
+        val graphicsGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val systemVk = RadioButton(this).apply { id = View.generateViewId(); text = "System Vulkan"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.SYSTEM_VULKAN }
+        val turnipVk = RadioButton(this).apply { id = View.generateViewId(); text = "Turnip"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.TURNIP }
+        graphicsGroup.addView(systemVk); graphicsGroup.addView(turnipVk)
+        form.addView(TextView(this).apply { text = "Graphics provider"; textSize = 12f })
+        form.addView(graphicsGroup)
+        val waylandWine = CheckBox(this).apply { text = "Selected Wine layer supports Wayland"; isChecked = profile.waylandWineSupported }
+        val waylandTurnip = CheckBox(this).apply { text = "Selected Turnip build supports Wayland"; isChecked = profile.waylandTurnipSupported }
+        form.addView(waylandWine); form.addView(waylandTurnip)
+        val reshadeEnabled = CheckBox(this).apply { text = "Enable vkBasalt / ReShade-compatible effects"; isChecked = profile.reshade.enabled }
+        form.addView(reshadeEnabled)
+        val reshadeComponent = field("vkBasalt component ID", profile.reshade.componentId)
+        val reshadePreset = field("Preset path (relative)", profile.reshade.presetPath)
+        val shaderPackages = field("Shader package IDs (comma-separated)", profile.reshade.shaderPackageIds.joinToString(","))
+        val envVars = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            minLines = 3
+            maxLines = 6
+            setText(profile.environmentVariables.toSortedMap().entries.joinToString("\n") { "${it.key}=${it.value}" })
+            hint = "KEY=VALUE, one per line"
+        }
+        form.addView(TextView(this).apply { text = "Environment variables"; textSize = 12f })
+        form.addView(envVars)
+        val scroll = ScrollView(this).apply { addView(form) }
+        AlertDialog.Builder(this)
+            .setTitle("Edit ${profile.displayName}")
+            .setView(scroll)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ ->
+                try {
+                    val parsedEnv = linkedMapOf<String, String>()
+                    envVars.text.toString().lineSequence().forEach { line ->
+                        val trimmed = line.trim()
+                        if (trimmed.isEmpty()) return@forEach
+                        val split = trimmed.indexOf('=')
+                        require(split > 0) { "Environment variables must use KEY=VALUE" }
+                        val key = trimmed.substring(0, split).trim()
+                        require(!parsedEnv.containsKey(key)) { "Duplicate environment variable: $key" }
+                        parsedEnv[key] = trimmed.substring(split + 1)
+                    }
+                    val standardMode = profile.containerMode == NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64
+                    val updated = profile.copy(
+                        wineLayerId = wine.text.toString().trim().ifEmpty { null },
+                        box64ComponentId = if (standardMode) box64.text.toString().trim().ifEmpty { null } else null,
+                        box86ComponentId = if (standardMode) box86.text.toString().trim().ifEmpty { null } else null,
+                        fexCoreComponentId = if (standardMode) null else fex.text.toString().trim().ifEmpty { null },
+                        fexUnixLibsComponentId = if (standardMode) null else fexUnix.text.toString().trim().ifEmpty { null },
+                        wowBox64ComponentId = if (standardMode) null else wow.text.toString().trim().ifEmpty { null },
+                        dxvkComponentId = dxvk.text.toString().trim().ifEmpty { null },
+                        vkd3dComponentId = vkd3d.text.toString().trim().ifEmpty { null },
+                        turnipComponentId = turnip.text.toString().trim().ifEmpty { null },
+                        graphicsProvider = if (graphicsGroup.checkedRadioButtonId == turnipVk.id) NgrEnvironmentProfile.GraphicsProvider.TURNIP else NgrEnvironmentProfile.GraphicsProvider.SYSTEM_VULKAN,
+                        displayBackend = if (displayGroup.checkedRadioButtonId == wayland.id) NgrEnvironmentProfile.DisplayBackend.WAYLAND else NgrEnvironmentProfile.DisplayBackend.X11,
+                        waylandWineSupported = waylandWine.isChecked,
+                        waylandTurnipSupported = waylandTurnip.isChecked,
+                        desktopWidth = width.text.toString().toInt(),
+                        desktopHeight = height.text.toString().toInt(),
+                        dpi = dpi.text.toString().toInt(),
+                        reshade = NgrEnvironmentProfile.ReShadeProfile(
+                            enabled = reshadeEnabled.isChecked,
+                            componentId = reshadeComponent.text.toString().trim().ifEmpty { null },
+                            presetPath = if (reshadeEnabled.isChecked) reshadePreset.text.toString().trim().ifEmpty { null } else null,
+                            shaderPackageIds = shaderPackages.text.toString().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                        ),
+                        environmentVariables = parsedEnv
+                    )
+                    val result = profileStore.save(updated)
+                    if (!result.success) throw IllegalArgumentException(result.error ?: "Profile validation failed")
+                    refreshProfiles()
+                    Toast.makeText(this, "Profile saved", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Profile not saved: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
     private fun showEnvironmentProfileDetails(profile: NgrEnvironmentProfile) {
         val details = listOf(
             "Profile ID: ${profile.profileId}",
