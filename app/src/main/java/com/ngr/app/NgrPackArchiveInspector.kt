@@ -152,8 +152,19 @@ object NgrPackArchiveInspector {
             errors += "Unable to inspect ZIP entry: ${e.message ?: "read error"}"
         }
 
-        if (infos.none { !it.directory && it.path == "ngr-manifest.json" })
-            errors += "Archive must contain root ngr-manifest.json"
+        if (infos.none { !it.directory && it.path == "ngr-manifest.json" }) {
+            val nestedManifests = infos.filter { !it.directory && it.path.substringAfterLast('/') == "ngr-manifest.json" }
+                .map { it.path }.take(8)
+            val topLevel = infos.map { it.path.substringBefore('/') }.distinct().take(12)
+            val detail = when {
+                nestedManifests.isNotEmpty() ->
+                    "Manifest found only inside subdirectory: ${nestedManifests.joinToString()}. Repack files so ngr-manifest.json is at ZIP root."
+                topLevel.isNotEmpty() ->
+                    "Root ngr-manifest.json is missing. Top-level ZIP entries: ${topLevel.joinToString()}. Select a .ngrpack ZIP, not an outer folder/archive."
+                else -> "Archive contains no readable file entries."
+            }
+            errors += "Archive must contain root ngr-manifest.json. $detail"
+        }
         return Result(errors.isEmpty(), errors, infos, total, manifestText)
     }
 
