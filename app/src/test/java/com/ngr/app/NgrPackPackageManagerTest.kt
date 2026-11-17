@@ -148,4 +148,21 @@ class NgrPackPackageManagerTest {
             base.deleteRecursively()
         }
     }
+
+    @Test fun rejectsArchivePayloadNotDeclaredInManifest() {
+        val base = createTempDir(prefix = "ngr-pm-unlisted-")
+        val packages = File(base, "packages")
+        val archive = createArchive("1.0", "hello", extra = listOf("extras/hidden.bin" to "unhashed"))
+        try {
+            val manager = NgrPackPackageManager(packages)
+            val result = manager.install(archive)
+            assertFalse(result.success)
+            assertTrue(result.errors.any { it.contains("Unlisted package file") })
+            assertFalse(File(packages, "test.game").exists())
+        } finally {
+            archive.delete()
+            base.deleteRecursively()
+        }
+    }
+
 }
