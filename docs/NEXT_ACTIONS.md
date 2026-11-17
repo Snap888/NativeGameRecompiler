@@ -5,9 +5,9 @@ Mark complete only when evidence exists.
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
 - [x] Confirm NGR-arm64-debug artifact upload in Actions run #56.
-- [ ] Install latest APK from run #71 on Snapdragon/Adreno Android device.
+- [ ] Install latest diagnostics APK on Snapdragon/Adreno Android device.
 - [ ] Verify app launch, Vulkan physical-device enumeration and controller hotplug.
-- [ ] Exercise NGRPACK picker/import/list/update/remove and restart recovery on device.
+- [ ] Exercise NGRPACK picker/import/list/update/remove and restart recovery on device; capture exported log for any failure.
 
 ## P1 — NGRPACK trust and security
 - [x] Manifest schema parity, strict metadata typing and unknown-property rejection.
@@ -28,8 +28,8 @@ Mark complete only when evidence exists.
 - [ ] Add trusted built-in/test backend fixture; never load NGRPACK game payloads as plugins.
 - [ ] Implement backend registry and lifecycle: probe, create, load, start, request_stop, wait, destroy.
 - [ ] Add conformance tests for ABI mismatch, truncated structs, missing callbacks, invalid string views and stop/destroy ordering.
-- [ ] Add structured logging with session IDs and bounded files.
-- [ ] Add crash/error reporting and cleanup rules.
+- [x] Add structured logging with session IDs, bounded persistent files, in-app viewer and SAF export (CI verification pending).
+- [ ] Add native crash/error reporting and cleanup rules.
 - [ ] Do not mark plugin ABI available until loader and conformance tests pass.
 
 ## P3 — First static recompiler proof of concept
