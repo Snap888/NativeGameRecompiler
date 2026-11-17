@@ -129,7 +129,7 @@ class NgrComponentCatalogTest {
             type = NgrComponentCatalog.Type.DXVK,
             constraints = NgrComponentCatalog.CompatibilityConstraints(requiredComponents = setOf("box64"))
         )
-        val errors = NgrComponentCatalog("community", "1", listOf(first, second)).validate()
+        val errors = NgrComponentCatalog(catalogId = "community", revision = "1", components = listOf(first, second)).validate()
         assertTrue(errors.any { it.contains("dependency graph contains a cycle") })
     }
 
