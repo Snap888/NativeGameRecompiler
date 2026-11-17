@@ -25,6 +25,12 @@ import java.util.zip.ZipOutputStream
 class NgrGamePackageBuilder(
     private val limits: NgrPackArchiveInspector.Limits = NgrPackArchiveInspector.Limits()
 ) {
+    data class ExecutableCandidate(
+        val path: String,
+        val platform: String,
+        val architecture: String
+    )
+
     data class Result(
         val success: Boolean,
         val message: String,
@@ -33,20 +39,21 @@ class NgrGamePackageBuilder(
         val entryPoint: String? = null,
         val platform: String? = null,
         val architecture: String? = null,
-        val errors: List<String> = emptyList()
+        val errors: List<String> = emptyList(),
+        val candidates: List<ExecutableCandidate> = emptyList()
     )
 
-    fun buildFromFolder(source: File, outputArchive: File, displayName: String? = null): Result =
+    fun buildFromFolder(source: File, outputArchive: File, displayName: String? = null, selectedEntryPoint: String? = null): Result =
         withWorkspace(outputArchive) { workspace ->
             val sourcePath = source.toPath().toAbsolutePath().normalize()
             if (Files.isSymbolicLink(sourcePath) || !Files.isDirectory(sourcePath, LinkOption.NOFOLLOW_LINKS))
                 throw IOException("Selected game source must be a real directory, not a symbolic link")
             val payload = workspace.resolve("payload")
             copyTreeBounded(sourcePath, payload)
-            createPackage(payload, outputArchive, displayName ?: source.name)
+            createPackage(payload, outputArchive, displayName ?: source.name, selectedEntryPoint)
         }
 
-    fun buildFromZip(source: File, outputArchive: File, displayName: String? = null): Result =
+    fun buildFromZip(source: File, outputArchive: File, displayName: String? = null, selectedEntryPoint: String? = null): Result =
         withWorkspace(outputArchive) { workspace ->
             val inspection = NgrPackArchiveInspector.inspect(source, limits, requireManifest = false)
             if (!inspection.valid) throw IOException(inspection.errors.joinToString("; "))
@@ -56,7 +63,7 @@ class NgrGamePackageBuilder(
             Files.createDirectory(extracted)
             extractZipBounded(source, extracted)
             val payload = unwrapSingleRoot(extracted)
-            createPackage(payload, outputArchive, displayName ?: source.nameWithoutExtension)
+            createPackage(payload, outputArchive, displayName ?: source.nameWithoutExtension, selectedEntryPoint)
         }
 
     private inline fun withWorkspace(output: File, action: (Path) -> Result): Result {
@@ -160,7 +167,7 @@ class NgrGamePackageBuilder(
         return extracted
     }
 
-    private fun createPackage(payload: Path, outputArchive: File, requestedName: String): Result {
+    private fun createPackage(payload: Path, outputArchive: File, requestedName: String, selectedEntryPoint: String?): Result {
         val files = mutableListOf<Path>()
         var total = 0L
         Files.walkFileTree(payload, object : SimpleFileVisitor<Path>() {
@@ -208,12 +215,15 @@ class NgrGamePackageBuilder(
                 else -> 4
             }
         }
-        val selected = candidates.sortedWith(
+        val rankedCandidates = candidates.sortedWith(
             compareBy<Triple<String, String?, String?>> { candidateScore(it) }
                 .thenBy { if (it.second == "windows") 0 else 1 }
                 .thenBy { it.first.length }
                 .thenBy { it.first.lowercase(Locale.ROOT) }
-        ).first()
+        )
+        val selected = if (selectedEntryPoint == null) rankedCandidates.first()
+            else candidates.firstOrNull { it.first == selectedEntryPoint }
+                ?: throw IOException("Selected executable is not a valid detected candidate: $selectedEntryPoint")
         NgrLogger.info(
             "package.builder",
             "Executable scan: detected=${detectedCandidates.size}; usable=${candidates.size}; " +
@@ -253,7 +263,16 @@ class NgrGamePackageBuilder(
             .put("files", fileArray)
         Files.write(payload.resolve("ngr-manifest.json"), manifest.toString(2).toByteArray(Charsets.UTF_8))
         writePackageZip(payload, outputArchive)
-        return Result(true, "Game scanned and NGRPACK generated", outputArchive, display, selected.first, platform, architecture)
+        return Result(
+            success = true,
+            message = "Game scanned and NGRPACK generated",
+            archive = outputArchive,
+            displayName = display,
+            entryPoint = selected.first,
+            platform = platform,
+            architecture = architecture,
+            candidates = rankedCandidates.map { ExecutableCandidate(it.first, it.second!!, it.third ?: "unknown") }
+        )
     }
 
     private fun writePackageZip(payload: Path, output: File) {
