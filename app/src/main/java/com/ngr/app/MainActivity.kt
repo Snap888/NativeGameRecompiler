@@ -50,11 +50,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
     private fun refresh() {
         status.text = nativeRuntimeInfo()
-        val found = inputManager.inputDeviceIds.mapNotNull { id ->
+        val found = inputManager.inputDeviceIds.asSequence().mapNotNull { id: Int ->
             inputManager.getInputDevice(id)?.takeIf {
                 it.sources and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
             }?.let { "• ${it.name} (id=${it.id})" }
-        }
+        }.toList()
         devices.text = if (found.isEmpty()) "No gamepad detected" else found.joinToString("\n")
     }
     override fun onInputDeviceAdded(deviceId: Int) = refresh()
