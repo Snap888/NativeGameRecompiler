@@ -31,11 +31,15 @@ Mark complete only when evidence exists.
 - [x] Audit WinNative container model/manager, Proton catalog/install flow, CPU preset managers, graphics-driver catalog, Wayland capability gate, ReShade effect manager/downloader, component recipe installer and environment-variable representation.
 - [x] Map WinNative XServerDisplayActivity, GuestProgramLauncherComponent, standard Box64 vs ARM64EC FEX/WOWBox64 launch selection, PRoot/Proton path and ReShade/vkBasalt environment handoff.
 - [ ] Complete Wine layer version resolver and exact binary/runtime dependency provenance.
-- [ ] Audit Box64/Box86 presets, FEXCore/FEX unixlibs, ARM64EC routing and WOWBox64 compatibility.
-- [ ] Audit DXVK/VKD3D/D8VK/D7VK selection and component install/rollback.
-- [ ] Audit AdrenoTools/Turnip provider selection and Vulkan isolation.
+- [x] Map Box64/Box86 preset environment settings, FEXCore preset/SMC normalization, ARM64EC direct-Wine/HODLL routing and WOWBox64 selection from pinned donor sources.
+- [ ] Complete exact binary/runtime dependency provenance and compatibility matrix.
+- [x] Map DXVK async/cache and VKD3D feature-level environment configuration; NGR component store/install/rollback foundation exists.
+- [ ] Audit remaining D8VK/D7VK selection details and validate actual runtime loading.
+- [x] Map AdrenoTools and Linux-runtime ICD provider separation; preserve system Vulkan loader.
+- [ ] Implement NGR's isolated Turnip provider activation and verify Vulkan ICD selection.
 - [ ] Audit ReShade injection, shader catalogs, presets and texture packages; distinguish catalog availability from runtime support.
-- [ ] Review GPL-3.0 and every transitive component license; confirm NGR licensing strategy before copying donor code.
+- [x] Record preliminary MIT NGR vs GPL-3.0 WinNative boundary and initial upstream license matrix in docs/LICENSING_AND_PROVENANCE.md.
+- [ ] Complete release-pinned SPDX/SBOM and transitive dependency review; decide whether to relicense NGR or keep donor code isolated before any source port.
 - [x] Pin donor source audit to WinNative commit 99c3305d163780de5ca39b493aefcde436acad5c.
 - [ ] Create component provenance/SPDX inventory for donor submodules, downloaded binaries and every runtime dependency.
 - [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.
@@ -45,7 +49,7 @@ Mark complete only when evidence exists.
 - [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.
 - [x] Add HTTPS-only component downloader with redirect downgrade protection, bounded streaming, timeouts, Content-Length validation and SHA-256 verification.
 - [x] Add atomic component version promotion, active/previous state, rollback, inactive-version removal and uninstall for verified ZIP components.
-- [ ] Confirm deterministic HTTPS downloader integration tests pass in CI (success, redirect, downgrade, hash and size-limit paths).\n- [ ] Add TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers with bounded extraction and expected-layout validation. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [x] Deterministic HTTPS downloader integration tests passed in CI run #264 (44192157349), including success, redirect, downgrade, hash and streaming-size-limit paths.\n- [ ] Add TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers with bounded extraction and expected-layout validation. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
