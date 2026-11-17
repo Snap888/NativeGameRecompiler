@@ -11,6 +11,8 @@ class NgrEnvironmentProfileCodecTest {
         displayName = "Desktop profile",
         containerMode = NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64,
         wineLayerId = "wine-stable",
+        box64ComponentId = "box64-stable",
+        box86ComponentId = "box86-stable",
         cpuTranslator = NgrEnvironmentProfile.CpuTranslator.BOX64,
         box64Preset = NgrEnvironmentProfile.Box64Preset.PERFORMANCE,
         dxvkComponentId = "dxvk-2",
