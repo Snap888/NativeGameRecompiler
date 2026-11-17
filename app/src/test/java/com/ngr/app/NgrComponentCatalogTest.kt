@@ -108,4 +108,17 @@ class NgrComponentCatalogTest {
         ).validate()
         assertTrue(errors.any { it.contains("unsafe install subdirectory") })
     }
+
+    @Test fun rejectsDependencyCycles() {
+        val first = component(id = "box64", dependencies = setOf("dxvk"))
+        val second = component(id = "dxvk", dependencies = setOf("box64")).copy(
+            type = NgrComponentCatalog.Type.DXVK
+        )
+        val errors = NgrComponentCatalog(
+            catalogId = "community",
+            revision = "1",
+            components = listOf(first, second)
+        ).validate()
+        assertTrue(errors.any { it.contains("dependency graph contains a cycle") })
+    }
 }
