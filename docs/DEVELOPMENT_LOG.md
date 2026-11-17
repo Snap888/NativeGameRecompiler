@@ -342,3 +342,10 @@ This is the durable project memory. Update it in every development session.
 - Actions run #108 completed the required test, native build, APK build and artifact upload steps successfully for code commit `c47aace3ac7d024c8b388b313596dbfd66548fda`.
 - Artifact: `NGR-arm64-debug`, ID `14367787571`, size 1,335,563 bytes, SHA-256 `6d530d4c4436c2b39f25236e1a95b56f86436d8fbc8289ead6fdae4904d93357`; expires 2026-12-01.
 - This confirms CI compilation and JVM tests only. Physical-device folder/ZIP selection and Lethal Company import remain untested.
+
+
+### Repeat-import update semantics
+- Follow-up audit found that random package IDs would create duplicate library entries when the same game was imported again.
+- Package IDs are now deterministic from normalized game name plus selected entry-point path, so reimporting the same game updates its existing package rather than creating another entry.
+- Added a JVM regression test that builds/imports the same folder twice and asserts a single installed package remains.
+- Code commit: `606b50a8`; test commit: `cc65f609`. A fresh CI run is required before distributing this revision.
