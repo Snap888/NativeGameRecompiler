@@ -11,7 +11,7 @@ const std::vector<Capability>& capabilities() {
   {"package.ngrpack.validation","available","Strict manifest, path, file-inventory and SHA-256 validation"},
   {"package.ngrpack.installation","available","Bounded NGRPACK staging install, update, inventory, removal and crash recovery"},
   {"package.ngrpack.signature-verification","planned","Signed release-package trust verification; unsigned payload execution is prohibited"},
-  {"backend.plugin-abi","planned","Versioned C ABI and backend lifecycle are not yet implemented"},
+  {"backend.plugin-abi","planned","C ABI v1 contract defined; loader, conformance tests and lifecycle integration remain"},
   {"backend.n64recomp","planned","Static recompilation proof of concept; not integrated"},
   {"backend.fex","planned","Dynamic Linux x86-64 translation; not integrated"},
   {"backend.box64","planned","Dynamic Linux x86-64 translation; not integrated"},
