@@ -10,6 +10,8 @@ class NgrComponentResolverTest {
         profileId = "test",
         displayName = "Test profile",
         containerMode = NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64,
+        wineLayerId = "wine",
+        box64ComponentId = "box64",
         cpuTranslator = NgrEnvironmentProfile.CpuTranslator.BOX64
     )
     private val capabilities = NgrComponentResolver.RuntimeCapabilities(
@@ -72,7 +74,7 @@ class NgrComponentResolverTest {
 
     @Test fun rejectsConflictsAcrossRequestedComponents() {
         val plan = NgrComponentResolver.resolve(
-            catalog(component("wine", conflicts = setOf("dxvk")), component("dxvk")),
+            catalog(component("wine", conflicts = setOf("dxvk")), component("dxvk"), component("box64")),
             profile,
             setOf("wine", "dxvk"),
             capabilities = capabilities
@@ -87,7 +89,7 @@ class NgrComponentResolverTest {
             targetAbis = setOf(NgrComponentCatalog.TargetAbi.ARM64EC)
         )
         val plan = NgrComponentResolver.resolve(
-            catalog(incompatible),
+            catalog(component("wine"), component("box64"), incompatible),
             profile,
             setOf("arm64ec-only"),
             capabilities = capabilities
@@ -96,7 +98,7 @@ class NgrComponentResolverTest {
         assertTrue(plan.errors.any { it.contains("incompatible with profile architecture") })
 
         val noVulkan = NgrComponentResolver.resolve(
-            catalog(component("wine")),
+            catalog(component("wine"), component("box64")),
             profile,
             setOf("wine"),
             capabilities = capabilities.copy(vulkanAvailable = false)
@@ -111,7 +113,7 @@ class NgrComponentResolverTest {
             constraints = NgrComponentCatalog.CompatibilityConstraints(requiresWayland = true)
         )
         val plan = NgrComponentResolver.resolve(
-            catalog(waylandOnly),
+            catalog(component("wine"), component("box64"), waylandOnly),
             profile,
             setOf("wayland-layer"),
             capabilities = capabilities
