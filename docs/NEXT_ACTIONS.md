@@ -5,7 +5,7 @@ Mark complete only when evidence exists.
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
 - [x] Confirm NGR-arm64-debug artifact upload in Actions run #56.
-- [ ] Install latest APK on Snapdragon/Adreno Android device.
+- [ ] Install latest APK from run #71 on Snapdragon/Adreno Android device.
 - [ ] Verify app launch, Vulkan physical-device enumeration and controller hotplug.
 - [ ] Exercise NGRPACK picker/import/list/update/remove and restart recovery on device.
 
@@ -23,7 +23,7 @@ Mark complete only when evidence exists.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
 
 ## P2 — Backend ABI and runtime
-- [x] Define ABI v1 C contract for execution backends and compile-check public header as C and C++.
+- [x] Define ABI v1 C contract for execution backends and compile-check public header as C and C++ (CI #71 green).
 - [ ] Implement host-side ABI negotiation and validation (major/minor, struct sizes, IDs, required callbacks).
 - [ ] Add trusted built-in/test backend fixture; never load NGRPACK game payloads as plugins.
 - [ ] Implement backend registry and lifecycle: probe, create, load, start, request_stop, wait, destroy.
