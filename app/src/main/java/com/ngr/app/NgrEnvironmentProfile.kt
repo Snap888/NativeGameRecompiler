@@ -32,7 +32,9 @@ data class NgrEnvironmentProfile(
     val desktopHeight: Int = 720,
     val dpi: Int = 96,
     val environmentVariables: Map<String, String> = emptyMap(),
-    val gameOverrides: Map<String, NgrGameEnvironmentOverride> = emptyMap()
+    val gameOverrides: Map<String, NgrGameEnvironmentOverride> = emptyMap(),
+    /** Exact component versions pinned by ID for reproducible environments. */
+    val componentVersions: Map<String, String> = emptyMap()
 ) {
     enum class ContainerMode { STANDARD_X86_64, ARM64EC }
     enum class CpuTranslator { BOX64, FEXCORE }
@@ -114,6 +116,10 @@ data class NgrEnvironmentProfile(
         }
         if (dpi !in 48..480) errors += "DPI must be within 48..480"
 
+        componentVersions.forEach { (componentId, version) ->
+            if (!componentId.matches(ID_PATTERN)) errors += "componentVersions contains an invalid component ID: $componentId"
+            if (!version.matches(VERSION_PATTERN)) errors += "componentVersions contains an invalid version for $componentId"
+        }
         validateEnvironment(environmentVariables, "environmentVariables", errors)
         gameOverrides.forEach { (gameId, override) ->
             if (!gameId.matches(ID_PATTERN)) errors += "Invalid game override key: $gameId"
@@ -161,6 +167,7 @@ data class NgrEnvironmentProfile(
     companion object {
         const val CURRENT_SCHEMA_VERSION = 1
         private val ID_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
+        private val VERSION_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._+-]{0,127}$")
         private val ENV_KEY_PATTERN = Regex("^[A-Z_][A-Z0-9_]{0,127}$")
 
         private fun isSafeRelativePath(value: String): Boolean =
