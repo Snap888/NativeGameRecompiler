@@ -107,6 +107,19 @@ All downloaded packages are untrusted input. Validate HTTPS origin policy, size 
 - Reference catalogs: https://github.com/The412Banner/winlator-contents and https://github.com/nicholasx417/WinNative-Components.
 - ReShade catalog reference: https://github.com/The412Banner/winlator-contents/blob/main/reshade.json.
 
+
+
+### Additional source mapping — CPU presets, Wine routing and graphics selection
+
+- `Box64PresetManager.getEnvVars(prefix, context, id)` translates the built-in Stability/Compatibility/Intermediate/Performance and custom preset IDs into explicit `BOX64_DYNAREC_*` environment settings; some BOX64-only flags include AVX, UnityPlayer, MMAP32 and DYNACACHE. Custom presets are persisted in Android SharedPreferences. NGR should serialize the resolved key/value map in its profile rather than depend on donor SharedPreferences string encoding.
+- `FEXCorePresetManager.getEnvVars(context, id)` has distinct Stability, Compatibility, Intermediate, Performance, Performance-TSO, Extreme, Extreme-TSO and Denuvo presets. It normalizes both `FEX_SMCCHECKS` and legacy `FEX_SMC_CHECKS`; NGR should preserve that alias normalization when translating profile settings. `FEXCoreManager.ensureAppConfigOverrides` writes per-executable FEX AppConfig JSON for Rockstar/Steam helper processes.
+- `GuestProgramLauncherComponent` selects the guest command by Wine architecture: standard x86_64 runs the guest through Box64; ARM64EC invokes the ARM64 Wine binary directly and sets `HODLL=wowbox64.dll` for WOWBox64 or `HODLL=libwow64fex.dll` for FEXCore. This is a hard routing distinction, not a single emulator toggle. It also prepares prefix updates before session startup and merges launcher-owned preload/input paths with the selected driver/DXVK environment.
+- `WineInfo` resolves Wine/Proton content IDs to their installed paths and architecture. NGR's resolver must validate the exact installed Wine layer metadata and architecture instead of guessing from a display name.
+- `DXVKConfigUtils.setEnvVars` maps async and GPL async-cache settings to `DXVK_ASYNC` and `DXVK_GPLASYNCCACHE`, applies `VKD3D_FEATURE_LEVEL`, and sets a state-cache path. Container configuration separately persists the selected DX wrapper, wrapper version and renderer/device options.
+- `GraphicsDriverCatalog` merges built-in wrapper drivers that pass `GPUInformation.isDriverSupported` with installed AdrenoTools driver IDs. `AdrenotoolsManager` validates a driver's `meta.json` and library presence, identifies Turnip/Freedreno packages, and rewrites containers/shortcuts that refer to a removed driver back to System. The launcher receives driver selection through `ADRENOTOOLS_DRIVER_PATH`/`ADRENOTOOLS_DRIVER_NAME`; NGR must preserve per-container isolation and must not overwrite Android's system Vulkan loader.
+- `DriverPackages` also manages a distinct Linux-runtime driver catalog under `contents/linux-drivers`, with a selected Linux ICD manifest. Do not conflate that Linux-runtime provider with the Android AdrenoTools path.
+- `DXVKConfigUtils` and the container defaults are configuration helpers, not proof that the NGR runtime has loaded DXVK/VKD3D. NGR should only report those components active after the launcher binds the matching files and the runtime probe confirms them.
+
 ## Important distinction: confirmed vs not yet verified
 
 | Area | Current evidence | NGR decision |
