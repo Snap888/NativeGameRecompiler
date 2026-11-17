@@ -86,11 +86,12 @@ object NgrComponentDownloader {
                     val declaredLength = connection.contentLengthLong
                     if (declaredLength > limits.maxBytes) throw SecurityException("Component download exceeds size limit")
 
-                    temporary = File.createTempFile("ngr-${component.id}-", ".verified", privateDirectory)
+                    val downloadedFile = File.createTempFile("ngr-${component.id}-", ".verified", privateDirectory)
+                    temporary = downloadedFile
                     val digest = MessageDigest.getInstance("SHA-256")
                     var received = 0L
                     connection.inputStream.use { input ->
-                        FileOutputStream(temporary, false).use { output ->
+                        FileOutputStream(downloadedFile, false).use { output ->
                             val buffer = ByteArray(64 * 1024)
                             while (true) {
                                 val count = input.read(buffer)
