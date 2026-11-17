@@ -252,8 +252,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     val built = builder.buildFromZip(source, generated, gameName)
                     if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
                     NgrLogger.info("package.builder", "ZIP converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}; candidates=${built.candidates.size}")
-                    val sourceFile = source
-                    val generatedFile = generated
+                    val sourceFile = source ?: throw IOException("ZIP source disappeared before executable selection")
+                    val generatedFile = generated ?: throw IOException("Generated package workspace is unavailable")
                     completeBuiltGameImport(generatedFile, built, { selected ->
                         builder.buildFromZip(sourceFile, generatedFile, gameName, selected)
                     }) {
@@ -301,7 +301,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val built = builder.buildFromFolder(copied, generated, displayName)
                 if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
                 NgrLogger.info("package.builder", "Folder converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}; candidates=${built.candidates.size}")
-                val generatedFile = generated
+                val generatedFile = generated ?: throw IOException("Generated package workspace is unavailable")
                 completeBuiltGameImport(generatedFile, built, { selected ->
                     builder.buildFromFolder(copied, generatedFile, displayName, selected)
                 }) {
