@@ -3,17 +3,17 @@
 Mark complete only when evidence exists.
 
 ## P0 — Build and validate current Stage 2
-- [ ] Inspect latest GitHub Actions run for main.
+- [x] Inspect GitHub Actions: Stage 2 run #38 is green; archive-inspector runs #40–#42 still require final verification.
 - [x] Fix the observed MainActivity IntArray/mapNotNull Kotlin compile failure (commit eef1bfec); verify the fix in CI.
-- [ ] Fix any remaining compile/test failures before unrelated feature work.
-- [ ] Confirm testDebugUnitTest passes.
-- [ ] Confirm NGR-arm64-debug artifact exists and downloads.
+- [x] Fix the observed MainActivity compile failure; no remaining Stage 2 failure in run #38.
+- [x] Confirm testDebugUnitTest passes in run #38.
+- [x] Confirm NGR-arm64-debug artifact was uploaded in run #38 (download/device install not yet tested).
 - [ ] Install APK on Snapdragon/Adreno device; record Vulkan and controller results.
 
 ## P1 — Harden package validation
-- [ ] Add schema parity tests for required manifest fields.
-- [ ] Reject symlink escapes and non-regular files.
-- [ ] Design safe archive extraction with ZIP-slip protection, entry-count/size and decompression-bomb limits.
+- [x] Add manifest/schema parity and metadata-limit regression tests (run #37/#38 green).
+- [x] Reject symlink package roots/components and non-regular payload files in extracted-package validator (run #38 green).
+- [ ] Verify NgrPackArchiveInspector CI/tests; then implement bounded extraction with ZIP-slip protection, actual streamed-byte limits and no-follow file creation.
 - [ ] Define unsigned development vs signed release trust policy.
 - [ ] Define manifest version migration.
 - [x] Require entryPoint to be present in the hashed files list (implementation and regression test committed; CI verification pending).
