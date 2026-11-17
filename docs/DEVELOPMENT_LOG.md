@@ -120,3 +120,88 @@ This is the durable project memory. Update it in every development session.
 - Do not trust ZIP metadata alone: extraction must count actual streamed bytes and re-check file paths.
 - No payload execution during inspect/install.
 - ZIP64 and multi-disk archives are intentionally rejected in this first bounded implementation rather than partially supported.
+
+
+## Session 2026-11-17 — NGRPACK Package Manager and Android UI
+
+### Verified CI and APK
+- Latest code commit: `fc5bc6d8af192c50faeb0382e754af1a8b1136fc`.
+- [GitHub Actions run #56](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44161661718) completed successfully.
+- Confirmed: Android SDK setup, NDK/CMake installation, Gradle setup, JVM unit tests, arm64-v8a APK build and artifact upload all passed.
+- Artifact: `NGR-arm64-debug`, ID `14364325521`, size 1,300,991 bytes.
+- Artifact archive SHA-256: `7dcc9170b639ef32cfdca761ada80afb1dba2e04ea0748b57d5c7eb605cf1cff`.
+- Artifact expires 2026-12-01. Device installation and runtime tests are not yet performed.
+
+### NGRPACK archive inspector
+- `app/src/main/java/com/ngr/app/NgrPackArchiveInspector.kt` added.
+- Read-only inspection of ZIP central directory; rejects multi-disk and ZIP64 archives in this first implementation.
+- Rejects encrypted entries and unsupported compression methods.
+- Checks Unix external attributes and rejects symlinks and non-regular special file types.
+- Rejects absolute paths, traversal, empty/dot path components, colon paths, duplicate/case-colliding names.
+- Enforces archive size, entry count, path length, manifest size, per-file size, total uncompressed size and compression-ratio limits.
+- Requires root `ngr-manifest.json` and parses bounded manifest bytes.
+- CI #42 [44159985291](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44159985291) passed with APK artifact.
+- CI #39 failed on unsupported escape sequences in the initial source; fixed in commit `2b62e95bf82f9987611524a8ea8a26a0e2f85eaa`. Subsequent runs #40–#42 passed.
+
+### Manifest validator hardening
+- `NgrManifestValidator.kt` now matches the JSON schema more strictly, rejects unknown/wrongly typed properties, limits manifest/path/file counts and payload sizes, rejects symlink roots/components and non-regular files.
+- Path duplicate detection normalizes slash/backslash separators.
+- Every regular package file other than `ngr-manifest.json` must appear in the manifest's SHA-256 file list; unlisted payload files are rejected.
+- `schemas/ngr-manifest.schema.json` now defines entry point/path maximum lengths and file-list min/max counts.
+- Regression tests cover schema properties, display name length, normalized duplicate paths and unlisted payload files.
+- CI runs #37, #38, #48 and #49 passed.
+
+### Package manager core
+- `app/src/main/java/com/ngr/app/NgrPackPackageManager.kt` added.
+- Source archives are copied into app-private package storage with a streamed size cap before inspection and extraction.
+- Extracts only into an app-private staging directory; re-checks paths and streamed byte counts, uses CREATE_NEW, rejects symlink/non-directory parents and verifies entry sizes.
+- Re-reads the extracted manifest and runs full manifest + SHA-256 validation before install.
+- Updates preserve the old package until the new package validates; replacement uses same-filesystem atomic directory renames and a backup/rollback path.
+- Startup recovery restores a backup if a crash happened before the new package rename; stale staging/incoming/trash entries are cleaned.
+- Provides installed-package inventory and removal. Corrupt packages are exposed as removable invalid entries; deletion is constrained to a validated package-ID child and does not follow symlinks.
+- No package payload is loaded or executed.
+- Tests cover valid install/list, hash mismatch, ZIP Slip, update, symlink destination rejection, uninstall, unlisted payload rejection, invalid update preserving old version, interrupted install recovery and corrupt-package removal.
+- CI #46 [44160577589](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44160577589), #47 [44160689734](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44160689734), #51 [44160990434](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44160990434), #53 [44161347280](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44161347280) and #56 passed.
+
+### Android package UI
+- `MainActivity.kt` now exposes Android Document Picker import, install/update, installed package list and removal.
+- Archive copying and package operations run on a single background executor, not the UI thread.
+- Invalid installed package folders are displayed with a removal action.
+- CI #52 [44161238983](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44161238983) and #56 passed.
+
+### Commits in this stage
+- `75a4e3c8` — harden extracted manifest validation.
+- `f87405b1` — correct validator path escape literals.
+- `a99660f5` — add manifest schema regression tests.
+- `9e320b49` — align manifest JSON schema limits.
+- `58a684b2` — add NGRPACK ZIP inspector.
+- `2b62e95b` — fix ZIP path escape literals after CI failure.
+- `17406190` — add ZIP inspector security tests.
+- `5a4b0fa3` — exact compression-ratio bound.
+- `a3db86e4` — add staged NGRPACK package manager.
+- `6f91dbae` — add package manager tests.
+- `d4d4285a` — reject unlisted and non-regular payload files.
+- `1e07ccc3` — test unlisted package payload rejection.
+- `f763f2c7` — bound installed manifest reads.
+- `b199b969` — test unlisted payload during install.
+- `d6f2fdfc` — add NGRPACK import/list/remove UI.
+- `dddce923` — test failed-update preservation and interrupted install recovery.
+- `d3ecfb59` — allow safe removal of corrupt installed packages.
+- `89924fe7` — expose removal of invalid packages in UI.
+- `fc5bc6d8` — test safe removal of corrupt installed packages.
+
+### Known limitations / not claimed
+- No physical Snapdragon/Adreno installation or runtime validation has been performed.
+- No backend plugin ABI, static recompiler, dynamic translator or game execution backend is implemented.
+- No payload is executed; no sandbox exists.
+- Package signing/trust policy is not implemented. Current package manager is a data installer only; unsigned packages must not be executed.
+- ZIP64 and multi-disk ZIP are deliberately rejected, not supported.
+- No automatic rollback UI or per-game configuration yet.
+
+### Next actions
+1. Install APK from run #56 on Android and verify launch, Vulkan enumeration, controller discovery and NGRPACK picker.
+2. Exercise install, update, corrupt archive rejection, uninstall and restart recovery on device.
+3. Define unsigned development vs signed release trust policy and signature format before any payload execution.
+4. Review ZIP local-header/central-directory consistency and malformed filename edge cases.
+5. Define stable versioned C ABI for backend plugins.
+6. Start N64/MIPS N64Recomp proof of concept only after pinning upstream and reviewing licenses/input legality.
