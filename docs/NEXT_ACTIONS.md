@@ -28,16 +28,19 @@ Mark complete only when evidence exists.
 - [x] Record target architecture and donor integration plan in docs/WINNATIVE_INTEGRATION_PLAN.md.
 - [x] Add versioned Kotlin environment profile model with standard x86_64/Box64 vs ARM64EC/FEX validation, Turnip/Wayland gating, ReShade/shader references, audio/display settings and per-game overrides.
 - [x] Add JVM validation tests for architecture mismatch, Wayland prerequisites, ReShade requirements, protected environment variables and profile bounds.
-- [x] Audit WinNative container model/manager, Proton catalog/install flow, CPU preset managers, graphics-driver catalog, Wayland capability gate, ReShade effect manager/downloader, component recipe installer and environment-variable representation.\n- [ ] Complete launch-pipeline and Wine layer resolver mapping; pin exact source files and runtime call sequence.
+- [x] Audit WinNative container model/manager, Proton catalog/install flow, CPU preset managers, graphics-driver catalog, Wayland capability gate, ReShade effect manager/downloader, component recipe installer and environment-variable representation.
+- [ ] Complete launch-pipeline and Wine layer resolver mapping; pin exact source files and runtime call sequence.
 - [ ] Audit Box64/Box86 presets, FEXCore/FEX unixlibs, ARM64EC routing and WOWBox64 compatibility.
 - [ ] Audit DXVK/VKD3D/D8VK/D7VK selection and component install/rollback.
 - [ ] Audit AdrenoTools/Turnip provider selection and Vulkan isolation.
 - [ ] Audit ReShade injection, shader catalogs, presets and texture packages; distinguish catalog availability from runtime support.
 - [ ] Review GPL-3.0 and every transitive component license; confirm NGR licensing strategy before copying donor code.
 - [ ] Pin donor commit and create component provenance/SPDX inventory.
-- [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.\n- [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
+- [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.
+- [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
 - [ ] Implement container profiles, Wine prefix lifecycle and global/per-game override schema.
-- [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.\n- [ ] Add HTTPS downloader, TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.
+- [ ] Add HTTPS downloader, TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
