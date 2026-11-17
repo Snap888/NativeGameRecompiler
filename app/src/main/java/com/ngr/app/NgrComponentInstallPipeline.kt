@@ -51,12 +51,13 @@ class NgrComponentInstallPipeline(private val store: NgrComponentStore) {
                 archiveLimits
             )
             if (!extracted.success) return Result(false, error = extracted.error ?: "Component extraction failed")
-            staging = extracted.stagingDirectory
+            val stagingDirectory = extracted.stagingDirectory
                 ?: return Result(false, error = "Component extractor returned no staging directory")
+            staging = stagingDirectory
 
-            val promoted = store.installAndActivate(component, staging)
+            val promoted = store.installAndActivate(component, stagingDirectory)
             if (!promoted.success) {
-                store.discardStagingDirectory(staging)
+                store.discardStagingDirectory(stagingDirectory)
                 staging = null
                 return Result(false, error = promoted.error ?: "Component activation failed")
             }
