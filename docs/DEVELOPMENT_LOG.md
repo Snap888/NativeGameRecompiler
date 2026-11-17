@@ -403,3 +403,34 @@ This is the durable project memory. Update it in every development session.
 2. Show installed package entry point, platform and architecture in package details, preserving/validating them on update.
 3. Add archive local-header/central-directory consistency and malformed filename tests.
 4. Continue backend ABI loader/conformance work only after keeping package import stable. NGR still does not launch Windows games.
+
+
+## Session 2026-11-17 — Executable chooser and installed package details
+
+### Implemented on main
+- `NgrGamePackageBuilder` now returns the complete ranked list of detected usable executable candidates, including relative path, platform and architecture.
+- Folder and ordinary ZIP builder entry points accept an optional explicit executable path. The selected path must match a detected usable PE/ELF candidate; arbitrary paths are rejected.
+- When an import contains multiple usable executable candidates, Android UI displays a chooser with each candidate path and platform/architecture. The user selection is applied by rebuilding the internal NGRPACK manifest and SHA-256 inventory before installation. Canceling the chooser discards temporary import data.
+- Single-candidate imports retain the previous automatic-selection flow.
+- Installed package metadata now exposes optional `sourcePlatform` and `sourceArchitecture` from the validated manifest backend metadata.
+- Package inventory now has a Details action showing game name, package ID/version, selected entry point, source platform/architecture, backend ID/version, private package path and the explicit data-only / no-backend status.
+- Added JVM regression coverage for candidate enumeration, explicit entry-point selection, install validation and persisted source platform/architecture metadata.
+
+### Commits
+- `d1f46bba890b3376bcee75942834d833cc0f8e1b` — expose executable candidates and explicit selection in builder.
+- `31238d6ba5ce2272c9b2667ad83beb4f2524b5c6` — expose source platform/architecture in installed metadata.
+- `85e9b6e7d753456894258e32504fdbb41d885ef6` — add Android chooser and package details UI.
+- `5d2b3b9f468ca81e834b4cf33ac3d8401adbea5a` — guard temporary import workspace ownership during asynchronous selection.
+- `6b546a682a316cdc96a1d96c96065ebe6599be14` — add candidate/selection/metadata regression test.
+
+### Validation status
+- GitHub Actions run #129 [44178745011](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44178745011) was triggered for the test commit and is in progress at log update time.
+- Do not distribute an APK or claim build success until JVM tests, arm64-v8a APK build and artifact upload complete successfully.
+- Device validation of the new multi-candidate dialog and Details screen remains pending.
+- The feature still does not launch games; imported packages remain data-only until a compatible execution backend is implemented.
+
+### Next actions
+1. Inspect run #129; fix compile/test issues before APK distribution.
+2. Install the green build and verify Details shows `Lethal Company.exe`, Windows, x86_64.
+3. Test a folder/ZIP containing at least two usable EXEs and confirm the chooser selection persists in the installed manifest/details.
+4. Continue ABI v1 host-side negotiation/validation and test backend fixture only after this import UI stage is stable.
