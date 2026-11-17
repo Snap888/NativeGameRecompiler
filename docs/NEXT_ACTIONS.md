@@ -113,4 +113,6 @@ Mark complete only when evidence exists.
 ## CI follow-up — 2026-11-18
 - [x] Fix Kotlin compile error in profile editor: form container is now initialized before local field helper (`9b3e91eb`).
 - [x] Run #231 (`44189626075`, profile editor fix) passed.
-- [ ] Confirm runs #232 (`44189719581`), #233 (`44189758325`), #234 (`44189803672`), #235 (`44189890969`) and #236 (`44189916010`); latest parser/installer code still needs a complete green CI and uploaded APK.
+- [x] Runs #232 (`44189719581`), #233 (`44189758325`), #234 (`44189803672`), #235 (`44189890969`) and #236 (`44189916010`) passed JVM tests, ARM64 APK build and artifact upload.
+- [x] Consolidate on the original bounded `NgrComponentCatalogParser`; remove the duplicate `NgrComponentCatalogJson` decoder and redundant tests after CI identified a brittle duplicate test failure.
+- [ ] Verify runs #241 (`44190262305`) through #243 (`44190651170`) and the latest main commit after parser cleanup and dependency graph hardening.
