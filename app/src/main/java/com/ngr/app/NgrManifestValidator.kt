@@ -6,6 +6,11 @@ import java.io.File
 import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.FileVisitResult
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
+import java.io.IOException
 
 /** Validates an already extracted NGR package directory. ZIP inspection/extraction is separate. */
 object NgrManifestValidator {
@@ -141,6 +146,34 @@ object NgrManifestValidator {
         }
         if (entryPoint.isNotEmpty() && entryPoint !in hashedPaths)
             errors += "entryPoint must be included in the hashed files list"
+
+        // A manifest must account for every regular payload file. Otherwise un-hashed
+        // content could be smuggled into an otherwise valid package.
+        if (Files.isDirectory(root.toPath(), LinkOption.NOFOLLOW_LINKS) &&
+            !Files.isSymbolicLink(root.toPath())) {
+            try {
+                Files.walkFileTree(root.toPath(), object : SimpleFileVisitor<Path>() {
+                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        val relative = root.toPath().relativize(file).toString().replace(File.separatorChar, '/')
+                        if (attrs.isSymbolicLink || Files.isSymbolicLink(file)) {
+                            errors += "Symbolic links are not allowed: $relative"
+                        } else if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+                            errors += "Package entry is not a regular file: $relative"
+                        } else if (relative != "ngr-manifest.json" && relative !in hashedPaths) {
+                            errors += "Unlisted package file: $relative"
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+                        errors += "Unable to inspect package entry: ${file.fileName}"
+                        return FileVisitResult.CONTINUE
+                    }
+                })
+            } catch (e: IOException) {
+                errors += "Unable to inspect package tree: ${e.message ?: "I/O error"}"
+            }
+        }
         return Result(errors.isEmpty(), errors)
     }
 
