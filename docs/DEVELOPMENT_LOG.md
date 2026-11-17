@@ -649,3 +649,8 @@ This is the durable project memory. Update it in every development session.
 
 ### Current CI status
 - No APK is claimed for this stage until the latest run passes unit tests, arm64 APK build and artifact upload.
+
+
+### CI checkpoint
+- Run #231 (`44189626075`, commit `9b3e91eb`) completed successfully after the MainActivity profile-dialog fix.
+- Runs #232–#236 cover catalog JSON parser, parser tests, strict JSON type validation and journal updates; they were still running at this checkpoint. Run #231 does not include the later parser/installer changes and is not evidence that the latest source is green.
