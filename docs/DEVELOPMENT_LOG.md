@@ -442,3 +442,54 @@ This is the durable project memory. Update it in every development session.
 - Artifact: `NGR-arm64-debug`, ID `14371675507`, size 1,344,874 bytes, SHA-256 `525ef7b9e040b6fdcb344c3a6c0ec24f0112ef24e59e8698e52152a047dea173`; expires 2026-12-01.
 - The candidate enumeration/explicit selection regression test passed, including persisted Windows/x86_64 source metadata after package installation.
 - CI confirms compilation and JVM behavior only. The new chooser and Details UI still require device validation with a multi-executable archive.
+
+
+## Session 2026-11-18 — WinNative runtime reuse and Environment Manager architecture
+
+### User direction
+- Reuse WinNative's ready Windows-on-Android environment to accelerate ordinary Windows game launch through Wine.
+- Bring across the environment settings and component management, not just the Wine executable: containers/prefixes, Wine/Proton layers, Box64, FEX/FEX unix libraries, DXVK, VKD3D, Turnip/Adreno drivers, ReShade, shader packs/presets, audio/input/display and environment variables.
+- Keep static recompilation as a separate execution backend. A statically recompiled ARM64 title must be able to run without Wine.
+
+### NGR source audit
+- Re-read live main README, technical spec/audit, next actions, Kotlin package manager/import builder, JNI/native CMake and capability registry.
+- NGR currently has Android ARM64 host, Vulkan enumeration, gamepad discovery, NGRPACK validation/import/install and execution-backend ABI v1 header.
+- No Wine, Box64, FEX, DXVK, VKD3D, Turnip provider manager, ReShade or game execution backend is implemented.
+- NGR package manager explicitly installs data only and never executes or loads imported payloads. This invariant remains mandatory.
+
+### Donor research — verified
+- WinNative README describes an Android Windows x86_64 emulation app and links build, Wayland and attribution docs.
+- WinNative build guide identifies JDK 17, compileSdk 35, NDK 27.3.13750724, CMake 3.22.1, Git LFS and recursive submodules.
+- WinNative native CMake includes Winlator native library, Vulkan helpers, AdrenoTools, Wayland compositor, PRoot and audio shims.
+- WinNative Wayland documentation requires Adreno and a compatible Wine/Proton layer containing matching winewayland and Wayland Turnip libraries; X11 remains the initial compatibility path.
+- WinNative is GPL-3.0; component licenses must be tracked independently.
+- Winlator Bionic lineage confirms standard x86_64 + Box64 and ARM64EC + FEXCore paths; FEX unix libraries and optional WOWBox64 are distinct artifacts.
+- Public component catalogs show WCP-style distribution for Wine/Proton, DXVK, VKD3D, FEXCore, Box64 and Turnip. A ReShade catalog exists, but catalog presence does not prove ReShade injection/runtime activation in the donor APK.
+- References: https://github.com/Snap888/WinNative, https://github.com/nicholasx417/WinNative-Components, https://github.com/The412Banner/winlator-contents.
+
+### Architecture decisions
+- Create NGR Environment Manager as a first-class subsystem.
+- Keep Wine compatibility, static recompiled and native ARM64 execution modes independent.
+- Model standard x86_64/Box64 and ARM64EC/FEX as distinct validated configurations.
+- Use typed component catalogs with exact version, target ABI, source, license, checksum, compatibility constraints and rollback metadata.
+- Keep Android system Vulkan untouched; Turnip is isolated per environment/game.
+- X11 first; Wayland only when the selected Wine/Proton and Wayland Turnip binaries are a matching compatible set.
+- ReShade/shader support is gated on source audit and a real injection compatibility test.
+- Do not copy GPL code until NGR licensing and all transitive licenses are reviewed.
+
+### Documentation
+- Added `docs/WINNATIVE_INTEGRATION_PLAN.md` with donor evidence, verified/unverified boundaries, architecture, security requirements, staged implementation and acceptance criteria.
+- Updated technical specification, next actions and continuation guidance to make Environment Manager and WinNative runtime reuse part of the official NGR roadmap.
+
+### Current implementation status
+- This session is architecture and documentation only. No WinNative source files or binaries have been copied into NGR.
+- No Wine/Box64/FEX/DXVK/VKD3D/Turnip/ReShade runtime is implemented or build-verified.
+- GitHub code search did not return donor source matches in this pass; exact donor class/file mapping remains an explicit next audit item. Do not claim the source-level port audit is complete.
+- CI result for documentation commits is pending/has not been inspected. No new APK is claimed.
+
+### Next actions
+1. Complete file-by-file WinNative source audit for container/launch/catalog/WCP/settings/driver/ReShade subsystems.
+2. Create upstream commit pins and SPDX/license/provenance matrix.
+3. Implement versioned NGR environment profile/catalog models and JVM tests before runtime binary integration.
+4. Proceed with Wine + Box64 standard x86_64 launch path, then ARM64EC/FEX and graphics components.
+5. Continue the static recompiler track independently.
