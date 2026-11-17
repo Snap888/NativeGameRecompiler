@@ -34,11 +34,11 @@ Product: Android app/runtime for launching game builds that have been legally an
 - Never distribute copyrighted game data, ROMs, BIOS images, proprietary keys or game assets.
 
 ## Known handoff status (2026-11-17)
-- Latest implementation commit before docs update: `fc5bc6d8af192c50faeb0382e754af1a8b1136fc`.
+- Latest implementation commit: `d4799d8c0ca0deed9395fa58bedc75fbea0d39ca`.
 - Stage 1: Android Activity, JNI, C++20 runtime, Vulkan physical-device probe, gamepad discovery and CI workflow.
 - Stage 2: native capability registry, JNI report, strict extracted-package manifest validator and JVM regression tests. CI passed.
 - Stage 3: read-only NGRPACK ZIP inspector, bounded staging extraction, streamed size checks, full manifest/SHA-256 validation, atomic install/update with rollback/recovery, package inventory/removal and Android Document Picker UI. CI run #56 passed.
-- Latest artifact: `NGR-arm64-debug`, Actions run #56, artifact ID `14364325521`, archive SHA-256 `7dcc9170b639ef32cfdca761ada80afb1dba2e04ea0748b57d5c7eb605cf1cff`.
+- Latest artifact: `NGR-arm64-debug`, Actions run #71, artifact ID `14364007052`, archive SHA-256 `caeb05249b81f9543cd9868601419e59ce14deec5c41c647ac6680a26af261fc`.
 - Backend execution ABI v1 C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h`, with C/C++ compile checks and ADR 0003. Loader, runtime negotiation, registry and conformance tests are not implemented; capability remains planned.
 - Physical-device validation remains pending. No static/dynamic game backend or game execution is implemented.
 - Package signing/trust policy and sandbox are not implemented; never execute package payloads.
