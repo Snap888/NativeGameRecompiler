@@ -26,8 +26,12 @@ object NgrComponentCatalogParser {
         for (index in 0 until componentsJson.length()) {
             components += parseComponent(componentsJson.getJSONObject(index), index)
         }
+        val schemaValue = root.get("schemaVersion")
+        require(schemaValue is Number && schemaValue.toDouble() == schemaValue.toInt().toDouble()) {
+            "schemaVersion must be an integer"
+        }
         val catalog = NgrComponentCatalog(
-            schemaVersion = root.getInt("schemaVersion"),
+            schemaVersion = schemaValue.toInt(),
             catalogId = root.getString("catalogId"),
             revision = root.getString("revision"),
             components = components
