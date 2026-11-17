@@ -227,29 +227,40 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     private fun importOrdinaryGameZip(uri: Uri) {
         val pickedName = queryDisplayName(uri) ?: "game.zip"
+        val gameName = pickedName.substringBeforeLast('.')
         NgrLogger.info("package.import", "Selected ordinary ZIP name=$pickedName")
         packageStatus.text = "Scanning game ZIP…"
         packageWorker.execute {
             var source: File? = null
             var generated: File? = null
+            var ownershipTransferred = false
             try {
                 source = File.createTempFile("ngr-game-source-", ".zip", cacheDir)
                 copyPickedArchive(uri, source)
                 val inspected = NgrPackArchiveInspector.inspect(source, requireManifest = false)
                 if (!inspected.valid) throw IOException(inspected.errors.joinToString("; "))
-                val result = if (inspected.manifestText != null) {
-                    packageManager.install(source)
+                if (inspected.manifestText != null) {
+                    val installed = packageManager.install(source)
+                    runOnUiThread {
+                        packageStatus.text = installed.errors.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: installed.message
+                        Toast.makeText(this, installed.message, Toast.LENGTH_LONG).show()
+                        refreshPackages()
+                    }
                 } else {
                     generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
-                    val built = NgrGamePackageBuilder().buildFromZip(source, generated, pickedName.substringBeforeLast('.'))
+                    val builder = NgrGamePackageBuilder()
+                    val built = builder.buildFromZip(source, generated, gameName)
                     if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
-                    NgrLogger.info("package.builder", "ZIP converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}")
-                    packageManager.install(generated)
-                }
-                runOnUiThread {
-                    packageStatus.text = result.errors.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: result.message
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-                    refreshPackages()
+                    NgrLogger.info("package.builder", "ZIP converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}; candidates=${built.candidates.size}")
+                    val sourceFile = source
+                    val generatedFile = generated
+                    completeBuiltGameImport(generatedFile, built, { selected ->
+                        builder.buildFromZip(sourceFile, generatedFile, gameName, selected)
+                    }) {
+                        sourceFile.delete()
+                        generatedFile.delete()
+                    }
+                    ownershipTransferred = true
                 }
             } catch (e: Exception) {
                 NgrLogger.error("package.import", "Ordinary ZIP import failed", e)
@@ -258,23 +269,23 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     Toast.makeText(this, "Game ZIP import failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
-                source?.delete()
-                generated?.delete()
+                if (!ownershipTransferred) {
+                    source?.delete()
+                    generated?.delete()
+                }
             }
         }
     }
 
     private fun importGameFolder(treeUri: Uri) {
         runCatching {
-            contentResolver.takePersistableUriPermission(
-                treeUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
+            contentResolver.takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         packageStatus.text = "Scanning selected game folder…"
         packageWorker.execute {
             val copied = File(cacheDir, "ngr-folder-${UUID.randomUUID()}")
             var generated: File? = null
+            var ownershipTransferred = false
             try {
                 val root = DocumentFile.fromTreeUri(this, treeUri)
                     ?: throw IOException("Unable to open selected folder")
@@ -283,17 +294,21 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val budget = FolderImportBudget()
                 copyDocumentDirectory(root, copied, "", budget)
                 if (budget.files == 0) throw IOException("Selected folder contains no files")
+                val displayName = root.name ?: "Imported game"
                 NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
                 generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
-                val built = NgrGamePackageBuilder().buildFromFolder(copied, generated, root.name ?: "Imported game")
+                val builder = NgrGamePackageBuilder()
+                val built = builder.buildFromFolder(copied, generated, displayName)
                 if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
-                NgrLogger.info("package.builder", "Folder converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}")
-                val installed = packageManager.install(generated)
-                runOnUiThread {
-                    packageStatus.text = installed.errors.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: installed.message
-                    Toast.makeText(this, installed.message, Toast.LENGTH_LONG).show()
-                    refreshPackages()
+                NgrLogger.info("package.builder", "Folder converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}; candidates=${built.candidates.size}")
+                val generatedFile = generated
+                completeBuiltGameImport(generatedFile, built, { selected ->
+                    builder.buildFromFolder(copied, generatedFile, displayName, selected)
+                }) {
+                    generatedFile.delete()
+                    copied.deleteRecursively()
                 }
+                ownershipTransferred = true
             } catch (e: Exception) {
                 NgrLogger.error("package.import", "Game folder import failed", e)
                 runOnUiThread {
@@ -301,8 +316,65 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
-                generated?.delete()
-                copied.deleteRecursively()
+                if (!ownershipTransferred) {
+                    generated?.delete()
+                    copied.deleteRecursively()
+                }
+            }
+        }
+    }
+
+    private fun completeBuiltGameImport(
+        generated: File,
+        initialBuild: NgrGamePackageBuilder.Result,
+        rebuildWithEntryPoint: (String) -> NgrGamePackageBuilder.Result,
+        cleanup: () -> Unit
+    ) {
+        val candidates = initialBuild.candidates
+        fun installSelected(entryPoint: String?) {
+            packageWorker.execute {
+                try {
+                    if (entryPoint != null) {
+                        val selectedBuild = rebuildWithEntryPoint(entryPoint)
+                        if (!selectedBuild.success) throw IOException(
+                            selectedBuild.errors.joinToString("; ").ifBlank { selectedBuild.message }
+                        )
+                        NgrLogger.info("package.builder", "User selected executable=${selectedBuild.entryPoint}; platform=${selectedBuild.platform}; architecture=${selectedBuild.architecture}")
+                    }
+                    val installed = packageManager.install(generated)
+                    NgrLogger.info("package.import", "Selected game install success=${installed.success}; message=${installed.message}")
+                    runOnUiThread {
+                        packageStatus.text = buildString {
+                            append(installed.message)
+                            if (installed.errors.isNotEmpty()) append("\n").append(installed.errors.joinToString("\n"))
+                        }
+                        Toast.makeText(this, installed.message, Toast.LENGTH_LONG).show()
+                        refreshPackages()
+                    }
+                } catch (e: Exception) {
+                    NgrLogger.error("package.import", "Selected game install failed", e)
+                    runOnUiThread {
+                        packageStatus.text = "Game installation failed\n${e.message}"
+                        Toast.makeText(this, "Game installation failed", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    cleanup()
+                }
+            }
+        }
+
+        runOnUiThread {
+            if (candidates.size > 1) {
+                val labels = candidates.map { "${it.path}\n${it.platform} · ${it.architecture}" }.toTypedArray()
+                AlertDialog.Builder(this)
+                    .setTitle("Choose game executable")
+                    .setMessage("Several executable files were detected. Select the main game executable. Only this file will be configured as the entry point.")
+                    .setItems(labels) { _, which -> installSelected(candidates[which].path) }
+                    .setNegativeButton("Cancel") { _, _ -> cleanup() }
+                    .setOnCancelListener { cleanup() }
+                    .show()
+            } else {
+                installSelected(null)
             }
         }
     }
@@ -408,6 +480,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     }
                     row.addView(description, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
                     row.addView(Button(this).apply {
+                        text = "Details"
+                        setOnClickListener { showPackageDetails(pkg) }
+                    })
+                    row.addView(Button(this).apply {
                         text = "Remove"
                         setOnClickListener { confirmPackageRemoval(pkg.packageId) }
                     })
@@ -433,6 +509,33 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 }
             }
         }
+    }
+
+    private fun showPackageDetails(pkg: NgrPackPackageManager.InstalledPackage) {
+        val source = listOfNotNull(pkg.sourcePlatform, pkg.sourceArchitecture).joinToString(" · ")
+            .ifBlank { "Unknown / not declared" }
+        val message = """
+            Game: ${pkg.displayName}
+            Package ID: ${pkg.packageId}
+            Version: ${pkg.version}
+
+            Entry point:
+            ${pkg.entryPoint}
+
+            Source: $source
+
+            Backend: ${pkg.backendId} ${pkg.backendVersion}
+
+            Package path:
+            ${pkg.directory.absolutePath}
+
+            Status: imported package data only. A compatible execution backend is not yet configured.
+        """.trimIndent()
+        AlertDialog.Builder(this)
+            .setTitle("Game package details")
+            .setMessage(message)
+            .setPositiveButton("Close", null)
+            .show()
     }
 
     private fun confirmPackageRemoval(packageId: String) {
