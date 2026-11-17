@@ -105,7 +105,8 @@ object NgrComponentArchiveInstaller {
                 val entries = zip.entries()
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
-                    val relative = if (entry.isDirectory) entry.name.removeSuffix("/") else entry.name
+                    val normalizedName = entry.name.replace('\\\\', '/')
+                    val relative = if (entry.isDirectory) normalizedName.removeSuffix("/") else normalizedName
                     val target = File(root, relative)
                     val canonical = target.canonicalFile
                     val rootPrefix = rootCanonical.path + File.separator
