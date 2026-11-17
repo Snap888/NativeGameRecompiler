@@ -70,6 +70,28 @@ class NgrGamePackageBuilderTest {
         } finally { base.deleteRecursively() }
     }
 
+    @Test fun detectsLinuxElfArchitecture() {
+        val base = createTempDir(prefix = "ngr-builder-elf-")
+        val game = File(base, "LinuxGame")
+        try {
+            assertTrue(game.mkdirs())
+            val elf = ByteArray(64)
+            elf[0] = 0x7f
+            elf[1] = 0x45
+            elf[2] = 0x4c
+            elf[3] = 0x46
+            elf[4] = 2
+            elf[5] = 1
+            elf[18] = 62
+            File(game, "game.x86_64").writeBytes(elf)
+            val result = NgrGamePackageBuilder().buildFromFolder(game, File(base, "linux.ngrpack"))
+            assertTrue(result.errors.joinToString(), result.success)
+            assertEquals("linux", result.platform)
+            assertEquals("x86_64", result.architecture)
+            assertEquals("game.x86_64", result.entryPoint)
+        } finally { base.deleteRecursively() }
+    }
+
     @Test fun rejectsFolderWithoutRecognizedExecutable() {
         val base = createTempDir(prefix = "ngr-builder-noexe-")
         val game = File(base, "data-only")
