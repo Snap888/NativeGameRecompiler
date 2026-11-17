@@ -251,3 +251,38 @@ This is the durable project memory. Update it in every development session.
 - Artifact: `NGR-arm64-debug`, ID `14364007052`, size 1,301,432 bytes, archive SHA-256 `caeb05249b81f9543cd9868601419e59ce14deec5c41c647ac6680a26af261fc`.
 - The ABI v1 header is C- and C++-compile-checked; this is not evidence of a functioning loader. Plugin ABI capability remains planned.
 - No physical Android device test has been completed.
+
+
+## Session 2026-11-17 — Device-test feedback: diagnostics and NGRPACK import diagnosis
+
+### User device observations
+- APK starts successfully on Android ARM64.
+- Vulkan enumeration reports Qualcomm Adreno 740, Vulkan API 1.3.128.
+- Android input discovery reports a GameSir-X4A controller.
+- NGRPACK import currently fails with: `Archive must contain root ngr-manifest.json`.
+- No package is installed. The exact archive contents have not yet been supplied, so the root cause cannot be conclusively attributed to the archive or SAF picker.
+
+### Changes implemented
+- Added `NgrLogger`, a private persistent diagnostic logger:
+  - UTC timestamps, severity, category, thread name and per-launch session ID.
+  - Logcat mirror and private file `files/logs/ngr-runtime.log`.
+  - 2 MiB active-file cap with one rotated previous file.
+  - In-app recent-log viewer and Android Storage Access Framework export to a user-selected destination.
+  - Export/view combines current and rotated logs.
+- Added diagnostics around app lifecycle, runtime refresh, Vulkan enumeration, gamepad enumeration/hotplug, SAF selection/copy, NGRPACK inspection/install stages, package inventory and removal.
+- Added actionable NGRPACK inspection diagnostics: when a manifest is nested below a wrapper directory, the error now reports the discovered path and instructs the user to repack with `ngr-manifest.json` at ZIP root; otherwise it reports top-level ZIP entries.
+- Added a JVM regression test for a manifest wrapped in a top-level folder.
+- No archive format relaxation was made: root manifest remains mandatory to preserve the documented NGRPACK layout and avoid ambiguous extraction roots.
+
+### Validation status
+- Source changes are committed to `main`; CI for this diagnostics stage is pending at log update time.
+- The device report confirms Vulkan and controller discovery work on the user's handset.
+- NGRPACK still needs a retest with the new diagnostic build. If it fails, export **Save log to storage** and provide the log; the inspector will now include the archive's top-level entries and nested manifest candidates in the failure text.
+- No game backend is integrated; package payloads remain data-only and are not executed.
+
+### Next actions
+1. Confirm JVM tests and arm64 APK build in GitHub Actions.
+2. Install the diagnostics APK and retry the same NGRPACK archive.
+3. If root manifest is nested, repack the package with manifest at ZIP root; if no manifest is present, generate a valid manifest and SHA-256 inventory.
+4. If import still fails, inspect exported `ngr-runtime-log.txt` and the full on-screen error before changing archive compatibility.
+5. Continue backend ABI v1 loader only after the device-test feedback loop is stable.
