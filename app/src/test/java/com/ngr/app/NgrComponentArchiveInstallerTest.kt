@@ -3,6 +3,7 @@ package com.ngr.app
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.nio.file.Files
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -46,7 +47,7 @@ class NgrComponentArchiveInstallerTest {
             "x64/d3d11.dll" to byteArrayOf(1, 2, 3),
             "x64/dxgi.dll" to byteArrayOf(4, 5)
         ))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(archive, component(sha256(archive)), parent)
             assertTrue(result.error ?: "extraction failed", result.success)
@@ -62,7 +63,7 @@ class NgrComponentArchiveInstallerTest {
 
     @Test fun rejectsArchiveHashMismatchBeforeExtraction() {
         val archive = archive(listOf("bin/component.so" to byteArrayOf(1, 2, 3)))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(archive, component("0".repeat(64)), parent)
             assertFalse(result.success)
@@ -76,7 +77,7 @@ class NgrComponentArchiveInstallerTest {
 
     @Test fun rejectsZipSlipWithoutLeavingStagingDirectory() {
         val archive = archive(listOf("../escape.bin" to byteArrayOf(1)))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(archive, component(sha256(archive)), parent)
             assertFalse(result.success)
@@ -91,7 +92,7 @@ class NgrComponentArchiveInstallerTest {
 
     @Test fun rejectsUnsupportedArchiveFormat() {
         val archive = archive(listOf("payload" to byteArrayOf(1)))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(
                 archive,
@@ -108,7 +109,7 @@ class NgrComponentArchiveInstallerTest {
     }
     @Test fun rejectsUnsafeComponentInstallSubdirectory() {
         val archive = archive(listOf("payload" to byteArrayOf(1)))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(
                 archive,
@@ -125,7 +126,7 @@ class NgrComponentArchiveInstallerTest {
     }
     @Test fun preservesExecutableBitFromUnixZipMetadata() {
         val archive = archive(listOf("bin/runner" to byteArrayOf(0x7F, 0x45, 0x4C, 0x46)))
-        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             RandomAccessFile(archive, "rw").use { raf ->
                 val bytes = ByteArray(raf.length().toInt())
