@@ -13,8 +13,12 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.documentfile.provider.DocumentFile
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Executors
 
 class MainActivity : Activity(), InputManager.InputDeviceListener {
@@ -29,6 +33,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     companion object {
         private const val REQUEST_NGRPACK = 4102
         private const val REQUEST_EXPORT_LOG = 4103
+        private const val REQUEST_GAME_ZIP = 4104
+        private const val REQUEST_GAME_FOLDER = 4105
         init { System.loadLibrary("ngr_runtime") }
     }
 
@@ -62,6 +68,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(devices)
 
         root.addView(TextView(this).apply { text = "\nNGRPACK packages"; textSize = 18f })
+        root.addView(Button(this).apply {
+            text = "Import game folder"
+            setOnClickListener { chooseGameFolder() }
+        })
+        root.addView(Button(this).apply {
+            text = "Import ordinary game ZIP"
+            setOnClickListener { chooseGameZip() }
+        })
         root.addView(Button(this).apply {
             text = "Import / Update NGRPACK"
             setOnClickListener { choosePackageArchive() }
@@ -114,6 +128,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
 
     private fun choosePackageArchive() {
+        chooseZipDocument(REQUEST_NGRPACK, "Opening NGRPACK document picker")
+    }
+
+    private fun chooseGameZip() {
+        chooseZipDocument(REQUEST_GAME_ZIP, "Opening ordinary game ZIP picker")
+    }
+
+    private fun chooseZipDocument(requestCode: Int, logMessage: String) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "*/*"
@@ -123,8 +145,13 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 "application/octet-stream"
             ))
         }
-        NgrLogger.info("package.import", "Opening document picker")
-        startActivityForResult(intent, REQUEST_NGRPACK)
+        NgrLogger.info("package.import", logMessage)
+        startActivityForResult(intent, requestCode)
+    }
+
+    private fun chooseGameFolder() {
+        NgrLogger.info("package.import", "Opening game folder picker")
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQUEST_GAME_FOLDER)
     }
 
     @Deprecated("Uses the platform document picker callback for compatibility with Activity")
@@ -144,6 +171,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     Toast.makeText(this, "Log export failed: ${it.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            return
+        }
+        if (requestCode == REQUEST_GAME_FOLDER) {
+            if (resultCode == RESULT_OK) data?.data?.let { importGameFolder(it) }
+            return
+        }
+        if (requestCode == REQUEST_GAME_ZIP) {
+            if (resultCode == RESULT_OK) data?.data?.let { importOrdinaryGameZip(it) }
             return
         }
         if (requestCode != REQUEST_NGRPACK || resultCode != RESULT_OK) return
@@ -183,6 +218,151 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             }
         }
     }
+
+    private data class FolderImportBudget(
+        var files: Int = 0,
+        var bytes: Long = 0,
+        val paths: MutableSet<String> = mutableSetOf()
+    )
+
+    private fun importOrdinaryGameZip(uri: Uri) {
+        val pickedName = queryDisplayName(uri) ?: "game.zip"
+        NgrLogger.info("package.import", "Selected ordinary ZIP name=$pickedName")
+        packageStatus.text = "Scanning game ZIP…"
+        packageWorker.execute {
+            var source: File? = null
+            var generated: File? = null
+            try {
+                source = File.createTempFile("ngr-game-source-", ".zip", cacheDir)
+                copyPickedArchive(uri, source)
+                val inspected = NgrPackArchiveInspector.inspect(source, requireManifest = false)
+                if (!inspected.valid) throw IOException(inspected.errors.joinToString("; "))
+                val result = if (inspected.manifestText != null) {
+                    packageManager.install(source)
+                } else {
+                    generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
+                    val built = NgrGamePackageBuilder().buildFromZip(source, generated, pickedName.substringBeforeLast('.'))
+                    if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
+                    NgrLogger.info("package.builder", "ZIP converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}")
+                    packageManager.install(generated)
+                }
+                runOnUiThread {
+                    packageStatus.text = result.errors.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: result.message
+                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+                    refreshPackages()
+                }
+            } catch (e: Exception) {
+                NgrLogger.error("package.import", "Ordinary ZIP import failed", e)
+                runOnUiThread {
+                    packageStatus.text = "Game ZIP import failed\n${e.message}"
+                    Toast.makeText(this, "Game ZIP import failed", Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                source?.delete()
+                generated?.delete()
+            }
+        }
+    }
+
+    private fun importGameFolder(treeUri: Uri) {
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                treeUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        packageStatus.text = "Scanning selected game folder…"
+        packageWorker.execute {
+            val copied = File(cacheDir, "ngr-folder-${UUID.randomUUID()}")
+            var generated: File? = null
+            try {
+                val root = DocumentFile.fromTreeUri(this, treeUri)
+                    ?: throw IOException("Unable to open selected folder")
+                if (!root.isDirectory) throw IOException("Selected item is not a directory")
+                if (!copied.mkdirs()) throw IOException("Unable to create private import workspace")
+                val budget = FolderImportBudget()
+                copyDocumentDirectory(root, copied, "", budget)
+                if (budget.files == 0) throw IOException("Selected folder contains no files")
+                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
+                generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
+                val built = NgrGamePackageBuilder().buildFromFolder(copied, generated, root.name ?: "Imported game")
+                if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
+                NgrLogger.info("package.builder", "Folder converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}")
+                val installed = packageManager.install(generated)
+                runOnUiThread {
+                    packageStatus.text = installed.errors.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: installed.message
+                    Toast.makeText(this, installed.message, Toast.LENGTH_LONG).show()
+                    refreshPackages()
+                }
+            } catch (e: Exception) {
+                NgrLogger.error("package.import", "Game folder import failed", e)
+                runOnUiThread {
+                    packageStatus.text = "Game folder import failed\n${e.message}"
+                    Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                generated?.delete()
+                copied.deleteRecursively()
+            }
+        }
+    }
+
+    private fun copyDocumentDirectory(
+        source: DocumentFile,
+        destination: File,
+        relative: String,
+        budget: FolderImportBudget
+    ) {
+        val children = source.listFiles().sortedBy { it.name ?: "" }
+        for (child in children) {
+            val name = child.name ?: throw IOException("A selected file has no name")
+            if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
+                name.contains('\\\\') || name.contains(':') || name.contains('\u0000'))
+                throw IOException("Unsafe file name in selected folder")
+            val childRelative = if (relative.isEmpty()) name else "$relative/$name"
+            if (childRelative.length > NgrPackArchiveInspector.Limits().maxPathChars)
+                throw IOException("Game path exceeds maximum length: $childRelative")
+            val key = childRelative.lowercase(Locale.ROOT)
+            if (!budget.paths.add(key)) throw IOException("Duplicate or case-colliding game path: $childRelative")
+            val target = File(destination, name)
+            if (child.isDirectory) {
+                if (!target.mkdirs() && !target.isDirectory) throw IOException("Unable to create game directory: $childRelative")
+                copyDocumentDirectory(child, target, childRelative, budget)
+            } else if (child.isFile) {
+                budget.files++
+                if (budget.files > NgrPackArchiveInspector.Limits().maxEntries - 1)
+                    throw IOException("Game contains too many files")
+                if (!target.parentFile!!.exists() && !target.parentFile!!.mkdirs())
+                    throw IOException("Unable to create game file directory")
+                val input = contentResolver.openInputStream(child.uri)
+                    ?: throw IOException("Unable to read game file: $childRelative")
+                var fileBytes = 0L
+                input.use { sourceStream ->
+                    target.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = sourceStream.read(buffer)
+                            if (read < 0) break
+                            fileBytes += read
+                            budget.bytes += read
+                            if (fileBytes > NgrPackArchiveInspector.Limits().maxFileBytes ||
+                                budget.bytes > NgrPackArchiveInspector.Limits().maxTotalBytes)
+                                throw IOException("Game folder exceeds import size limits")
+                            output.write(buffer, 0, read)
+                        }
+                    }
+                }
+            } else {
+                throw IOException("Unsupported document type: $childRelative")
+            }
+        }
+    }
+
+    private fun queryDisplayName(uri: Uri): String? = runCatching {
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+            if (it.moveToFirst()) it.getString(0) else null
+        }
+    }.getOrNull()
 
     private fun copyPickedArchive(uri: Uri, destination: File) {
         val maxBytes = NgrPackArchiveInspector.Limits().maxArchiveBytes
