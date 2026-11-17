@@ -12,13 +12,15 @@ N64Recomp is a build-time static recompiler/toolchain, not an execution backend.
 
 - Exported symbol: `ngr_backend_get_api_v1`.
 - ABI major/minor: 1.0. Major mismatch is fatal; additive minor extensions append fields and are guarded by `struct_size`.
-- Every public struct starts with `struct_size`; API tables also carry ABI major/minor.
+- Every extensible versioned struct starts with `struct_size`; the fixed-layout `NgrStringViewV1` value type is the deliberate exception. API tables also carry ABI major/minor.
 - Fixed-width integer types and explicit UTF-8 pointer/length string views only.
 - No memory ownership crosses the boundary except caller-provided buffers and opaque handles.
 - No C++ exception may cross the ABI. All callbacks return `NgrStatusV1`; destroy is non-throwing.
 - Host file access is mediated by package/file handles and relative paths. Plugins do not receive raw package-root filesystem paths.
 - Host API callbacks are thread-safe. Backend lifecycle calls are serialized except `request_stop`, which must be safe concurrently with `start`.
 - String views passed into a call are borrowed for that call only. Backend ID/version views returned in the API table must remain valid for the plugin library lifetime.
+- `start` is synchronous for the active backend session; `request_stop` may be called concurrently to ask it to finish. The host waits for `start` to return before `destroy`.
+- `read_file` advances a per-handle cursor; each opened file handle is independent and must be closed.
 - Plugin instances are destroyed only after stop completes and no callback remains in flight.
 
 ## Lifecycle
@@ -44,5 +46,5 @@ Input, audio, display, threading, graphics-provider and asynchronous event servi
 
 ## Validation
 
-- Public header is compiled as C and C++ by the Android native build.
+- Public header is compiled as C and C++ by the Android native build. Struct-size helpers and the exported entry-point declaration are part of the header.
 - Loader conformance tests, version negotiation tests, lifecycle tests and hostile-plugin tests are required before marking the backend ABI capability available.
