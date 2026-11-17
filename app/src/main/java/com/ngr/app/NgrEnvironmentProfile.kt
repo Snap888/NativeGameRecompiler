@@ -12,9 +12,12 @@ data class NgrEnvironmentProfile(
     val displayName: String,
     val containerMode: ContainerMode,
     val wineLayerId: String? = null,
+    val box64ComponentId: String? = null,
+    val box86ComponentId: String? = null,
     val cpuTranslator: CpuTranslator,
     val box64Preset: Box64Preset = Box64Preset.BALANCED,
     val fexCoreComponentId: String? = null,
+    val fexUnixLibsComponentId: String? = null,
     val wowBox64ComponentId: String? = null,
     val dxvkComponentId: String? = null,
     val vkd3dComponentId: String? = null,
@@ -63,7 +66,7 @@ data class NgrEnvironmentProfile(
         when (containerMode) {
             ContainerMode.STANDARD_X86_64 -> {
                 if (cpuTranslator != CpuTranslator.BOX64) errors += "STANDARD_X86_64 requires Box64"
-                if (fexCoreComponentId != null) errors += "FEXCore is only valid for ARM64EC profiles"
+                if (fexCoreComponentId != null || fexUnixLibsComponentId != null) errors += "FEXCore/FEX UnixLibs are only valid for ARM64EC profiles"
                 if (wowBox64ComponentId != null) errors += "WOWBox64 is only valid for ARM64EC profiles"
             }
             ContainerMode.ARM64EC -> {
@@ -74,7 +77,10 @@ data class NgrEnvironmentProfile(
 
         if (wineLayerId != null && !wineLayerId.matches(ID_PATTERN)) errors += "wineLayerId is invalid"
         listOf(
+            "box64ComponentId" to box64ComponentId,
+            "box86ComponentId" to box86ComponentId,
             "fexCoreComponentId" to fexCoreComponentId,
+            "fexUnixLibsComponentId" to fexUnixLibsComponentId,
             "wowBox64ComponentId" to wowBox64ComponentId,
             "dxvkComponentId" to dxvkComponentId,
             "vkd3dComponentId" to vkd3dComponentId,
@@ -126,6 +132,20 @@ data class NgrEnvironmentProfile(
         return errors
     }
 
+
+    /** Returns structural validation plus the component references required for a launchable Wine profile. */
+    fun validateLaunchReady(): List<String> {
+        val errors = validate().toMutableList()
+        if (wineLayerId.isNullOrBlank()) errors += "A Wine/Proton layer must be selected"
+        when (containerMode) {
+            ContainerMode.STANDARD_X86_64 -> if (box64ComponentId.isNullOrBlank()) errors += "A Box64 component must be selected"
+            ContainerMode.ARM64EC -> {
+                if (fexCoreComponentId.isNullOrBlank()) errors += "An FEXCore component must be selected"
+                if (fexUnixLibsComponentId.isNullOrBlank()) errors += "FEX UnixLibs must be selected for ARM64EC"
+            }
+        }
+        return errors.distinct()
+    }
     private fun validateEnvironment(values: Map<String, String>, scope: String, errors: MutableList<String>) {
         if (values.size > 128) errors += "$scope contains more than 128 variables"
         values.forEach { (key, value) ->
