@@ -30,7 +30,8 @@ object NgrPackArchiveInspector {
         val path: String,
         val directory: Boolean,
         val compressedBytes: Long,
-        val uncompressedBytes: Long
+        val uncompressedBytes: Long,
+        val executable: Boolean = false
     )
 
     data class Result(
@@ -117,7 +118,7 @@ object NgrPackArchiveInspector {
                         else if (compressed > 0 && size > compressed * limits.maxCompressionRatio)
                             errors += "ZIP compression ratio exceeds limit: $normalized"
                     }
-                    infos += EntryInfo(normalized, isDirectory, compressed, size)
+                    infos += EntryInfo(normalized, isDirectory, compressed, size, executable = !isDirectory && (metadata.unixMode and 0x49) != 0)
 
                     if (!isDirectory && normalized == "ngr-manifest.json") {
                         if (size > limits.maxManifestBytes) errors += "NGR manifest exceeds size limit"
