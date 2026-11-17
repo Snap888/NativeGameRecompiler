@@ -40,12 +40,12 @@ Mark complete only when evidence exists.
 - [ ] Create component provenance/SPDX inventory for donor submodules, downloaded binaries and every runtime dependency.
 - [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.
 - [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
-- [x] Add dependency/ABI/profile compatibility resolver with dependency-first install order and conflict checks.
+- [x] Add dependency/ABI/profile compatibility resolver with dependency-first install order, installed-component dependency traversal, pinned-version checks and conflict checks.
 - [ ] Persist environment profiles, implement container roots/Wine prefix lifecycle and connect global/per-game overrides to runtime launch.
 - [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.
 - [x] Add HTTPS-only component downloader with redirect downgrade protection, bounded streaming, timeouts, Content-Length validation and SHA-256 verification.
 - [x] Add atomic component version promotion, active/previous state, rollback, inactive-version removal and uninstall for verified ZIP components.
-- [ ] Add HTTPS downloader integration tests and TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers with bounded extraction and expected-layout validation. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [ ] Confirm deterministic HTTPS downloader integration tests pass in CI (success, redirect, downgrade, hash and size-limit paths).\n- [ ] Add TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers with bounded extraction and expected-layout validation. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
@@ -121,3 +121,6 @@ Mark complete only when evidence exists.
 
 ## Component pin CI gate — 2026-11-18
 - [ ] Verify runs #252 (44191419786) through #257 (44191685428) for component-version pin model, codec, resolver, UI and tests. The latest main source still requires a complete green CI and uploaded APK.
+
+## Latest code CI gate — 2026-11-18
+- [ ] Confirm #261 (44191960463) downloader integration tests and #262 (44191981786) cleanup run; #263 (44192131858) and #264 (44192157349) include installed-dependency resolver fix/tests.
