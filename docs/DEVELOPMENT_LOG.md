@@ -349,3 +349,10 @@ This is the durable project memory. Update it in every development session.
 - Package IDs are now deterministic from normalized game name plus selected entry-point path, so reimporting the same game updates its existing package rather than creating another entry.
 - Added a JVM regression test that builds/imports the same folder twice and asserts a single installed package remains.
 - Code commit: `606b50a8`; test commit: `cc65f609`. A fresh CI run is required before distributing this revision.
+
+
+### Stable-ID regression CI result
+- Actions run #113 [44171433744](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44171433744) passed JVM unit tests, arm64-v8a APK build and artifact upload for code commit `cc65f609e5c3e92af80b5fcdadd65cd7c337aa64`.
+- Artifact: `NGR-arm64-debug`, ID `14366828932`, size 1,335,715 bytes, SHA-256 `59b2916d8257869641b19317a6bc061ed9c0caa7d7ec3dd9383a954fc1ba966a`; expires 2026-12-01.
+- The repeat-import regression test passed: importing the same game folder twice keeps one installed package identity and exercises the package manager update path.
+- This remains CI/JVM evidence. Real SAF folder/ZIP import and Lethal Company package installation still require testing on the user's Android device.
