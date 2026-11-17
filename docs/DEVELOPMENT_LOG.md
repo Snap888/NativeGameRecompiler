@@ -47,3 +47,34 @@ This is the durable project memory. Update it in every development session.
 - No claim of universal game recompilation.
 - First static-recompiler experiment remains N64/MIPS using N64Recomp, subject to legal test input and metadata.
 - Prefer small auditable commits and keep this log current.
+
+
+## Session 2026-11-17 — P0 CI diagnosis and Kotlin compile fix
+
+### Repository state
+- Latest inspected main commit before this fix: `fa4fccdacb711ab5c7d75fccf035293c115ad807`.
+- Main branch exists and the working tree is represented by the live GitHub branch.
+- Latest Actions run at audit time: [44157529633](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44157529633), commit `fa4fccdacb711ab5c7d75fccf035293c115ad807`, conclusion: failure.
+
+### CI root cause
+- Android SDK setup, NDK/CMake installation and Gradle setup all completed successfully.
+- The step labelled "Run JVM unit tests" failed during `:app:compileDebugKotlin`, before tests could execute.
+- Compiler diagnostics point to `MainActivity.kt` around line 53: `inputDeviceIds.mapNotNull` could not resolve for the primitive `IntArray`; downstream type inference errors followed.
+- APK build and artifact upload were skipped. No APK artifact exists for run 44157529633.
+
+### Change made
+- Commit: `eef1bfecab9d50e8cff0812be72be03e3153c33f` — "Fix gamepad device enumeration compilation".
+- Changed gamepad enumeration to use `inputDeviceIds.asSequence().mapNotNull { id: Int -> ... }.toList()`.
+- Preserved filtering for GAMEPAD/JOYSTICK input sources and existing hotplug listener behavior.
+- Files changed: `app/src/main/java/com/ngr/app/MainActivity.kt`.
+
+### Validation status
+- The source fix is committed to main.
+- A new CI run must complete before claiming Kotlin compilation, unit tests, native build or APK packaging are successful.
+- No device-side Vulkan/gamepad test has been performed in this session.
+- No APK link is available until a successful artifact is confirmed.
+
+### Next step
+1. Inspect the Actions run triggered by commit `eef1bfecab9d50e8cff0812be72be03e3153c33f`.
+2. If Kotlin compilation passes, inspect JVM test results and continue through CMake/NDK APK build.
+3. Only after green CI, download and verify the `NGR-arm64-debug` artifact.
