@@ -590,3 +590,10 @@ This is the durable project memory. Update it in every development session.
 5. Validate component-specific expected layout and required files before atomic promotion.
 6. Implement per-version install store, activation pointer, rollback and uninstall without touching Android system Vulkan.
 7. Continue exact WinNative launch-pipeline and license/provenance audit before porting runtime binaries or source.
+
+
+### CI verification — ZIP staging implementation
+- Run #172 (`44184927065`) completed successfully for commit `2d4dd105f6c8e5ab4f16f4bc42da61d3ff32a620`.
+- Confirmed JVM unit-test task, ARM64 debug APK build and artifact upload all succeeded. The test log includes the catalog parser and component archive installer suites, including executable-bit preservation.
+- Artifact: `NGR-arm64-debug`, ID `14373866839`, SHA-256 `487fef223d1c011e6008d1a8fd3ab8192cab5090a1f0f0ed5635eb77b0ea5f50`, expires 2026-12-01.
+- Replaced deprecated test-only `createTempDir` calls with `Files.createTempDirectory` in commit `7955754a4d2c303cb4495436154e7d12a2fb5b97`; its own CI run is pending. This is a test-fixture hygiene change only; production code is unchanged from the successful #172 build.
