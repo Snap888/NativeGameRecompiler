@@ -205,3 +205,41 @@ This is the durable project memory. Update it in every development session.
 4. Review ZIP local-header/central-directory consistency and malformed filename edge cases.
 5. Define stable versioned C ABI for backend plugins.
 6. Start N64/MIPS N64Recomp proof of concept only after pinning upstream and reviewing licenses/input legality.
+
+
+## Session 2026-11-17 — Backend ABI v1 contract
+
+### Native audit
+- Reviewed current native runtime headers and sources: capability registry, JNI bridge, runtime info, Vulkan probe and CMake target.
+- Existing runtime had no plugin ABI, loader or backend lifecycle. Capability registry previously listed backend plugin ABI as planned.
+- Decision: ABI v1 is an execution-backend C ABI. N64Recomp remains a build-time static recompiler/toolchain; generated ARM64 output is consumed by an execution backend. Graphics-provider and compiler APIs remain separate contracts.
+
+### ABI v1 design
+- Added `native/ngr-runtime/include/ngr/backend_abi_v1.h`.
+- ABI major/minor: 1.0; exported symbol name: `ngr_backend_get_api_v1`.
+- C-compatible fixed-width status/kind/log types, UTF-8 pointer+length views, struct-size/version fields, opaque package/file handles and function-table lifecycle.
+- Host services: logging, package-root-constrained open/read/close and monotonic time.
+- Backend lifecycle: probe, create, load, start, concurrent request_stop, destroy.
+- No C++ STL, exceptions, Android framework objects, raw package paths or memory ownership across the ABI.
+- Added C compilation check `backend_abi_c_check.c`, C++ compile-time check in capability registry and CMake source integration.
+- Added ADR `docs/ADR/0003-backend-plugin-abi.md` with version negotiation, lifecycle, thread-safety and trust-boundary decisions.
+- Native capability registry now reports NGRPACK validation/installation as available and plugin ABI as planned (contract defined, loader/conformance/lifecycle integration remain).
+- Commits: `90886bbe` (header), `152aee00` (C check), `03bf54b7` (ADR), `ff4038c1` (CMake), `a31a6a76` (C++ compile check), `afea9a36` (capability status), `8b3c9f4f` (capability detail), `57d1f542` (entry-point declaration/size helpers), `4c189f61` (ADR lifecycle clarification).
+- CI #66 [44162518320](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162518320) passed C header compilation and native build.
+- CI #68 [44162558719](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162558719) passed the C++ header inclusion/static_assert build.
+- CI #70 [44162679511](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162679511) passed JVM tests, NDK/CMake build, APK packaging and upload.
+- Latest source change `d4799d8c` zero-initializes Vulkan structs to remove existing missing-field-initializer warnings; run #71 is pending final verification at log update time.
+
+### Explicitly not implemented
+- No `dlopen` plugin loader, registry binding, ABI negotiation runtime or plugin lifecycle implementation.
+- No external plugin package format, signature verification or sandbox.
+- NGRPACK game data is never treated as a backend shared library.
+- ABI v1 is a contract/header compile-checked by CI, not yet a functioning plugin system.
+
+### Next ABI work
+1. Complete CI for latest native warning cleanup.
+2. Implement host-side ABI validation (major version, struct_size, backend kind/ID and required function pointers).
+3. Add a trusted built-in/test backend fixture for conformance tests; do not load NGRPACK payloads.
+4. Implement serialized lifecycle and cancellation semantics, including waiting for start to return before destroy.
+5. Add tests for ABI mismatch, truncated structs, missing callbacks, invalid strings, file-handle boundaries and stop/destroy ordering.
+6. Keep plugin ABI capability planned until loader and conformance tests pass.
