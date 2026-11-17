@@ -700,3 +700,19 @@ This is the durable project memory. Update it in every development session.
 - Added resolver tests for installing a missing dependency of an already-installed component and rejecting installed IDs absent from catalog metadata.
 - Code/test commits: `0975c40b`, `baf17723`, `cdcb8583`, `647e272d`, `c5a969ff`.
 - CI runs #260–#264 cover these changes and remain pending/in progress at the time of this entry.
+
+
+### Latest verified component pipeline build — Actions #264
+- Run #264: https://github.com/Snap888/NativeGameRecompiler/actions/runs/44192157349
+- Source/test commit: `c5a969ff3e7b6e27a5b52e35d51ae03ae23d5825`.
+- Confirmed all CI steps passed: JVM unit tests, ARM64-v8a debug APK build and artifact upload.
+- The passing source includes component-version pin persistence/UI, resolver enforcement, installed-component dependency traversal, HTTPS connection injection and deterministic download tests.
+- Artifact: `NGR-arm64-debug`, ID `14378300480`, archive size 1,424,818 bytes, expires 2026-12-01.
+- Downloaded and inspected artifact ZIP: contains `app-debug.apk` (2,358,277 bytes). Extracted APK SHA-256: `7eac1872e0773cd83b6a55ca7637a3003b5bc1726af817eeeb569fbc2d7b8b44`. APK contains `lib/arm64-v8a/libngr_runtime.so`.
+- Subsequent commits through `9b466ce9` only update documentation; no source code changed after the verified build. This APK therefore matches the current source tree at the time of this note.
+- Device installation/runtime execution has not been tested.
+
+### Licensing/provenance checkpoint
+- Added `docs/LICENSING_AND_PROVENANCE.md` after confirming NGR root license is MIT and WinNative is GPL-3.0.
+- Preliminary upstream root licenses inspected: Box64 MIT, FEX MIT, DXVK zlib/libpng, VKD3D-Proton LGPL-2.1, Wine LGPL-2.1-or-later and vkBasalt zlib/libpng. Mesa/Turnip and ReShade licensing remain unverified in this pass.
+- No WinNative code or binaries have been copied. The MIT/GPL boundary requires an explicit licensing decision before donor source reuse.
