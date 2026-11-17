@@ -22,10 +22,12 @@ Mark complete only when evidence exists.
 - [x] Use deterministic package IDs so repeated imports update the same library entry.
 - [x] Verify folder/ZIP import builder and Android UI in CI run #108; JVM tests, arm64-v8a APK build and artifact upload passed.
 - [x] Verify deterministic package identity and repeat-import update path in CI run #113; APK artifact uploaded.
-- [ ] Device-test importing the user's Lethal Company ZIP and selecting a valid game root/entry point.
+- [x] Device-test folder and ordinary ZIP import of Lethal Company: both install, validate hashes and inventory successfully; repeat import updates same package.
+- [ ] Re-test Lethal Company after entry-point fix; current device logs show the uninstaller was incorrectly selected.
 - [x] Package inventory, update and removal; corrupt package folders remain safely removable.
 - [ ] Review local-header vs central-directory consistency, malformed UTF-8 names and archive edge cases.
-- [ ] Add explicit primary-executable selection when multiple PE/ELF candidates are detected.
+- [ ] Add explicit primary-executable selection when multiple plausible PE/ELF game candidates remain.
+- [x] Exclude common installer/uninstaller/helper EXEs and rank candidates by game-name match; add tests and candidate diagnostics (CI pending).
 - [ ] Define manifest version migration.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
 
