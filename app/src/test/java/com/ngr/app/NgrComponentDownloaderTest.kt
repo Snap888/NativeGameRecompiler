@@ -2,12 +2,10 @@ package com.ngr.app
 
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.net.URI
 import java.net.URL
 import java.security.Principal
 import java.security.cert.Certificate
 import java.security.MessageDigest
-import java.util.zip.ZipEntry
 import javax.net.ssl.HttpsURLConnection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
