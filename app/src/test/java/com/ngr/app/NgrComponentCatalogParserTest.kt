@@ -66,4 +66,12 @@ class NgrComponentCatalogParserTest {
         assertTrue(runCatching { NgrComponentCatalogParser.parse(oversized) }.exceptionOrNull()
             ?.message.orEmpty().contains("maximum JSON size"))
     }
+    @Test fun rejectsStringOrFractionalSchemaVersion() {
+        val stringVersion = validJson.replace("\"schemaVersion\": 1", "\"schemaVersion\": \"1\"")
+        assertTrue(runCatching { NgrComponentCatalogParser.parse(stringVersion) }.exceptionOrNull()
+            ?.message.orEmpty().contains("schemaVersion must be an integer"))
+        val fractionalVersion = validJson.replace("\"schemaVersion\": 1", "\"schemaVersion\": 1.5")
+        assertTrue(runCatching { NgrComponentCatalogParser.parse(fractionalVersion) }.exceptionOrNull()
+            ?.message.orEmpty().contains("schemaVersion must be an integer"))
+    }
 }
