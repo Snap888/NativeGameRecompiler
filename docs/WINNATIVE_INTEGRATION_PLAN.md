@@ -1,12 +1,35 @@
 # WinNative Runtime & Environment Integration Plan
 
-Status: architecture approved; source-level porting has not started. This document separates verified donor capabilities from items that still require source audit and compatibility validation.
+Status: environment/profile and component-management foundation implemented; Windows runtime execution is not integrated. This document separates verified donor capabilities from items that still require source audit and compatibility validation.
 
 ## Goal
 
 Reuse the proven Android Windows-compatibility environment from WinNative / its Winlator Bionic lineage so NGR can launch ordinary Windows games early, while keeping static recompilation as a separate first-class execution path.
 
 NGR must not become a thin fork of WinNative. It owns game identity, package/library management, compiler pipelines, execution selection, diagnostics and per-game profiles. The compatibility runtime is an isolated subsystem behind NGR interfaces.
+
+
+
+## NGR implementation status — 2026-11-18
+
+### Implemented in NGR
+- Versioned environment profile model with standard x86_64/Box64 and ARM64EC/FEXCore validation, component references, graphics/display/audio fields, global environment variables and per-game overrides.
+- Strict profile JSON codec and atomic app-private profile storage; UI can create, edit, select and delete profiles.
+- Typed component catalog and bounded strict JSON parser with source/license/hash/ABI metadata, dependency/conflict constraints and cycle detection.
+- HTTPS-only component downloader with bounded redirects, no HTTPS downgrade, connect/read timeouts, streamed size and Content-Length checks, SHA-256 verification and temporary private output.
+- ZIP component installer with immutable private snapshot, central-directory inspection, traversal/symlink/special-file rejection, bounded extraction, executable-bit preservation and staging cleanup.
+- Versioned component store with atomic promotion, active/previous state, rollback, inactive-version removal and uninstall.
+- Dependency resolver with profile-selected components, ABI/container-mode checks, required/forbidden components, conflicts and dependency-first install plans.
+- Install pipeline connects verified HTTPS download, ZIP extraction and component activation. It does not execute component payloads.
+
+### Not yet implemented
+- No Wine/Proton process launcher, Windows prefix lifecycle, Box64/FEX runtime invocation or guest process supervision.
+- No real DXVK/VKD3D/Turnip provider activation or Vulkan loader isolation at runtime.
+- No ReShade DLL injector. Donor audit found vkBasalt-based ReShade-compatible effect handling; do not label this as ReShade DLL injection.
+- No X11/Wayland game session launch path in NGR.
+- No TAR.GZ/TAR.XZ/TAR.ZSTD/RAW component extraction. Catalog formats outside ZIP are rejected by the current installer.
+- No live-network integration tests for redirect, TLS and server-failure paths; downloader currently has URL-policy/preflight tests.
+- No donor runtime binaries/source have been copied into NGR. License/provenance inventory remains incomplete.
 
 ## Execution architecture
 
