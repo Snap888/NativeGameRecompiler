@@ -89,7 +89,7 @@ object NgrComponentArchiveInstaller {
                 maxTotalBytes = limits.maxTotalBytes,
                 maxCompressionRatio = limits.maxCompressionRatio
             )
-            val inspection = NgrPackArchiveInspector.inspect(snapshot, inspectionLimits, requireManifest = false)
+            val inspection = NgrPackArchiveInspector.inspect(snapshotFile, inspectionLimits, requireManifest = false)
             if (!inspection.valid) return Result(false, error = inspection.errors.joinToString("; "))
 
             val root = File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
