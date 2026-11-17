@@ -119,3 +119,32 @@ All downloaded packages are untrusted input. Validate HTTPS origin policy, size 
 - Wine, Box64, FEX, DXVK, VKD3D, Turnip and ReShade are reported as available only after install/probe succeeds.
 - Logs identify the selected container, Wine layer, CPU translator, graphics stack, driver, environment overrides and display backend.
 - A normal Windows game can launch through Wine; a static recompiled title can launch independently through its native backend.
+
+
+## Source audit update — 2026-11-18
+
+Pinned donor tree: `Snap888/WinNative` commit `99c3305d163780de5ca39b493aefcde436acad5c`.
+
+| Concern | Source entry points inspected | Integration decision |
+|---|---|---|
+| Container model/lifecycle | `runtime/container/Container.java`, `ContainerManager.java` | Map persisted per-container Wine, display, env, DX wrapper, graphics, audio and CPU settings into NGR's own schema. Do not reuse the donor's global active-container symlink design unchanged. |
+| Proton | `runtime/linux/LinuxProtons.kt` | Reuse catalog concepts (ID, URL, SHA-256, size, installed marker), but NGR uses typed immutable catalog records and atomic staging. |
+| Box64/FEX | `runtime/compat/box64/Box64PresetManager.java`, `runtime/compat/fexcore/FEXCoreManager.java` | Preserve distinct version/preset paths; do not treat Box64 and FEXCore as interchangeable. |
+| Driver selection | `runtime/system/GraphicsDriverCatalog.kt` | Existing catalog queries built-in driver support and AdrenoTools-installed drivers. NGR must scope provider/ICD selection to its managed environment. |
+| Wayland | `runtime/display/wayland/WineWaylandSupport.java` | Require Adreno plus the exact selected Wine build's `winewayland.so` and matching Wayland Turnip ICD/library. Never copy this Wine unixlib from another build. |
+| ReShade | `runtime/reshade/ReshadeManager.java`, `ReshadeDownloader.kt` | Effect discovery/uniform reflection is reusable as a design reference. Existing downloader uses optional MD5 and direct live-folder extraction after deleting the previous folder; replace with SHA-256, staging and rollback. |
+| Component recipes | `runtime/content/component/ComponentInstaller.kt` | Recipe action model is informative, but ZIP extraction lacks canonical containment checks and destination resolution permits absolute paths. Do not port this installer/extractor. |
+| Environment variables | `runtime/wine/EnvVars.java` | Ordered KEY=value representation and escaped output are useful references. NGR retains strict structured-map validation and protects runtime-managed variables. |
+
+### Security implications
+
+The donor's current component recipe installer is not a safe foundation for NGR's untrusted catalog archives. In particular, its ZIP extractor creates output files from `File(outDir, entry.name)` without verifying canonical containment, and its destination resolver can accept arbitrary absolute destinations. NGR's installer must instead:
+- reject absolute, traversal, duplicate-normalized and symlink/special-file archive entries;
+- enforce archive entry, compressed/uncompressed byte, total expansion and compression-ratio limits;
+- extract into a newly created app-private staging directory with no-follow/create-new semantics;
+- verify SHA-256 and expected install layout before activation;
+- atomically switch active version only after validation, preserving previous version for rollback.
+
+The ReShade catalog and effect scanner do not by themselves prove a working ReShade Vulkan injection path in the NGR runtime. Injection/activation remains blocked on a dedicated source and runtime audit.
+
+This audit is a bounded source mapping, not a complete audit of every launch call site, submodule, native dependency, binary provenance or license. No donor code or binary has been copied into NGR in this stage.
