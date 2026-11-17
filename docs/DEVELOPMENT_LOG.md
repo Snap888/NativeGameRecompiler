@@ -623,3 +623,29 @@ This is the durable project memory. Update it in every development session.
 - Confirmed container JSON persists Wine, DX wrapper, graphics/audio, Box64/FEX versions and presets, CPU lists, drives, executable and environment settings. Container activation still uses a global `xuser` symlink; NGR must not copy this architecture.
 - Confirmed the current donor's effect path is vkBasalt using ReShade-compatible `.fx` effects and `ENABLE_VKBASALT`/`VKBASALT_CONFIG_FILE`, not a proven ReShade Vulkan DLL injector. NGR documentation now distinguishes these capabilities.
 - LinuxProtons TAR install code offers useful staging, hash, path containment, symlink target and expected-Wine-ELF validation patterns. It is not copied into NGR; its dependency/license and full edge-case behavior still need audit.
+
+
+## 2026-11-18 — Component catalog parsing and staged ZIP installer
+
+### CI diagnosis and correction
+- Actions run #230 (`44189222721`, commit `37c3c2b1`) failed during Kotlin compilation in `MainActivity.kt`: the local `field()` helper referenced `form` before its declaration. Fixed by constructing the form before declaring the helper in commit `9b3e91eb2104a131e41d51a0ee79de426b1f85a9`.
+- Previous baseline run #229 (`44188936701`, commit `f251560d`) completed successfully.
+- Run #231 (`44189626075`) checks the MainActivity fix. Runs #232 (`44189719581`), #233 (`44189758325`) and #234 (`44189803672`) check the catalog parser/tests and subsequent strict-type correction. Their final status must be checked before calling this stage green.
+
+### Implemented
+- Added `NgrComponentCatalogJson.kt`, a strict JSON parser for catalog schema v1. It rejects unknown root/component/constraint fields, duplicate array entries, invalid enum values and invalid catalog metadata; optional fields have explicit defaults.
+- Tightened JSON parsing for schema version, constraints object and boolean values rather than relying on permissive JSONObject coercion.
+- Added `NgrComponentCatalogJsonTest.kt` for valid parse, compatibility constraints, unknown keys, unknown enums and duplicate values.
+- Added dependency-cycle detection to `NgrComponentCatalog.validate()` using topological resolution; a cycle regression test is present.
+- Added `NgrComponentArchiveInstaller.kt`: copies the archive to an app-private snapshot, verifies SHA-256 against that exact snapshot, calls the existing ZIP central-directory inspector with component-specific limits, extracts into a fresh staging directory, rejects path escape/collisions, bounds actual streamed sizes, preserves Unix executable bits, removes failed staging output and never activates or executes payloads.
+- Added `NgrComponentArchiveInstallerTest.kt` covering verified extraction, hash mismatch, ZIP Slip rejection, unsupported formats, unsafe install path, executable bit preservation and backslash path normalization.
+- ZIP is the only archive format currently extracted. TAR/RAW formats remain explicitly unsupported; no network downloader, component activation, atomic version promotion or rollback is implemented yet.
+
+### Security review notes
+- Installer validation and extraction operate on an app-private snapshot to avoid a hash/inspection/extraction TOCTOU against a mutable source file.
+- The shared NGRPACK inspector rejects unsafe paths, duplicate/case-colliding names, symlink/special file entries, encrypted/unsupported compression methods, ZIP64 and excessive declared size/ratio.
+- Installer separately validates actual decompressed byte counts and cleans the staging directory on extraction failure.
+- Remaining hardening before production: add a dedicated directory/file collision matrix, ensure all archive path normalization semantics are consistent, test malicious local-header/central-directory disagreements, and implement promotion only under a private component root with rollback.
+
+### Current CI status
+- No APK is claimed for this stage until the latest run passes unit tests, arm64 APK build and artifact upload.
