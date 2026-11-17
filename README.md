@@ -2,7 +2,7 @@
 
 Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
 
-> **Current status:** Stage 1 runtime shell and initial Stage 2 capability/package-validation work. It is not a general-purpose game recompiler and does not currently execute commercial games.
+> **Current status:** Stage 1 runtime shell, Stage 2 capability/manifest validation, and Stage 3 NGRPACK inspection + package install manager are implemented and CI-built. Physical-device validation and all game execution backends remain pending. NGR is not a general-purpose game recompiler.
 
 ## Project direction
 
@@ -19,8 +19,13 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 - C++20 runtime information and Vulkan physical-device enumeration.
 - Android gamepad/joystick discovery.
 - Native capability registry with explicit available/planned status.
-- Kotlin validator for already-extracted package directories, including metadata, path and SHA-256 checks.
-- JVM tests for valid package, path traversal and hash mismatch.
+- Strict Kotlin manifest validator: schema-aligned metadata, path safety, symlink/non-regular file rejection, complete payload inventory and SHA-256 checks.
+- Read-only NGRPACK ZIP inspector: ZIP Slip, Unix symlink/special-file, duplicate path, entry count, archive/manifest/payload size and compression-ratio checks.
+- Bounded NGRPACK extraction into app-private staging; streamed-byte limits and full post-extraction hash validation.
+- Package manager: atomic install/update, backup/rollback, interrupted-install recovery, inventory and removal.
+- Android UI: Document Picker import/update, installed package list and removal, including corrupt-package cleanup.
+- JVM regression tests for manifest validation, ZIP inspection, package installation/update/removal and recovery.
+- Latest successful CI: [run #56](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44161661718). APK artifact is available from the run page.
 - GitHub Actions workflow configured to run unit tests and build arm64-v8a debug APK.
 
 ## Build
@@ -45,7 +50,7 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 
 ## Not implemented yet
 
-No ZIP extraction/installation, game backend, N64Recomp integration, FEX, Box64, Wine, DXVK, VKD3D-Proton, Turnip provider manager or game execution is included yet. CI/APK status must be checked from Actions; a workflow file alone does not prove a successful build.
+No backend plugin ABI, static game recompiler, dynamic translator, N64Recomp integration, FEX, Box64, Wine, DXVK, VKD3D-Proton, Turnip provider manager or game execution is included yet. Package signing/trust policy and sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
 
 ## Legal
 
