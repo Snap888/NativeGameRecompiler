@@ -78,4 +78,46 @@ class NgrManifestValidatorTest {
         }
     }
 
+
+    @Test fun rejectsUnknownManifestPropertiesLikeSchema() {
+        val root = createTempDir(prefix = "ngr-schema-extra-")
+        try {
+            val payload = File(root, "bin/game.so")
+            payload.parentFile!!.mkdirs()
+            payload.writeText("hello")
+            val invalid = manifest().replace("\"formatVersion\":1,", "\"formatVersion\":1,\"unexpected\":true,")
+            val result = NgrManifestValidator.validate(invalid, root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("Unknown manifest property") })
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun rejectsDisplayNameLongerThanSchemaLimit() {
+        val root = createTempDir(prefix = "ngr-schema-name-")
+        try {
+            val payload = File(root, "bin/game.so")
+            payload.parentFile!!.mkdirs()
+            payload.writeText("hello")
+            val longName = "x".repeat(161)
+            val invalid = manifest().replace("\"displayName\":\"Test Game\"", "\"displayName\":\"$longName\"")
+            val result = NgrManifestValidator.validate(invalid, root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("displayName") })
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun rejectsDuplicatePathsAfterSeparatorNormalization() {
+        val root = createTempDir(prefix = "ngr-duplicate-path-")
+        try {
+            val payload = File(root, "bin/game.so")
+            payload.parentFile!!.mkdirs()
+            payload.writeText("hello")
+            val duplicateFiles = "\"files\":[{\"path\":\"bin/game.so\",\"sha256\":\"$validHash\"},{\"path\":\"bin\\\\game.so\",\"sha256\":\"$validHash\"}]"
+            val invalid = manifest().replace("\"files\":[{\"path\":\"bin/game.so\",\"sha256\":\"$validHash\"}]", duplicateFiles)
+            val result = NgrManifestValidator.validate(invalid, root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("Duplicate file path") })
+        } finally { root.deleteRecursively() }
+    }
+
 }
