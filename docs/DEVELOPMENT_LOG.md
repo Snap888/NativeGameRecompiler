@@ -654,3 +654,13 @@ This is the durable project memory. Update it in every development session.
 ### CI checkpoint
 - Run #231 (`44189626075`, commit `9b3e91eb`) completed successfully after the MainActivity profile-dialog fix.
 - Runs #232–#236 cover catalog JSON parser, parser tests, strict JSON type validation and journal updates; they were still running at this checkpoint. Run #231 does not include the later parser/installer changes and is not evidence that the latest source is green.
+
+
+## 2026-11-18 — Catalog parser consolidation and dependency-graph hardening
+
+- Repository audit found two catalog JSON decoders: the original bounded `NgrComponentCatalogParser` and a second `NgrComponentCatalogJson` introduced during later work. The original parser already had the stronger byte limit, contextual enum errors, strict scalar types and tests.
+- Removed the duplicate `NgrComponentCatalogJson.kt` and its redundant tests in commits `2f7be573` and `1dc58268`. The single supported parser is now `NgrComponentCatalogParser`.
+- Run #239 (`44190109701`) and #240 (`44190235891`) failed only in the redundant duplicate-parser test `NgrComponentCatalogJsonTest.rejectsCoercedBooleanAndWrongConstraintsType`; the parser's established strict-type tests are in `NgrComponentCatalogParserTest`. This duplicate test/file has now been removed.
+- Catalog dependency-cycle detection now includes both explicit `dependencies` and `constraints.requiredComponents`; added regression coverage for a cycle formed through required-component constraints. Also reject a component that both requires and forbids the same component, or requires a component it declares as a conflict, and validate the minimum NGR version field length.
+- Commits: `16ee463e` (constraint graph validation), `7d6ec05d` (required-component cycle test), `2f7be573` and `1dc58268` (duplicate parser removal).
+- Runs #241–#243 and subsequent latest-main CI must be checked; do not use the earlier green APK artifacts as proof of this exact latest source.
