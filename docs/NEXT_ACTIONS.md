@@ -26,6 +26,8 @@ Mark complete only when evidence exists.
 
 ## P3 — WinNative runtime and Environment Manager
 - [x] Record target architecture and donor integration plan in docs/WINNATIVE_INTEGRATION_PLAN.md.
+- [x] Add versioned Kotlin environment profile model with standard x86_64/Box64 vs ARM64EC/FEX validation, Turnip/Wayland gating, ReShade/shader references, audio/display settings and per-game overrides.
+- [x] Add JVM validation tests for architecture mismatch, Wayland prerequisites, ReShade requirements, protected environment variables and profile bounds.
 - [ ] Complete file-by-file source audit of WinNative container model/manager, launch pipeline, Wine/Proton layer resolver, WCP installer, catalog parser and environment variable UI.
 - [ ] Audit Box64/Box86 presets, FEXCore/FEX unixlibs, ARM64EC routing and WOWBox64 compatibility.
 - [ ] Audit DXVK/VKD3D/D8VK/D7VK selection and component install/rollback.
