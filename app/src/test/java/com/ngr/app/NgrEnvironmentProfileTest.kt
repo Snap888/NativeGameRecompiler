@@ -81,4 +81,24 @@ class NgrEnvironmentProfileTest {
         assertTrue(errors.any { it.contains("Desktop dimensions") })
         assertTrue(errors.any { it.contains("DPI") })
     }
+    @Test fun rejectsUnsafeReshadePresetPathsAndWaylandOverridesWithoutPrerequisites() {
+        val unsafePreset = standard().copy(
+            reshade = NgrEnvironmentProfile.ReShadeProfile(
+                enabled = true,
+                componentId = "vkbasalt",
+                presetPath = "../outside.ini"
+            )
+        )
+        assertTrue(unsafePreset.validate().any { it.contains("safe relative path") })
+
+        val waylandOverride = standard().copy(
+            gameOverrides = mapOf(
+                "game-a" to NgrEnvironmentProfile.NgrGameEnvironmentOverride(
+                    displayBackend = NgrEnvironmentProfile.DisplayBackend.WAYLAND
+                )
+            )
+        )
+        assertTrue(waylandOverride.validate().any { it.contains("Wayland override") })
+    }
+
 }
