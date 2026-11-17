@@ -186,6 +186,21 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     })
                     packageList.addView(row)
                 }
+                inventory.invalidPackageIds.forEach { packageId ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 8, 0, 8)
+                    }
+                    row.addView(TextView(this).apply {
+                        text = "Invalid package\n$packageId"
+                        textSize = 13f
+                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    row.addView(Button(this).apply {
+                        text = "Remove"
+                        setOnClickListener { confirmPackageRemoval(packageId) }
+                    })
+                    packageList.addView(row)
+                }
                 if (inventory.errors.isNotEmpty()) {
                     packageStatus.text = inventory.errors.joinToString("\n")
                 }
