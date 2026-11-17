@@ -28,7 +28,7 @@ Mark complete only when evidence exists.
 - [x] Package inventory, update and removal; corrupt package folders remain safely removable.
 - [ ] Review local-header vs central-directory consistency, malformed UTF-8 names and archive edge cases.
 - [ ] Show selected entry point, platform and architecture in installed package details; preserve and validate on update.
-- [ ] Add explicit primary-executable selection when multiple plausible PE/ELF game candidates remain; display candidate architecture/path before install.
+- [x] Add explicit primary-executable selection for multiple usable PE/ELF candidates; chooser displays path/platform/architecture and selection is revalidated by the builder.
 - [x] Exclude common installer/uninstaller/helper EXEs and rank candidates by game-name match; regression tests and CI run #122 pass.
 - [ ] Define manifest version migration.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
@@ -63,3 +63,8 @@ Mark complete only when evidence exists.
 - Tests/build run and result recorded.
 - Limitations and follow-up tasks recorded in DEVELOPMENT_LOG.md.
 - No fabricated success claims or unverified APK links.
+
+
+## Current validation gate
+- [ ] CI run #129 (commit `6b546a682a316cdc96a1d96c96065ebe6599be14`) passes JVM tests, arm64-v8a APK build and artifact upload.
+- [ ] Device-test executable chooser with a multi-EXE game archive and verify Details for Lethal Company reports `Lethal Company.exe`, Windows, x86_64.
