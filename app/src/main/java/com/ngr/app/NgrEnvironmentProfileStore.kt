@@ -22,6 +22,14 @@ class NgrEnvironmentProfileStore(private val privateRoot: File) {
                 "Environment profile exceeds maximum JSON size"
             }
             val target = File(directory, "${profile.profileId}.json")
+            if (target.exists()) {
+                require(!Files.isSymbolicLink(target.toPath()) && target.isFile) {
+                    "Existing profile target is not a regular file"
+                }
+            } else {
+                val count = directory.listFiles().orEmpty().count { it.name.endsWith(".json", ignoreCase = true) }
+                require(count < MAX_PROFILES) { "Environment profile count exceeds $MAX_PROFILES" }
+            }
             val temporary = File.createTempFile("profile-", ".tmp", directory)
             try {
                 FileOutputStream(temporary, false).use { output ->
