@@ -91,6 +91,7 @@ object NgrComponentArchiveInstaller {
             )
             val inspection = NgrPackArchiveInspector.inspect(snapshotFile, inspectionLimits, requireManifest = false)
             if (!inspection.valid) return Result(false, error = inspection.errors.joinToString("; "))
+            val entryMetadata = inspection.entries.associateBy { it.path }
 
             val root = File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
                 if (!it.delete() || !it.mkdir()) throw IllegalStateException("Unable to create staging directory")
@@ -157,6 +158,9 @@ object NgrComponentArchiveInstaller {
                         }
                     }
                     if (fileBytes != entry.size) throw SecurityException("Extracted size does not match ZIP metadata: $relative")
+                    if (entryMetadata[relative]?.executable == true && !canonical.setExecutable(true, true)) {
+                        throw IllegalStateException("Unable to preserve executable permission: $relative")
+                    }
                     files++
                 }
             }
