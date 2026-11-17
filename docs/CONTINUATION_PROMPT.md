@@ -56,3 +56,16 @@ Product: Android app/runtime for launching game builds that have been legally an
 
 ## Current user instruction
 Continue implementation from the live repository. Maintain the development journal and next-action list. End with changes, exact commits, build/test status, known issues and the next task.
+
+
+## Updated direction — WinNative runtime and Environment Manager
+- Reuse WinNative/Winlator Bionic technology for a Wine compatibility backend, but do not collapse NGR into a WinNative fork.
+- NGR must support three independent execution modes: Wine compatibility, static recompiled ARM64 and native ARM64.
+- Environment Manager scope includes containers/Wine prefixes, Wine/Proton layers, Box64, FEXCore/FEX unixlibs, optional WOWBox64, DXVK, VKD3D-Proton, Turnip/Adreno drivers, ReShade/shader packs, environment variables, audio/input/display and per-game profiles.
+- Standard x86_64 + Box64 and ARM64EC + FEX are distinct configurations with explicit compatibility checks.
+- X11 is the first display path. Wayland is gated on a matching Wine/Proton winewayland driver and compatible Wayland Turnip libraries.
+- Never replace Android system Vulkan libraries. Keep Turnip isolated.
+- Catalog presence is not proof of runtime integration. ReShade activation must be audited and tested separately.
+- WinNative is GPL-3.0; review NGR licensing and all component licenses before copying or linking code.
+- Read `docs/WINNATIVE_INTEGRATION_PLAN.md` before continuing this work.
+- Current session only records architecture/docs; no donor source or binary was ported. First next task is file-by-file donor source audit and provenance/license matrix.
