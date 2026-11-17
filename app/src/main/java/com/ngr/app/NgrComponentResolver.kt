@@ -30,8 +30,8 @@ object NgrComponentResolver {
         if (requestedIds.isEmpty() && profileSelectedIds(profile).isEmpty()) {
             errors += "No components were selected"
         }
-        if (!capabilities.vulkanAvailable && profile.graphicsProvider != NgrEnvironmentProfile.GraphicsProvider.SYSTEM_VULKAN) {
-            errors += "Selected graphics provider requires Vulkan support"
+        if (!capabilities.vulkanAvailable) {
+            errors += "Selected environment requires Vulkan support"
         }
         if (profile.displayBackend == NgrEnvironmentProfile.DisplayBackend.WAYLAND && !capabilities.waylandAvailable) {
             errors += "Wayland is not available on this runtime"
@@ -46,11 +46,16 @@ object NgrComponentResolver {
                 setOf(NgrComponentCatalog.TargetAbi.ANDROID_ARM64_V8A, NgrComponentCatalog.TargetAbi.ARM64EC)
         }
         val selected = linkedSetOf<String>()
+        val alreadyInstalled = linkedSetOf<String>()
         val visiting = mutableSetOf<String>()
         val resolved = mutableSetOf<String>()
 
         fun include(id: String) {
-            if (id in installedIds || id in resolved || errors.isNotEmpty()) return
+            if (id in installedIds) {
+                alreadyInstalled.add(id)
+                return
+            }
+            if (id in resolved || errors.isNotEmpty()) return
             val component = byId[id]
             if (component == null) {
                 errors += "Selected component is not present in catalog: $id"
@@ -101,7 +106,7 @@ object NgrComponentResolver {
         return Plan(
             valid = true,
             installOrder = selected.mapNotNull(byId::get),
-            alreadyInstalled = installedIds.intersect(allSelected)
+            alreadyInstalled = alreadyInstalled
         )
     }
 
