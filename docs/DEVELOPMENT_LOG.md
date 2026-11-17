@@ -329,3 +329,10 @@ This is the durable project memory. Update it in every development session.
 3. Device-test folder import and ordinary ZIP import with the user's Lethal Company archive.
 4. Add a candidate list and explicit primary executable selection when multiple PE/ELF files are found.
 5. Consider archive progress/cancellation and persistent import metadata after device validation.
+
+
+### Follow-up compile corrections
+- CI run #102 reached Kotlin compilation and reported one remaining unsupported backslash character literal in `MainActivity.kt`; corrected it in commit `c47aace3ac7d024c8b388b313596dbfd66548fda`.
+- Added explicit 64-level nesting bounds to both local folder copying and SAF folder traversal (`33812dfa`, `70892ab8`).
+- Added Linux ELF x86_64 detection regression coverage in commit `8d06364c`.
+- Latest commit at this update: `c47aace3ac7d024c8b388b313596dbfd66548fda`; Actions run #108 is pending. CI is not yet green.
