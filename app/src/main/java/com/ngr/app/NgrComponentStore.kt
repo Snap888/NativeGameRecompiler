@@ -68,6 +68,10 @@ class NgrComponentStore(private val privateRoot: File) {
                 "Staged component must be a direct child of the private staging directory"
             }
             validateTree(staged.toPath())
+            val expectedPayload = File(staged, component.installSubdirectory).canonicalFile
+            require(expectedPayload.path.startsWith(staged.path + File.separator) && expectedPayload.isDirectory) {
+                "Component archive is missing its declared install subdirectory"
+            }
 
             val componentsRoot = File(privateRoot, COMPONENTS_DIRECTORY)
             Files.createDirectories(componentsRoot.toPath())
@@ -136,6 +140,13 @@ class NgrComponentStore(private val privateRoot: File) {
         }
     }
 
+    fun activeComponentPath(component: NgrComponentCatalog.Component): File? {
+        if (validateComponent(component) != null) return null
+        val versionRoot = activeVersionDirectory(component.id) ?: return null
+        val payload = File(versionRoot, component.installSubdirectory).canonicalFile
+        if (!payload.path.startsWith(versionRoot.canonicalPath + File.separator)) return null
+        return payload.takeIf { it.isDirectory }
+    }
     fun removeVersion(componentId: String, version: String): Result {
         if (!isSafeId(componentId) || !isSafeVersion(version)) return Result(false, error = "Component ID or version is invalid")
         return try {
