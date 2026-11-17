@@ -244,7 +244,10 @@ class NgrGamePackageBuilder(
 
     private fun executableKind(file: Path): Pair<String?, String?> {
         val name = file.fileName.toString()
-        if (name.endsWith(".exe", true)) return "windows" to detectPeArchitecture(file)
+        if (name.endsWith(".exe", true)) {
+            val architecture = detectPeArchitecture(file) ?: return null to null
+            return "windows" to architecture
+        }
         RandomAccessFile(file.toFile(), "r").use { raf ->
             if (raf.length() >= 20) {
                 val magic = ByteArray(4)
@@ -265,15 +268,15 @@ class NgrGamePackageBuilder(
         return null to null
     }
 
-    private fun detectPeArchitecture(file: Path): String {
+    private fun detectPeArchitecture(file: Path): String? {
         return try {
             RandomAccessFile(file.toFile(), "r").use { raf ->
-                if (raf.length() < 64) return "unknown"
+                if (raf.length() < 64) return null
                 raf.seek(0x3c)
                 val offset = readLe32(raf)
-                if (offset < 0 || offset + 6 > raf.length()) return "unknown"
+                if (offset < 0 || offset.toLong() + 6L > raf.length()) return null
                 raf.seek(offset.toLong())
-                if (raf.read() != 0x50 || raf.read() != 0x45 || raf.read() != 0) return "unknown"
+                if (raf.read() != 0x50 || raf.read() != 0x45 || raf.read() != 0 || raf.read() != 0) return null
                 val machineLow = raf.read()
                 val machineHigh = raf.read()
                 when {
@@ -283,7 +286,7 @@ class NgrGamePackageBuilder(
                     else -> "unknown"
                 }
             }
-        } catch (_: Exception) { "unknown" }
+        } catch (_: Exception) { null }
     }
 
     private fun readLe32(raf: RandomAccessFile): Int {
