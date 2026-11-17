@@ -65,7 +65,7 @@ data class NgrComponentCatalog(
         val dependents = mutableMapOf<String, MutableList<String>>()
         val remainingDependencies = mutableMapOf<String, Int>()
         uniqueComponents.forEach { component ->
-            val validDependencies = component.dependencies.filter { it in ids }
+            val validDependencies = (component.dependencies + component.constraints.requiredComponents).filter { it in ids }.distinct()
             remainingDependencies[component.id] = validDependencies.size
             validDependencies.forEach { dependency ->
                 dependents.getOrPut(dependency) { mutableListOf() }.add(component.id)
@@ -107,7 +107,16 @@ data class NgrComponentCatalog(
             if (component.conflicts.any { it !in ids }) errors += prefix + "conflict references an unknown component"
             if (component.constraints.requiredComponents.any { it !in ids }) errors += prefix + "constraint references an unknown required component"
             if (component.constraints.forbiddenComponents.any { it !in ids }) errors += prefix + "constraint references an unknown forbidden component"
-            if (component.dependencies.any { it in component.conflicts }) errors += prefix + "dependency is also declared as a conflict"
+            if (component.constraints.requiredComponents.any { it in component.constraints.forbiddenComponents }) {
+                errors += prefix + "component cannot both require and forbid the same component"
+            }
+            if ((component.dependencies + component.constraints.requiredComponents).any { it in component.conflicts }) {
+                errors += prefix + "required component is also declared as a conflict"
+            }
+            if (component.constraints.minimumNgrVersion != null &&
+                (component.constraints.minimumNgrVersion.isBlank() || component.constraints.minimumNgrVersion.length > 64)) {
+                errors += prefix + "minimum NGR version is invalid"
+            }
         }
         return errors
     }
