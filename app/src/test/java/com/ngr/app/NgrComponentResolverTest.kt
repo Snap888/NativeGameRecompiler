@@ -153,4 +153,28 @@ class NgrComponentResolverTest {
         assertFalse(installedWithoutMetadata.valid)
         assertTrue(installedWithoutMetadata.errors.any { it.contains("verified installed version metadata") })
     }
+    @Test fun resolvesMissingDependenciesOfAlreadyInstalledComponents() {
+        val plan = NgrComponentResolver.resolve(
+            catalog(component("wine", dependencies = setOf("box64")), component("box64")),
+            profile,
+            setOf("wine"),
+            installedIds = setOf("wine"),
+            capabilities = capabilities
+        )
+        assertTrue(plan.errors.joinToString(), plan.valid)
+        assertEquals(listOf("box64"), plan.installOrder.map { it.id })
+        assertEquals(setOf("wine"), plan.alreadyInstalled)
+    }
+
+    @Test fun rejectsInstalledComponentsMissingFromCatalogMetadata() {
+        val plan = NgrComponentResolver.resolve(
+            catalog(component("wine"), component("box64")),
+            profile,
+            setOf("removed-component"),
+            installedIds = setOf("removed-component"),
+            capabilities = capabilities
+        )
+        assertFalse(plan.valid)
+        assertTrue(plan.errors.any { it.contains("not present in catalog") })
+    }
 }
