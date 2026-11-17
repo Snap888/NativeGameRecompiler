@@ -50,4 +50,32 @@ class NgrManifestValidatorTest {
             assertTrue(result.errors.any { it.contains("SHA-256 mismatch") })
         } finally { root.deleteRecursively() }
     }
+    @Test fun rejectsEntryPointMissingFromHashedFileList() {
+        val root = createTempDir(prefix = "ngr-entry-")
+        try {
+            val payload = File(root, "bin/game.so")
+            payload.parentFile!!.mkdirs()
+            payload.writeText("hello")
+            val result = NgrManifestValidator.validate(manifest("bin/game.so", "bin/other.so"), root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("entryPoint must be included") })
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun rejectsSymlinkPayload() {
+        val root = createTempDir(prefix = "ngr-symlink-")
+        val outside = createTempFile(prefix = "ngr-outside-")
+        try {
+            val link = File(root, "bin/game.so")
+            link.parentFile!!.mkdirs()
+            java.nio.file.Files.createSymbolicLink(link.toPath(), outside.toPath())
+            val result = NgrManifestValidator.validate(manifest(), root, false)
+            assertFalse(result.valid)
+            assertTrue(result.errors.any { it.contains("Symbolic links") })
+        } finally {
+            root.deleteRecursively()
+            outside.delete()
+        }
+    }
+
 }
