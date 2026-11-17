@@ -1,46 +1,85 @@
 # Native Game Recompiler — Technical Specification
 
 ## Objective
-
-An Android application that manages and launches legally obtained game builds produced for the NGR runtime. Backends declare supported input formats, CPU/OS ABI requirements, graphics requirements and package metadata.
+An Android application that manages and launches legally obtained game builds through multiple independent execution paths: Wine compatibility, static recompilation and native ARM64 backends. NGR does not promise universal game compatibility.
 
 ## Runtime layers
-
 1. Android host: lifecycle, storage, touch/gamepad, display and audio surfaces.
 2. NGR Core (C++20): sessions, capability registry, logging and backend selection.
-3. NGR ABI: files, clocks, threads, input, audio, display, memory and diagnostics.
-4. Execution backends: static recompilation, dynamic translation or native ARM64.
-5. Compatibility adapters: OS APIs, libraries, syscalls and platform services.
-6. Graphics providers: system Vulkan first; isolated Turnip provider later; DXVK/VKD3D only when supported.
+3. NGR Environment Manager: containers, Wine/Proton layers, CPU translators, graphics components, drivers and per-game profiles.
+4. Execution backends: Wine compatibility, static recompilation or native ARM64.
+5. Compatibility adapters: Windows/Linux OS APIs, libraries, syscalls and platform services.
+6. Graphics providers: Android system Vulkan first; isolated per-game Turnip provider; DXVK/VKD3D only when compatible.
 7. Package manager: manifest validation, hashes, install/update/remove and per-game configuration.
+8. Compiler pipeline: binary inspection, lifting/IR, optimization, ARM64 code generation and title-specific runtime services.
+
+## Execution modes
+- **Wine compatibility:** Windows PE through a compatible Wine/Proton layer, CPU translation backend and selected graphics stack.
+- **Static recompiled:** generated ARM64 code and NGR title runtime; Wine is not a prerequisite.
+- **Native ARM64:** legally supplied native build or trusted app-integrated backend.
+
+Imported Windows executables remain data until a compatible execution backend is installed and selected. Importing an EXE does not make it executable through NGR by itself.
+
+## Environment Manager requirements
+### Containers and Wine
+- Container/rootfs and Wine prefix lifecycle: create, clone, backup, repair, reset and remove.
+- Versioned Wine/Proton layer catalog with install, update, pin, rollback and compatibility checks.
+- Windows version, architecture mode, resolution, DPI, display backend, audio/input and synchronization options.
+- Container defaults plus per-game overrides for environment variables, DLL overrides and compatibility flags.
+- Reproducible profile export/import and schema migration.
+
+### CPU translation
+- Box64 for supported standard x86_64 paths; Box86 only if required for a validated 32-bit path.
+- FEXCore and FEX unix libraries for compatible ARM64EC paths.
+- Optional WOWBox64 only for configurations that require it.
+- Explicit routing and compatibility validation; Box64 and FEX are not interchangeable toggles.
+
+### Graphics and drivers
+- DXVK for supported Direct3D 8–11 paths.
+- VKD3D-Proton for Direct3D 12; D8VK/D7VK are separate optional components.
+- Turnip/Adreno through isolated provider loading; never overwrite Android system Vulkan libraries.
+- X11 first. Wayland is enabled only when the selected Wine/Proton layer and game-side Vulkan/Turnip components satisfy the documented ABI and compositor requirements.
+- Track exact component version, ABI, source, license, checksum, install state and conflicts.
+
+### ReShade and shaders
+- Separate audit of ReShade catalog availability vs actual Wine/Vulkan injection support.
+- Versioned ReShade builds, compatible shader/effect packages, presets and texture assets.
+- Per-game activation, preset, search paths and shader cache controls.
+- Never claim support solely because a ReShade catalog file exists.
+
+### Additional settings
+Audio bridge/device selection, input/gamepad mapping, display controls, diagnostics, environment variables, cache management and safe rollback.
+
+## Component catalog and installation security
+Catalog entries must include stable ID/type, version/build/upstream commit, target ABI/container mode, download URL, archive format, expected SHA-256, license, source repository, compatibility constraints, conflicts, install layout and rollback metadata.
+
+Treat catalog responses and archives as untrusted. Enforce HTTPS policy, size limits, safe archive paths, regular-file-only extraction, hashes and expected layouts before installation. Keep components in app-private managed locations. Imported NGRPACK game payloads are never backend plugins.
 
 ## Package format
+NGRPACK is a ZIP-compatible container with a versioned manifest, payload and SHA-256 hashes. Metadata declares backend ID/version, target ABI, entry point, minimum runtime and graphics requirements. Define signed release trust before executing any payload.
 
-Future NGRPACK packages use a ZIP-compatible container with a versioned manifest, payload and SHA-256 hashes. Metadata declares backend ID/version, target ABI, entry point, minimum runtime and graphics requirements. Signature verification is a later security gate; unsigned development packages must be clearly marked.
-
-The Kotlin validator checks an already-extracted package directory. A separate read-only NGRPACK ZIP inspector is now being implemented and CI-verified; it checks central-directory metadata, path safety, symlink/special-file metadata, entry and size limits, compression ratio and the bounded root manifest. It does not extract or install archives, verify extracted payload hashes, or create a security sandbox. Payload execution is prohibited until bounded extraction, atomic installation and a trust model are implemented.
+The Kotlin package manager currently performs bounded extraction, hash validation, atomic install/update, rollback/recovery and inventory. It is a data installer, not a sandbox or execution backend.
 
 ## Milestones
-
-- Stage 1: Android/JNI/C++ shell, Vulkan probe, controller discovery, CI APK.
-- Stage 2: capability registry, extracted-package manifest validator, path/hash checks and JVM tests. CI run #38 passed and published the arm64 debug APK; device validation remains pending.
-- Stage 3: read-only NGRPACK inspection is implemented with CI verification pending; bounded extraction, SHA-256 revalidation, atomic package installation and package inventory remain.
-- Stage 4: stable backend ABI, lifecycle and structured diagnostics.
-- Stage 5: N64/MIPS static recompilation proof of concept using N64Recomp and legally supplied test inputs.
-- Stage 6+: evaluate additional platform backends individually.
+- Stage 1–3: Android/JNI/C++ shell, Vulkan/input discovery, NGRPACK validation and package management — implemented and CI-built.
+- Stage 4: trusted backend ABI negotiation, registry and lifecycle — pending.
+- Stage 5: WinNative/Winlator runtime and Environment Manager source audit + port map.
+- Stage 6: Wine + Box64 standard x86_64 launch path.
+- Stage 7: FEXCore + ARM64EC path, after matching Wine layer validation.
+- Stage 8: DXVK/VKD3D and isolated Turnip manager.
+- Stage 9: ReShade/shader activation and validated Wayland support.
+- Stage 10: N64/MIPS static recompilation proof of concept with N64Recomp and legal test inputs; expand compiler targets individually.
 
 ## Non-functional requirements
-
-- ARM64 Android is the first host.
-- Treat all package inputs as untrusted.
-- Reject path traversal, symlink escapes, missing files and hash mismatches.
+- ARM64 Android is the first host; Qualcomm Adreno is the first GPU target.
+- Treat all packages, catalogs and downloaded components as untrusted.
+- Keep Android system Vulkan intact.
 - Produce actionable diagnostics and isolate backend failures where practical.
-- Do not distribute copyrighted ROMs, BIOS images, proprietary keys or game assets.
+- Do not distribute copyrighted game data, ROMs, BIOS images, proprietary keys or game assets.
+- Pin source revisions and review SPDX/transitive licenses before vendoring.
 - CI publishes artifacts only after successful tests and builds.
 
-
 ## Backend plugin ABI v1
+The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h` and is ABI 1.0. It is for trusted execution backends only. The exported entry point is `ngr_backend_get_api_v1`; versioned structs use `struct_size`, API tables carry major/minor versions, and strings use explicit UTF-8 pointer/length views. The host API exposes bounded logging, package-handle-relative file access and monotonic time. The lifecycle table defines probe/create/load/start/request_stop/destroy.
 
-The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h` and is currently ABI 1.0. It is for trusted execution backends only. The exported entry point is `ngr_backend_get_api_v1`; versioned structs use `struct_size`, API tables carry major/minor versions, and strings use explicit UTF-8 pointer/length views. The host API exposes bounded logging, package-handle-relative file access and monotonic time. The lifecycle table defines probe/create/load/start/request_stop/destroy.
-
-N64Recomp is treated as a build-time compiler, not as a runtime execution plugin. Graphics-provider and compiler APIs require separate contracts. The header is compiled as both C and C++ by the Android native build, but the host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The plugin ABI capability therefore remains planned. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation are implemented.
+N64Recomp is a build-time compiler, not a runtime plugin. Graphics-provider and compiler APIs require separate contracts. The header is compiled as C and C++, but host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation.
