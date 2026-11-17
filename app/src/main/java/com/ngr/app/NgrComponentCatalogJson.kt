@@ -12,7 +12,7 @@ object NgrComponentCatalogJson {
         val root = JSONObject(json)
         requireKeys(root, setOf("schemaVersion", "catalogId", "revision", "components"))
         val catalog = NgrComponentCatalog(
-            schemaVersion = root.getInt("schemaVersion"),
+            schemaVersion = root.get("schemaVersion").also { require(it is Int) { "schemaVersion must be an integer" } } as Int,
             catalogId = root.getString("catalogId"),
             revision = root.getString("revision"),
             components = root.getJSONArray("components").toObjects(::parseComponent)
@@ -28,7 +28,9 @@ object NgrComponentCatalogJson {
             "downloadUrl", "sha256", "licenseSpdx", "sourceRepository", "dependencies",
             "conflicts", "constraints", "installSubdirectory", "rollbackSlot"
         ), optional = setOf("upstreamCommit", "dependencies", "conflicts", "constraints", "rollbackSlot"))
-        val constraintsJson = value.optJSONObject("constraints") ?: JSONObject()
+        val constraintsValue = if (value.has("constraints")) value.get("constraints") else JSONObject()
+        require(constraintsValue is JSONObject) { "constraints must be an object" }
+        val constraintsJson = constraintsValue as JSONObject
         requireKeys(constraintsJson, setOf(
             "minimumNgrVersion", "containerModes", "requiredComponents", "forbiddenComponents",
             "requiresWayland", "requiresVulkan"
@@ -42,8 +44,8 @@ object NgrComponentCatalogJson {
                 .map { NgrEnvironmentProfile.ContainerMode.valueOf(it) }.toSet(),
             requiredComponents = constraintsJson.optStringSet("requiredComponents"),
             forbiddenComponents = constraintsJson.optStringSet("forbiddenComponents"),
-            requiresWayland = constraintsJson.optBoolean("requiresWayland", false),
-            requiresVulkan = constraintsJson.optBoolean("requiresVulkan", false)
+            requiresWayland = constraintsJson.strictBoolean("requiresWayland"),
+            requiresVulkan = constraintsJson.strictBoolean("requiresVulkan")
         )
         return NgrComponentCatalog.Component(
             id = value.getString("id"),
@@ -75,6 +77,13 @@ object NgrComponentCatalogJson {
         val missing = allowed - optional - keys
         require(unknown.isEmpty()) { "Unknown catalog JSON fields: ${unknown.sorted().joinToString()}" }
         require(missing.isEmpty()) { "Missing catalog JSON fields: ${missing.sorted().joinToString()}" }
+    }
+
+    private fun JSONObject.strictBoolean(key: String): Boolean {
+        if (!has(key)) return false
+        val value = get(key)
+        require(value is Boolean) { "$key must be a boolean" }
+        return value
     }
 
     private fun JSONObject.optStringOrNull(key: String): String? {
