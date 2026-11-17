@@ -280,6 +280,15 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val dxvk = field("DXVK component ID", profile.dxvkComponentId)
         val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
         val turnip = field("Turnip component ID", profile.turnipComponentId)
+        val componentVersions = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            minLines = 2
+            maxLines = 5
+            setText(profile.componentVersions.toSortedMap().entries.joinToString("\n") { "${it.key}=${it.value}" })
+            hint = "component-id=version, one per line"
+        }
+        form.addView(TextView(this).apply { text = "Pinned component versions"; textSize = 12f })
+        form.addView(componentVersions)
         val width = field("Desktop width", profile.desktopWidth.toString(), InputType.TYPE_CLASS_NUMBER)
         val height = field("Desktop height", profile.desktopHeight.toString(), InputType.TYPE_CLASS_NUMBER)
         val dpi = field("DPI", profile.dpi.toString(), InputType.TYPE_CLASS_NUMBER)
@@ -329,8 +338,19 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                         require(!parsedEnv.containsKey(key)) { "Duplicate environment variable: $key" }
                         parsedEnv[key] = trimmed.substring(split + 1)
                     }
+                    val parsedVersions = linkedMapOf<String, String>()
+                    componentVersions.text.toString().lineSequence().forEach { line ->
+                        val trimmed = line.trim()
+                        if (trimmed.isEmpty()) return@forEach
+                        val split = trimmed.indexOf('=')
+                        require(split > 0) { "Component versions must use component-id=version" }
+                        val id = trimmed.substring(0, split).trim()
+                        require(!parsedVersions.containsKey(id)) { "Duplicate component version pin: $id" }
+                        parsedVersions[id] = trimmed.substring(split + 1).trim()
+                    }
                     val standardMode = profile.containerMode == NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64
                     val updated = profile.copy(
+                        componentVersions = parsedVersions,
                         wineLayerId = wine.text.toString().trim().ifEmpty { null },
                         box64ComponentId = if (standardMode) box64.text.toString().trim().ifEmpty { null } else null,
                         box86ComponentId = if (standardMode) box86.text.toString().trim().ifEmpty { null } else null,
@@ -381,6 +401,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             "Display: ${profile.displayBackend} · ${profile.desktopWidth}×${profile.desktopHeight} @ ${profile.dpi} DPI",
             "Audio: ${profile.audioBackend}",
             "vkBasalt/ReShade effects: ${if (profile.reshade.enabled) "enabled" else "disabled"}",
+            "Pinned component versions: ${profile.componentVersions.size}",
             "Environment variables: ${profile.environmentVariables.size}",
             "Game overrides: ${profile.gameOverrides.size}",
             "Launch readiness: ${profile.validateLaunchReady().let { if (it.isEmpty()) "valid" else it.joinToString("; ") }}"
