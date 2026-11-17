@@ -101,4 +101,19 @@ class NgrEnvironmentProfileTest {
         assertTrue(waylandOverride.validate().any { it.contains("Wayland override") })
     }
 
+    @Test fun launchReadyProfilesRequireWineAndArchitectureSpecificCpuComponents() {
+        assertTrue(standard().validateLaunchReady().any { it.contains("Wine/Proton") })
+        assertTrue(standard().validateLaunchReady().any { it.contains("Box64 component") })
+        val ready = standard().copy(wineLayerId = "wine-stable", box64ComponentId = "box64-stable")
+        assertTrue(ready.validateLaunchReady().toString(), ready.validateLaunchReady().isEmpty())
+
+        val arm64ec = standard().copy(
+            containerMode = NgrEnvironmentProfile.ContainerMode.ARM64EC,
+            cpuTranslator = NgrEnvironmentProfile.CpuTranslator.FEXCORE,
+            fexCoreComponentId = "fexcore",
+            wineLayerId = "wine-arm64ec"
+        )
+        assertTrue(arm64ec.validateLaunchReady().any { it.contains("FEX UnixLibs") })
+        assertTrue(arm64ec.copy(fexUnixLibsComponentId = "fex-unixlibs").validateLaunchReady().isEmpty())
+    }
 }
