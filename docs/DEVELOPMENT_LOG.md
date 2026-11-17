@@ -31,7 +31,8 @@ This is the durable project memory. Update it in every development session.
 - Inspected failed run 44156896963 and its full job log.
 - Failure occurred in android-actions/setup-android@v3 before Gradle: the action requested obsolete SDK package 'tools'; sdkmanager reported 'Failed to find package tools'.
 - Updated workflow to explicitly request only 'platform-tools'. Commit: e16ac5540790a6cb69fd8242fd3a23da2b62844b.
-- New run 44157299377 was queued at handoff; build/test result is not yet known.
+- Run 44157299377 (commit e16ac554) confirms Android SDK setup, NDK/CMake installation and Gradle setup now succeed. Its JVM unit-test step is currently running; build/artifact result is pending.
+- Additional pushes triggered runs 27–30; run 30 includes the latest symlink/test changes and was queued at last check.
 
 ### Validation required
 1. Inspect run 44157299377 and verify Android SDK setup now succeeds.
