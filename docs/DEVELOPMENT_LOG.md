@@ -606,3 +606,20 @@ This is the durable project memory. Update it in every development session.
 - Added URL policy and preflight rejection tests. Live network behavior, redirect servers and TLS failure cases still need dedicated integration tests.
 - Code commits: downloader `caca5fd0`, manifest permission `56880434`, output-file correction `2c3c0ffc`, URL tests `427b32f0`, strict HTTP 200 handling `ef2ef3c6`.
 - CI for downloader/manifest commits is pending; do not claim the new downloader is verified until the latest workflow passes.
+
+
+### Component version store, install pipeline and dependency resolver — 2026-11-18
+- Added `NgrComponentStore.kt`: private staging/download directories, versioned component store, atomic directory promotion, atomic active/previous state file, rollback toggle, guarded removal of inactive versions, uninstall and payload-path validation. Symlinked store directories and non-regular staged payloads are rejected.
+- Added `NgrComponentInstallPipeline.kt`: combines verified archive extraction and atomic activation; also exposes a download-and-install path using the HTTPS downloader. It removes downloaded archives and failed staging directories; it does not load or execute payloads.
+- Added `NgrComponentResolver.kt`: resolves profile-selected components and recursive dependencies into dependency-first install order; checks profile validation, target ABI compatibility, container-mode constraints, Wayland/Vulkan capabilities, required/forbidden components and conflicts with selected/installed IDs.
+- Added tests for version activation/rollback, removal guards, uninstall, stage-root containment, local archive install, hash mismatch, dependency ordering, already-installed dependencies, architecture mismatch, conflicts, Wayland and Vulkan requirements.
+- CI: run #190 (`44185844227`) passed store tests; run #202 (`44186403039`) passed payload-layout validation and install-pipeline tests; run #205 (`44186662469`) passed resolver tests, JVM tests, ARM64 APK build and artifact upload. Artifact #205: `14375191502`, SHA-256 `02e56c547f9594c986995c48b5ae9693086b3f2775591ae04f456e89be8a66e5`.
+- Run #199 failed because store tests had not yet been updated to include the newly required installSubdirectory; fixtures were corrected and #200 passed. Run #201 failed because the pipeline test still treated the returned active path as the version root; the API now returns the validated payload directory and the test was corrected in #202.
+- ZIP extraction now normalizes backslash path separators to forward slashes to match inspector path normalization; regression test added. Runs for this last path normalization change are pending.
+
+### WinNative launch-pipeline audit
+- Pinned donor remains `99c3305d163780de5ca39b493aefcde436acad5c`.
+- Mapped `XServerDisplayActivity` override resolution and launch setup, `GuestProgramLauncherComponent` runtime assembly, standard x86_64 Box64 command vs ARM64EC direct Wine/HODLL selection, and the separate PRoot-based Linux/Proton launcher.
+- Confirmed container JSON persists Wine, DX wrapper, graphics/audio, Box64/FEX versions and presets, CPU lists, drives, executable and environment settings. Container activation still uses a global `xuser` symlink; NGR must not copy this architecture.
+- Confirmed the current donor's effect path is vkBasalt using ReShade-compatible `.fx` effects and `ENABLE_VKBASALT`/`VKBASALT_CONFIG_FILE`, not a proven ReShade Vulkan DLL injector. NGR documentation now distinguishes these capabilities.
+- LinuxProtons TAR install code offers useful staging, hash, path containment, symlink target and expected-Wine-ELF validation patterns. It is not copied into NGR; its dependency/license and full edge-case behavior still need audit.
