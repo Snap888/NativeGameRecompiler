@@ -34,6 +34,8 @@ class NgrPackPackageManager(
         val backendId: String,
         val backendVersion: String,
         val entryPoint: String,
+        val sourcePlatform: String?,
+        val sourceArchitecture: String?,
         val directory: File
     )
 
@@ -341,6 +343,8 @@ class NgrPackPackageManager(
                 backendId = backend.getString("id"),
                 backendVersion = backend.getString("version"),
                 entryPoint = manifest.getString("entryPoint"),
+                sourcePlatform = backend.optString("sourcePlatform").takeIf { it.isNotBlank() },
+                sourceArchitecture = backend.optString("sourceArchitecture").takeIf { it.isNotBlank() },
                 directory = directory
             )
         } catch (_: Exception) { null }
