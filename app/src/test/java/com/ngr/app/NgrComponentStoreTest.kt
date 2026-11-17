@@ -22,7 +22,8 @@ class NgrComponentStoreTest {
 
     private fun staged(store: NgrComponentStore, marker: String): java.io.File {
         val dir = Files.createTempDirectory(store.stagingDirectory().toPath(), "component-").toFile()
-        dir.resolve("payload.txt").writeText(marker)
+        dir.resolve("runtime/box64").mkdirs()
+        dir.resolve("runtime/box64/payload.txt").writeText(marker)
         return dir
     }
 
