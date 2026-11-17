@@ -164,3 +164,28 @@ The installer intentionally does not yet download, activate, load or execute com
 ### HTTPS download implementation
 
 NGR now has an HTTPS-only component downloader with manual bounded redirects, no HTTPS downgrade, timeouts, Content-Length and streaming-size checks, identity-only response encoding, SHA-256 verification and private temporary-file output. It deliberately stops at a verified file; the separate ZIP staging installer handles extraction. Live network integration tests and the full download-to-install orchestration remain outstanding.
+
+
+## Launch-pipeline source map — 2026-11-18
+
+Additional source mapping at donor commit `99c3305d163780de5ca39b493aefcde436acad5c`:
+
+| Stage | WinNative source | Findings relevant to NGR |
+|---|---|---|
+| Per-container settings | `runtime/container/Container.java` | JSON persists Wine layer, screen size, env vars, graphics driver/config, DX wrapper/config, audio driver, drives, emulator choices, Box64/FEX versions and presets, CPU lists, executable and args. Save uses atomic file writing. |
+| Container activation | `runtime/container/ContainerManager.java` | Switches a shared `xuser` path via a symlink to the active container. NGR must instead resolve every game to an isolated root/profile; do not reuse this global mutable activation mechanism. |
+| Launch orchestration | `runtime/display/XServerDisplayActivity.java` | Resolves shortcut overrides over container defaults; configures prefix, locale, DX wrapper, graphics driver, audio, env vars, vkBasalt effect loadout and Wayland env; then creates and configures the guest launcher component. |
+| Windows guest launcher | `runtime/display/environment/components/GuestProgramLauncherComponent.java` | Prepares Box64 or ARM64EC runtime files, runs prerequisite callbacks, prepares Wayland, builds host/guest environment, preloads input/network/audio shims and starts the process. Standard x86_64 path invokes `box64 <guest executable>`; ARM64EC invokes Wine directly and selects `HODLL` for FEXCore or WOWBox64. |
+| Linux/Proton session | `runtime/display/environment/components/LinuxProgramLauncherComponent.java`, `runtime/linux/LinuxProtons.kt` | Separate PRoot-based session path. Proton download verifies declared size and SHA-256; TAR extraction uses staging, canonical containment, constrained symlink targets, expected Wine ELF architecture and manifest checks before rename. This is a useful reference, not yet a proven reusable NGR installer. |
+| CPU settings | `runtime/compat/box64/Box64PresetManager.java`, `runtime/compat/fexcore/FEXCoreManager.java` | Box64 and FEXCore have separate presets/configuration. The launcher selects them according to Wine architecture and applies their environment separately. |
+| Graphics provider | `runtime/content/AdrenotoolsManager.java`, `runtime/system/GraphicsDriverCatalog.kt` | Driver selection writes `ADRENOTOOLS_DRIVER_PATH`, `ADRENOTOOLS_HOOKS_PATH` and `ADRENOTOOLS_DRIVER_NAME`; it falls back to system driver when selected package is missing. NGR must verify installed metadata and keep provider libraries isolated. |
+| Wayland | `runtime/display/wayland/WineWaylandSupport.java` | Capability is based on actual Wine `winewayland.so` and matching Wayland Turnip files, not merely a user preference. |
+| Effect compatibility | `runtime/reshade/ReshadeConfigWriter.java`, `ReshadeManager.java` | Important correction: the current implementation writes `vkBasalt.conf`, enables `ENABLE_VKBASALT` and `VKBASALT_CONFIG_FILE`, and stages ReShade-compatible `.fx` effects for vkBasalt. This is not proof of a ReShade Vulkan DLL injector. NGR should label this as vkBasalt/ReShade-effect compatibility until a separate DLL-injection path is demonstrated. |
+
+### NGR design consequences
+
+- Keep Wine compatibility launch and Linux/Proton PRoot launch as distinct backends; do not combine their environment assembly or lifecycle.
+- Store per-game overrides as structured typed data, then resolve them against a validated base profile at launch. Runtime-owned keys such as `PATH`, `HOME`, `PREFIX`, `LD_LIBRARY_PATH`, `LD_PRELOAD`, `VK_ICD_FILENAMES` and `ADRENOTOOLS_*` must not be user-overridable without an explicit privileged setting.
+- Select Box64 vs FEXCore/WOWBox64 from the verified Wine architecture and component compatibility, not from a free-form emulator string.
+- Probe the actual installed Wine and driver files before allowing Wayland.
+- Do not claim full ReShade injection support from the existing vkBasalt-based effect path.
