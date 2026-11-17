@@ -274,9 +274,12 @@ class NgrGamePackageBuilder(
                 if (offset < 0 || offset + 6 > raf.length()) return "unknown"
                 raf.seek(offset.toLong())
                 if (raf.read() != 0x50 || raf.read() != 0x45 || raf.read() != 0) return "unknown"
-                when (raf.read()) {
-                    0x86 -> if (raf.read() == 0x64) "x86_64" else "x86"
-                    0x64 -> if (raf.read() == 0xAA) "arm64" else "unknown"
+                val machineLow = raf.read()
+                val machineHigh = raf.read()
+                when {
+                    machineLow == 0x64 && machineHigh == 0x86 -> "x86_64"
+                    machineLow == 0x4c && machineHigh == 0x01 -> "x86"
+                    machineLow == 0x64 && machineHigh == 0xAA -> "arm64"
                     else -> "unknown"
                 }
             }
