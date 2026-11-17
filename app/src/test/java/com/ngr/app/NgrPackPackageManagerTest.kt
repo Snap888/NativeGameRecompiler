@@ -165,4 +165,45 @@ class NgrPackPackageManagerTest {
         }
     }
 
+
+    @Test fun invalidUpdatePreservesPreviouslyInstalledPackage() {
+        val base = createTempDir(prefix = "ngr-pm-rollback-")
+        val packages = File(base, "packages")
+        val first = createArchive("1.0", "known-good")
+        val invalidUpdate = createArchive("2.0", "tampered", declaredHash = sha256("expected"))
+        try {
+            val manager = NgrPackPackageManager(packages)
+            assertTrue(manager.install(first).success)
+            val update = manager.install(invalidUpdate)
+            assertFalse(update.success)
+            assertEquals("known-good", File(packages, "test.game/bin/game.so").readText())
+            assertEquals("1.0", manager.listInstalled().packages.single().version)
+        } finally {
+            first.delete()
+            invalidUpdate.delete()
+            base.deleteRecursively()
+        }
+    }
+
+    @Test fun restoresBackupWhenInterruptedBeforeNewPackageRename() {
+        val base = createTempDir(prefix = "ngr-pm-recovery-")
+        val packages = File(base, "packages")
+        val archive = createArchive("1.0", "recover-me")
+        try {
+            val manager = NgrPackPackageManager(packages)
+            assertTrue(manager.install(archive).success)
+            val installed = File(packages, "test.game")
+            val backup = File(packages, ".backup-test.game-interrupted")
+            Files.move(installed.toPath(), backup.toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+            val inventory = manager.listInstalled()
+            assertTrue(inventory.errors.joinToString(), inventory.errors.isEmpty())
+            assertEquals(1, inventory.packages.size)
+            assertEquals("recover-me", File(packages, "test.game/bin/game.so").readText())
+            assertFalse(backup.exists())
+        } finally {
+            archive.delete()
+            base.deleteRecursively()
+        }
+    }
+
 }
