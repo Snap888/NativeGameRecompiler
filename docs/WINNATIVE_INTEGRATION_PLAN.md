@@ -148,3 +148,14 @@ The donor's current component recipe installer is not a safe foundation for NGR'
 The ReShade catalog and effect scanner do not by themselves prove a working ReShade Vulkan injection path in the NGR runtime. Injection/activation remains blocked on a dedicated source and runtime audit.
 
 This audit is a bounded source mapping, not a complete audit of every launch call site, submodule, native dependency, binary provenance or license. No donor code or binary has been copied into NGR in this stage.
+
+
+## NGR component catalog and ZIP staging implementation — 2026-11-18
+
+The following first implementation now exists in NGR:
+- `NgrComponentCatalog.kt`: typed versioned metadata and provenance/ABI/dependency/conflict/path validation, including cycle detection.
+- `NgrComponentCatalogParser.kt`: bounded strict JSON parser; unknown fields and invalid types/enums are rejected.
+- `NgrComponentArchiveInstaller.kt`: ZIP-only component staging, bounded private snapshot, SHA-256 verification, shared archive inspection, path containment, file/total-size limits, create-new writes, executable-bit preservation and failed-stage cleanup.
+- `NgrPackArchiveInspector.EntryInfo` now exposes a validated executable bit from Unix ZIP mode metadata.
+
+The installer intentionally does not yet download, activate, load or execute components. TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout checks, atomic version promotion, rollback and uninstall remain future work. Do not advertise unsupported archive formats as installable yet.
