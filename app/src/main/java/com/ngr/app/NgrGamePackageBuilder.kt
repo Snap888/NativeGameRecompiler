@@ -195,7 +195,11 @@ class NgrGamePackageBuilder(
         val display = requestedName.trim().ifBlank { selected.first.substringAfterLast('/').substringBeforeLast('.') }
             .take(160)
         val safeName = display.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), "-").trim('-').take(80)
-        val packageId = "import.${safeName.ifBlank { "game" }}.${UUIDSuffix.next()}"
+        val identity = "${safeName.ifBlank { "game" }}|${selected.first.lowercase(Locale.ROOT)}"
+        val identityHash = MessageDigest.getInstance("SHA-256")
+            .digest(identity.toByteArray(Charsets.UTF_8))
+            .take(6).joinToString("") { "%02x".format(it) }
+        val packageId = "import.${safeName.ifBlank { "game" }}.$identityHash"
         val platform = selected.second!!
         val architecture = selected.third ?: "unknown"
 
@@ -332,7 +336,4 @@ class NgrGamePackageBuilder(
         })
     }
 
-    private object UUIDSuffix {
-        fun next(): String = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
-    }
 }
