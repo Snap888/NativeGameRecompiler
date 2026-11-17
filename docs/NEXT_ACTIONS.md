@@ -72,6 +72,6 @@ Mark complete only when evidence exists.
 
 ## Current CI gate — 2026-11-18
 - [x] Prior baseline commit `5969959ba40a2c7e75c6f625ca023b5e76e62198` passed Actions run #142 (`44180861281`).
-- [ ] Catalog model commit `492282799227bf424a619e9a3dc68112ed2b3323` — run #145 (`44181554144`) pending at last check.
-- [ ] Catalog test commit `38f64afef93eec3f87cc55b80a049664bd791f2b` — run #146 (`44181583098`) pending at last check.
-- [ ] Confirm green run #146 and `NGR-arm64-debug` artifact before sharing a new APK.
+- [x] Diagnosed runs #145 (`44181554144`) and #146 (`44181583098`): Kotlin compilation failed on invalid backslash/NUL escape literals; no APK was produced.
+- [x] Corrected path validation and added Windows-style traversal regression test (commits `94f0ccdc`, `ee33c008`, `f9b2b5bd`).
+- [ ] Verify corrected-code run #152 (`44181974186`) and latest documentation run #153 (`44182015525`); JVM tests, arm64 APK build and artifact upload must all pass before sharing a new APK.
