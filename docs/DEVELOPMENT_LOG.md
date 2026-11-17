@@ -286,3 +286,46 @@ This is the durable project memory. Update it in every development session.
 3. If root manifest is nested, repack the package with manifest at ZIP root; if no manifest is present, generate a valid manifest and SHA-256 inventory.
 4. If import still fails, inspect exported `ngr-runtime-log.txt` and the full on-screen error before changing archive compatibility.
 5. Continue backend ABI v1 loader only after the device-test feedback loop is stable.
+
+
+## Session 2026-11-17 — Folder and ordinary ZIP game import
+
+### User request
+- User asked to remove the need to manually provide `ngr-manifest.json` and support adding games either from a folder or an archive.
+- Decision: keep the manifest mandatory inside NGR's private package store, but generate it automatically for user-selected game folders and ordinary ZIP archives. Existing NGRPACK remains supported as the explicit prebuilt-package path.
+
+### Implementation committed
+- Added `NgrGamePackageBuilder.kt`:
+  - Copies a selected game folder into a bounded staging tree or inspects/extracts an ordinary ZIP.
+  - Unwraps a single top-level wrapper directory when present (e.g. `Lethal Company/`).
+  - Rejects traversal paths, symlinks/non-regular files, duplicate ZIP output paths and excessive file/entry/total sizes.
+  - Detects Windows PE executables and Linux ELF binaries; reads PE machine and ELF e_machine to identify common architectures.
+  - Generates an internal formatVersion 1 manifest, package ID, source platform/architecture, entryPoint, per-file SHA-256 inventory and provenance.
+  - Produces a temporary NGRPACK and hands it to the existing validated installer; it never executes imported code.
+- Updated ZIP inspector with an explicit `requireManifest=false` mode for ordinary ZIP validation. The default remains true, so NGRPACK validation behavior is unchanged.
+- Added Android SAF actions for selecting a folder tree and an ordinary ZIP, while retaining the NGRPACK picker.
+- Folder SAF copy is bounded by archive file count, per-file size and total payload size; unsafe names and case-colliding paths are rejected.
+- Added JVM tests for manifest-optional ZIP inspection, generated package from folder, wrapper-folder ZIP import, post-generation manifest/hash validation and missing-executable rejection.
+- Added AndroidX DocumentFile for SAF tree traversal.
+
+### CI findings
+- Initial builder CI run #97 failed at Kotlin compilation:
+  - unsupported backslash character-literal escaping;
+  - collection append compiled as reassignment.
+- Fixed the character-literal escaping and changed collection insertion to `files.add(file)`.
+- Added valid PE test fixture bytes and stricter PE signature validation; common architecture detection is based on PE machine / ELF e_machine.
+- Latest verification commit at log time: `0f3e20d810dbb6598a2da6695d3f7368ca940a24`; Actions run #102 is in progress. Do not claim this stage build-green until the run finishes successfully.
+
+### Current limitations
+- The builder selects a deterministic likely entry point automatically; a user-facing chooser for multiple executable candidates remains to be implemented.
+- Only ZIP and folders are supported in this stage. 7z/TAR are not implemented.
+- PE/ELF detection is classification only, not a runtime compatibility test.
+- NGR still has no integrated Windows x64 or Linux x86_64 game backend. Importing Lethal Company does not mean it can run on Android.
+- Imported files remain data-only; no payload is executed or loaded as a backend plugin.
+
+### Next actions
+1. Confirm JVM tests and arm64 APK build in the latest Actions run.
+2. Fix any further compile/test failures before distributing an APK.
+3. Device-test folder import and ordinary ZIP import with the user's Lethal Company archive.
+4. Add a candidate list and explicit primary executable selection when multiple PE/ELF files are found.
+5. Consider archive progress/cancellation and persistent import metadata after device validation.
