@@ -1,6 +1,6 @@
 package com.ngr.app
 
-import java.util.Locale
+import java.net.URI
 
 /**
  * Typed, untrusted component catalog metadata.
