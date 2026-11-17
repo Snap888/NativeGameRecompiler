@@ -691,3 +691,12 @@ This is the durable project memory. Update it in every development session.
 - Added codec tests for round-trip and invalid pins; resolver tests cover catalog mismatch, installed mismatch and missing installed-version metadata.
 - Commits: `e4a87dd1` model, `22bb69dd` codec, `9119e2d3` tests, `2257cd53` resolver, `31e28ed3` resolver tests, `25f31ed8` editor UI.
 - CI runs #252–#257 are pending/in progress at the time of this entry. No new APK is claimed for version-pin support until the latest code run passes all tests/build/artifact steps.
+
+
+### Downloader integration testability and resolver correctness
+- Added an injectable HTTPS connection factory to `NgrComponentDownloader` so redirects, status/headers, hash failures and streaming limits can be tested without external network dependencies.
+- Replaced the downloader's URL-only tests with deterministic fake-HTTPS connection tests for successful SHA-256-verified download, HTTPS redirect, downgrade rejection, hash mismatch cleanup and streaming size-limit cleanup.
+- Audit of `NgrComponentResolver` found that installed components were marked satisfied before their dependency graph was traversed. Corrected resolution so installed components must exist in catalog metadata, their dependencies/required components are still resolved, and pins are checked against supplied installed-version metadata.
+- Added resolver tests for installing a missing dependency of an already-installed component and rejecting installed IDs absent from catalog metadata.
+- Code/test commits: `0975c40b`, `baf17723`, `cdcb8583`, `647e272d`, `c5a969ff`.
+- CI runs #260–#264 cover these changes and remain pending/in progress at the time of this entry.
