@@ -3,7 +3,7 @@ package com.ngr.app
 import android.app.Activity
 import android.os.Bundle
 import android.view.InputDevice
-import android.view.InputManager
+import android.hardware.input.InputManager
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
