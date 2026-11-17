@@ -35,9 +35,9 @@ Mark complete only when evidence exists.
 - [ ] Audit ReShade injection, shader catalogs, presets and texture packages; distinguish catalog availability from runtime support.
 - [ ] Review GPL-3.0 and every transitive component license; confirm NGR licensing strategy before copying donor code.
 - [ ] Pin donor commit and create component provenance/SPDX inventory.
-- [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.\n- [ ] Add catalog JSON parser, schema fixture and dependency-cycle validation.
+- [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.\n- [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
 - [ ] Implement container profiles, Wine prefix lifecycle and global/per-game override schema.
-- [ ] Implement secure catalog download, bounded archive inspection, staged install, activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.\n- [ ] Add HTTPS downloader, TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
@@ -75,3 +75,9 @@ Mark complete only when evidence exists.
 - [x] Diagnosed runs #145 (`44181554144`) and #146 (`44181583098`): Kotlin compilation failed on invalid backslash/NUL escape literals; no APK was produced.
 - [x] Corrected path validation and added Windows-style traversal regression test (commits `94f0ccdc`, `ee33c008`, `f9b2b5bd`).
 - [ ] Verify corrected-code run #152 (`44181974186`) and latest documentation run #153 (`44182015525`); JVM tests, arm64 APK build and artifact upload must all pass before sharing a new APK.
+
+
+## Environment Manager CI checkpoint — 2026-11-18
+- [x] Run #155 (`44184022132`) for catalog URI import correction: JVM tests, ARM64 APK build and artifact upload succeeded.
+- [x] Run #166 (`44184560868`) at commit `ca08211817af5f0a8ed7fc5216bd395c7140faad`: JVM tests, ARM64 APK build and artifact upload succeeded. Artifact `NGR-arm64-debug`, ID `14374685465`, SHA-256 `3191e73181fec3bc57c3db651cc37b1d353bbbb61dc2daebf278725dce154408`.
+- [ ] Verify later commits adding private archive snapshotting and executable-bit preservation, plus the latest regression tests. Do not treat artifact from #166 as containing those later changes.
