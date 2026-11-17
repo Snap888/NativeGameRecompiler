@@ -243,3 +243,11 @@ This is the durable project memory. Update it in every development session.
 4. Implement serialized lifecycle and cancellation semantics, including waiting for start to return before destroy.
 5. Add tests for ABI mismatch, truncated structs, missing callbacks, invalid strings, file-handle boundaries and stop/destroy ordering.
 6. Keep plugin ABI capability planned until loader and conformance tests pass.
+
+
+### Final ABI/native validation update
+- Commit `d4799d8c0ca0deed9395fa58bedc75fbea0d39ca`: zero-initialize Vulkan application/instance create structs and assign `sType` explicitly, removing the existing missing-field-initializer warnings.
+- CI run #71 [44162883678](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162883678) passed JVM unit tests, C/C++ native build, arm64-v8a APK build and artifact upload.
+- Artifact: `NGR-arm64-debug`, ID `14364007052`, size 1,301,432 bytes, archive SHA-256 `caeb05249b81f9543cd9868601419e59ce14deec5c41c647ac6680a26af261fc`.
+- The ABI v1 header is C- and C++-compile-checked; this is not evidence of a functioning loader. Plugin ABI capability remains planned.
+- No physical Android device test has been completed.
