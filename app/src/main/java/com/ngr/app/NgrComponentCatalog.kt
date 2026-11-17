@@ -107,9 +107,9 @@ data class NgrComponentCatalog(
 
         private fun isSafeRelativePath(value: String): Boolean {
             if (value.isBlank() || value.length > 512 || value.startsWith("/") ||
-            if (value.isBlank() || value.length > 512 || value.startsWith("/") ||
                 value.startsWith("\\") || value.contains('\\') || value.contains(':') ||
                 value.contains(0.toChar())) return false
+            val segments = value.split('/')
             return segments.all { it.isNotBlank() && it != "." && it != ".." }
         }
     }
