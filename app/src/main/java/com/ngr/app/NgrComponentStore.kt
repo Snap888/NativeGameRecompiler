@@ -31,6 +31,29 @@ class NgrComponentStore(private val privateRoot: File) {
             require(!Files.isSymbolicLink(it.toPath())) { "Staging directory must not be a symbolic link" }
         }
     }
+    fun downloadDirectory(): File {
+        ensurePrivateRoot()
+        return File(privateRoot, DOWNLOAD_DIRECTORY).also {
+            Files.createDirectories(it.toPath())
+            require(!Files.isSymbolicLink(it.toPath())) { "Download directory must not be a symbolic link" }
+        }
+    }
+
+    fun discardStagingDirectory(stagedDirectory: File): Boolean {
+        return try {
+            val stagingRoot = stagingDirectory().canonicalFile
+            val staged = stagedDirectory.canonicalFile
+            require(staged.parentFile == stagingRoot && staged.isDirectory &&
+                !Files.isSymbolicLink(stagedDirectory.toPath())) {
+                "Staged component must be a direct child of the private staging directory"
+            }
+            validateTree(staged.toPath())
+            deleteTree(staged.toPath())
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     fun installAndActivate(
         component: NgrComponentCatalog.Component,
@@ -259,6 +282,7 @@ class NgrComponentStore(private val privateRoot: File) {
 
     companion object {
         private const val STAGING_DIRECTORY = "staging"
+        private const val DOWNLOAD_DIRECTORY = "downloads"
         private const val COMPONENTS_DIRECTORY = "components"
         private const val VERSIONS_DIRECTORY = "versions"
         private const val STATE_FILE = "active-state"
