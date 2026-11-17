@@ -102,7 +102,7 @@ object NgrPackArchiveInspector {
                         errors += "Unsafe ZIP entry path: $rawName"
                         continue
                     }
-                    val normalized = pathCandidate.replace('\\\\', '/')
+                    val normalized = pathCandidate.replace('\\', '/')
                     val collisionKey = normalized.lowercase(Locale.ROOT)
                     if (!seen.add(collisionKey)) errors += "Duplicate or case-colliding ZIP path: $normalized"
 
@@ -158,9 +158,9 @@ object NgrPackArchiveInspector {
     }
 
     private fun isSafePath(path: String, maxLength: Int): Boolean {
-        if (path.isBlank() || path.length > maxLength || path.startsWith("/") || path.startsWith("\\\\")) return false
+        if (path.isBlank() || path.length > maxLength || path.startsWith("/") || path.startsWith("\\")) return false
         if (path.contains('\u0000') || path.contains(':')) return false
-        val normalized = path.replace('\\\\', '/')
+        val normalized = path.replace('\\', '/')
         return normalized.split('/').none { it.isBlank() || it == "." || it == ".." }
     }
 
