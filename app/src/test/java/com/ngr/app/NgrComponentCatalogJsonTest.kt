@@ -62,6 +62,14 @@ class NgrComponentCatalogJsonTest {
         assertParseFails(invalid, "Duplicate array item")
     }
 
+
+    @Test fun rejectsCoercedBooleanAndWrongConstraintsType() {
+        val stringBoolean = validJson().replace("\"requiresVulkan\": true", "\"requiresVulkan\": \"true\"")
+        assertParseFails(stringBoolean, "requiresVulkan must be a boolean")
+        val wrongObject = validJson().replace("\"constraints\": {", "\"constraints\": \"not-an-object\"")
+        assertParseFails(wrongObject, "constraints must be an object")
+    }
+
     private fun assertParseFails(json: String, message: String) {
         try {
             NgrComponentCatalogJson.parse(json)
