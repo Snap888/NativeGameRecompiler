@@ -57,6 +57,7 @@ class NgrPackPackageManager(
 
     @Synchronized
     fun install(archive: File): OperationResult {
+        NgrLogger.info("package.manager", "Install started; archive=${archive.name}; bytes=${archive.length()}")
         val recoveryErrors = mutableListOf<String>()
         val root = try { prepareRoot(recoveryErrors) }
         catch (e: Exception) { return OperationResult(false, "Package storage is unavailable", errors = listOf(e.message ?: "storage error")) }
@@ -67,7 +68,9 @@ class NgrPackPackageManager(
         var staging: Path? = null
         try {
             copyArchiveToPrivateStorage(archive, incoming)
+            NgrLogger.info("package.manager", "Archive copied to private incoming path; bytes=${Files.size(incoming)}")
             val inspected = NgrPackArchiveInspector.inspect(incoming.toFile(), limits)
+            NgrLogger.info("package.manager", "Archive inspection valid=${inspected.valid}; entries=${inspected.entries.size}; uncompressed=${inspected.totalUncompressedBytes}; errors=${inspected.errors.joinToString(" | ")}")
             if (!inspected.valid) return OperationResult(false, "NGRPACK inspection failed", errors = inspected.errors)
             val manifestText = inspected.manifestText
                 ?: return OperationResult(false, "NGRPACK manifest is missing", errors = listOf("Root ngr-manifest.json is required"))
@@ -78,8 +81,11 @@ class NgrPackPackageManager(
             if (!packageIdPattern.matches(packageId))
                 return OperationResult(false, "NGRPACK packageId is invalid", errors = listOf("packageId is not a safe package identifier"))
 
+            NgrLogger.info("package.manager", "Manifest accepted; packageId=$packageId")
             staging = Files.createTempDirectory(root, ".staging-$token-")
+            NgrLogger.info("package.manager", "Extraction started into private staging directory")
             extractBounded(incoming, staging)
+            NgrLogger.info("package.manager", "Extraction complete; validating manifest and payload hashes")
             val extractedManifest = staging.resolve(MANIFEST_NAME)
             if (!Files.isRegularFile(extractedManifest, LinkOption.NOFOLLOW_LINKS))
                 return OperationResult(false, "Extracted manifest is missing", errors = listOf("Root ngr-manifest.json was not extracted"))
@@ -125,8 +131,10 @@ class NgrPackPackageManager(
 
             val installed = readPackageInfo(destination.toFile(), verifyHashes = false)
                 ?: return OperationResult(false, "Installed package could not be re-opened", errors = listOf("Post-install metadata validation failed"))
+            NgrLogger.info("package.manager", "Install committed; packageId=${installed.packageId}; version=${installed.version}")
             return OperationResult(true, "Package installed", installed)
         } catch (e: Exception) {
+            NgrLogger.error("package.manager", "Package installation failed", e)
             return OperationResult(false, "Package installation failed", errors = listOf(e.message ?: e.javaClass.simpleName))
         } finally {
             try { deleteTree(incoming) } catch (_: Exception) { }
@@ -136,6 +144,7 @@ class NgrPackPackageManager(
 
     @Synchronized
     fun listInstalled(): InventoryResult {
+        NgrLogger.info("package.manager", "Inventory scan started")
         val errors = mutableListOf<String>()
         val root = try { prepareRoot(errors) }
         catch (e: Exception) { return InventoryResult(emptyList(), listOf(e.message ?: "storage error")) }
@@ -162,6 +171,7 @@ class NgrPackPackageManager(
 
     @Synchronized
     fun remove(packageId: String): OperationResult {
+        NgrLogger.info("package.manager", "Removal started; packageId=$packageId")
         if (!packageIdPattern.matches(packageId)) return OperationResult(false, "Invalid package ID", errors = listOf("Unsafe package identifier"))
         val errors = mutableListOf<String>()
         val root = try { prepareRoot(errors) }
@@ -180,8 +190,10 @@ class NgrPackPackageManager(
             try { deleteTree(tombstone) } catch (e: Exception) {
                 return OperationResult(true, "Package removed; cleanup will be retried", info)
             }
+            NgrLogger.info("package.manager", "Removal committed; packageId=$packageId")
             OperationResult(true, "Package removed", info)
         } catch (e: Exception) {
+            NgrLogger.error("package.manager", "Package removal failed; packageId=$packageId", e)
             OperationResult(false, "Package removal failed", errors = listOf(e.message ?: "remove error"))
         }
     }
