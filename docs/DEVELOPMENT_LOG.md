@@ -550,3 +550,43 @@ This is the durable project memory. Update it in every development session.
 - Added a regression test for Windows-style traversal paths.
 - Fix commits: `94f0ccdc11052ec90d4febe7595d09fe426089f6`, `ee33c0084849700e590d33f016052dacf7bc06a0`, and test `f9b2b5bd6b6247864355d2d3f2b0cfa458af6dc9`.
 - Runs for the corrected commits were queued/in progress at the time of this note. The catalog feature remains CI-unverified until the latest run passes JVM tests and APK packaging.
+
+
+## Session continuation — catalog parser and secure ZIP component staging (2026-11-18)
+
+### CI findings and fixes
+- Run #155 (`44184022132`) passed after restoring the missing `java.net.URI` import. JVM tests, ARM64 debug APK and artifact upload all succeeded.
+- Run #166 (`44184560868`) passed at `ca08211817af5f0a8ed7fc5216bd395c7140faad`. JVM tests, ARM64 debug APK and artifact upload all succeeded. Artifact ID `14374685465`, SHA-256 `3191e73181fec3bc57c3db651cc37b1d353bbbb61dc2daebf278725dce154408`.
+- Intermediate failures #157, #159, #160 and #161 were caused by a test assertion comparing `List<Int>` with `List<Byte>`; the implementation's extraction counts and file output were otherwise successful. Corrected the test to compare `List<Byte>` in commit `ca082118`.
+- Run #166 predates the later snapshot/execute-bit hardening. Do not claim its APK contains the later changes.
+
+### Catalog parser and dependency graph
+- Added `NgrComponentCatalogParser.kt`: bounded JSON input, strict root/component/constraint keys, enum validation, typed arrays/booleans, optional field handling and post-parse catalog validation.
+- Schema version must be an integer; unknown fields and invalid enum values are rejected.
+- Added parser tests for valid input, unknown keys, invalid enum/boolean types, oversized JSON and non-integer schema versions.
+- Catalog validation now uses Kahn's topological algorithm to reject dependency cycles; added a cycle regression test.
+
+### Component ZIP staging installer
+- Added `NgrComponentArchiveInstaller.kt`, initially ZIP-only.
+- Before inspection/extraction, copies the input into a bounded app-private snapshot; SHA-256, central-directory inspection and extraction all operate on that same snapshot to avoid validation/extraction TOCTOU against a mutable input file.
+- Reuses `NgrPackArchiveInspector` with component-specific entry/file/total-size/compression-ratio limits; no NGRPACK manifest is required for component archives.
+- Extracts only into a newly created staging directory, enforces canonical containment, rejects duplicate targets and size mismatches, uses create-new output files, syncs writes, removes failed staging trees and deletes the private snapshot.
+- Catalog ZIP Unix mode metadata now exposes the executable bit; the extractor preserves owner-executable permission for validated regular files. Symlinks and special files remain rejected by the shared inspector.
+- Installer validates component ID and relative install subdirectory before using them.
+- Added tests for valid extraction, hash mismatch, Zip Slip, unsupported formats, unsafe install paths and executable-bit preservation.
+- This does not yet download components, parse TAR variants, validate component-specific expected layouts, activate a version, or implement rollback/uninstall. Extracted staging output is not loaded or executed.
+
+### Current CI gate
+- Successful checkpoint #166: `ca08211817af5f0a8ed7fc5216bd395c7140faad`.
+- Later hardening commits: `b821af83`, `75139b96`, `b803e8e8`, `d1b6436e`, `e3cc8ca9`, `2d4dd105`.
+- Latest test fix and subsequent snapshot/executable-mode changes have new Actions runs queued/in progress. Confirm the latest main commit's JVM tests, ARM64 APK build and artifact upload before issuing a new APK.
+- The donor-source audit and component security design remain bounded; no WinNative runtime binary or donor code has been copied into NGR.
+
+### Next actions
+1. Verify latest CI after private snapshotting and executable-mode preservation; fix all test/build failures.
+2. Add a trusted component catalog fixture and dependency-resolution plan output (download/install order, conflicts and ABI gates).
+3. Implement HTTPS download with redirect policy, timeouts, bounded streaming and SHA-256 before extraction.
+4. Add safe TAR.GZ/TAR.XZ/TAR.ZSTD handlers only with audited decompression libraries; otherwise reject those formats explicitly.
+5. Validate component-specific expected layout and required files before atomic promotion.
+6. Implement per-version install store, activation pointer, rollback and uninstall without touching Android system Vulkan.
+7. Continue exact WinNative launch-pipeline and license/provenance audit before porting runtime binaries or source.
