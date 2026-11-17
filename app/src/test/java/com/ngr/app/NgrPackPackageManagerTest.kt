@@ -206,4 +206,25 @@ class NgrPackPackageManagerTest {
         }
     }
 
+
+    @Test fun listsAndSafelyRemovesCorruptPackageDirectory() {
+        val base = createTempDir(prefix = "ngr-pm-corrupt-")
+        val packages = File(base, "packages")
+        val archive = createArchive("1.0", "hello")
+        try {
+            val manager = NgrPackPackageManager(packages)
+            assertTrue(manager.install(archive).success)
+            File(packages, "test.game/unlisted.bin").writeText("corrupt extra data")
+            val inventory = manager.listInstalled()
+            assertTrue(inventory.packages.isEmpty())
+            assertTrue(inventory.invalidPackageIds.contains("test.game"))
+            val removed = manager.remove("test.game")
+            assertTrue(removed.message, removed.success)
+            assertFalse(File(packages, "test.game").exists())
+        } finally {
+            archive.delete()
+            base.deleteRecursively()
+        }
+    }
+
 }
