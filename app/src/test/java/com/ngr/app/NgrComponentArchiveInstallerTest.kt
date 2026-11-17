@@ -2,6 +2,7 @@ package com.ngr.app
 
 import java.io.File
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -122,4 +123,41 @@ class NgrComponentArchiveInstallerTest {
             parent.deleteRecursively()
         }
     }
+    @Test fun preservesExecutableBitFromUnixZipMetadata() {
+        val archive = archive(listOf("bin/runner" to byteArrayOf(0x7F, 0x45, 0x4C, 0x46)))
+        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        try {
+            RandomAccessFile(archive, "rw").use { raf ->
+                val bytes = ByteArray(raf.length().toInt())
+                raf.seek(0)
+                raf.readFully(bytes)
+                var patched = false
+                for (i in 0..bytes.size - 46) {
+                    if ((bytes[i].toInt() and 0xFF) == 0x50 &&
+                        (bytes[i + 1].toInt() and 0xFF) == 0x4B &&
+                        (bytes[i + 2].toInt() and 0xFF) == 0x01 &&
+                        (bytes[i + 3].toInt() and 0xFF) == 0x02) {
+                        val nameLength = (bytes[i + 28].toInt() and 0xFF) or ((bytes[i + 29].toInt() and 0xFF) shl 8)
+                        val name = String(bytes, i + 46, nameLength, Charsets.UTF_8)
+                        if (name == "bin/runner") {
+                            raf.seek((i + 4).toLong())
+                            raf.write(byteArrayOf(0x14, 0x03))
+                            raf.seek((i + 38).toLong())
+                            raf.write(byteArrayOf(0, 0, 0xED.toByte(), 0x81.toByte()))
+                            patched = true
+                            break
+                        }
+                    }
+                }
+                assertTrue("test ZIP central entry was not patched", patched)
+            }
+            val result = NgrComponentArchiveInstaller.extractZip(archive, component(sha256(archive)), parent)
+            assertTrue(result.error ?: "extraction failed", result.success)
+            assertTrue(result.stagingDirectory!!.resolve("bin/runner").canExecute())
+        } finally {
+            archive.delete()
+            parent.deleteRecursively()
+        }
+    }
+
 }
