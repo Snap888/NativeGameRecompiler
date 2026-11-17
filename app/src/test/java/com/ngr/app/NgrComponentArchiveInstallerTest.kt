@@ -105,4 +105,21 @@ class NgrComponentArchiveInstallerTest {
             parent.deleteRecursively()
         }
     }
+    @Test fun rejectsUnsafeComponentInstallSubdirectory() {
+        val archive = archive(listOf("payload" to byteArrayOf(1)))
+        val parent = createTempDir(prefix = "ngr-stage-parent-")
+        try {
+            val result = NgrComponentArchiveInstaller.extractZip(
+                archive,
+                component(sha256(archive)).copy(installSubdirectory = "../../outside"),
+                parent
+            )
+            assertFalse(result.success)
+            assertTrue(result.error.orEmpty().contains("install subdirectory is unsafe"))
+            assertEquals(0, parent.listFiles()?.size ?: 0)
+        } finally {
+            archive.delete()
+            parent.deleteRecursively()
+        }
+    }
 }
