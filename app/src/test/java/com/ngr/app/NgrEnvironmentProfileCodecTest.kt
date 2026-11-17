@@ -27,6 +27,7 @@ class NgrEnvironmentProfileCodecTest {
         desktopHeight = 1080,
         dpi = 120,
         environmentVariables = mapOf("DXVK_HUD" to "fps", "WINEDEBUG" to "-all"),
+        componentVersions = mapOf("wine-stable" to "9.0.1", "box64-stable" to "0.3.2"),
         gameOverrides = mapOf(
             "lethal-company" to NgrEnvironmentProfile.NgrGameEnvironmentOverride(
                 dxvkComponentId = "dxvk-async",
@@ -52,6 +53,12 @@ class NgrEnvironmentProfileCodecTest {
             ?.message.orEmpty().contains("dpi must be an integer"))
     }
 
+    @Test fun rejectsInvalidComponentVersionPins() {
+        val invalidId = profile().copy(componentVersions = mapOf("../box64" to "0.3.2"))
+        assertFalse(runCatching { NgrEnvironmentProfileCodec.encode(invalidId) }.isSuccess)
+        val invalidVersion = profile().copy(componentVersions = mapOf("box64" to "../latest"))
+        assertFalse(runCatching { NgrEnvironmentProfileCodec.encode(invalidVersion) }.isSuccess)
+    }
     @Test fun rejectsOversizedAndInvalidProfiles() {
         val oversized = " ".repeat(NgrEnvironmentProfileCodec.MAX_PROFILE_BYTES + 1)
         assertTrue(runCatching { NgrEnvironmentProfileCodec.decode(oversized) }.exceptionOrNull()
