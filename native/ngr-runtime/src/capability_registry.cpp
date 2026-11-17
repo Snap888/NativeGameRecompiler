@@ -1,0 +1,26 @@
+#include "ngr/capability_registry.hpp"
+#include <sstream>
+namespace ngr {
+const std::vector<Capability>& capabilities() {
+ static const std::vector<Capability> items{
+  {"host.android.arm64","available","Android ARM64 host is the only configured target"},
+  {"graphics.vulkan.enumeration","available","Physical-device enumeration through system Vulkan loader"},
+  {"input.android.gamepad-discovery","available","Android gamepad and joystick discovery"},
+  {"package.ngrpack.validation","in-progress","Manifest and payload validation is being implemented"},
+  {"backend.n64recomp","planned","Static recompilation proof of concept; not integrated"},
+  {"backend.fex","planned","Dynamic Linux x86-64 translation; not integrated"},
+  {"backend.box64","planned","Dynamic Linux x86-64 translation; not integrated"},
+  {"graphics.turnip-provider","planned","Isolated Adreno Vulkan provider; not integrated"},
+  {"graphics.dxvk","planned","D3D8-11 translation layer; not integrated"},
+  {"graphics.vkd3d-proton","planned","D3D12 translation layer; not integrated"},
+  {"audio.oboe","planned","Android low-latency audio backend; not integrated"}
+ };
+ return items;
+}
+std::string capability_report() {
+ std::ostringstream out;
+ for (const auto& item : capabilities())
+  out << item.id << " [" << item.state << "] — " << item.detail << "\n";
+ return out.str();
+}
+}
