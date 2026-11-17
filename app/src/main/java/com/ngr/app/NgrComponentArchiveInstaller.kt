@@ -56,10 +56,11 @@ object NgrComponentArchiveInstaller {
         var staging: File? = null
         try {
             // Work from an app-private snapshot so validation and extraction see identical bytes.
-            snapshot = File.createTempFile("ngr-${component.id}-", ".zip", stagingParent)
+            val snapshotFile = File.createTempFile("ngr-${component.id}-", ".zip", stagingParent)
+            snapshot = snapshotFile
             var copiedBytes = 0L
             FileInputStream(archive).use { input ->
-                FileOutputStream(snapshot, false).use { output ->
+                FileOutputStream(snapshotFile, false).use { output ->
                     val buffer = ByteArray(64 * 1024)
                     while (true) {
                         val count = input.read(buffer)
@@ -75,7 +76,7 @@ object NgrComponentArchiveInstaller {
             }
             if (copiedBytes <= 0L) return Result(false, error = "Component archive is empty")
             val expectedHash = component.sha256.lowercase()
-            if (sha256(snapshot, limits.maxArchiveBytes) != expectedHash) {
+            if (sha256(snapshotFile, limits.maxArchiveBytes) != expectedHash) {
                 return Result(false, error = "Component archive SHA-256 mismatch")
             }
 
@@ -91,15 +92,15 @@ object NgrComponentArchiveInstaller {
             val inspection = NgrPackArchiveInspector.inspect(snapshot, inspectionLimits, requireManifest = false)
             if (!inspection.valid) return Result(false, error = inspection.errors.joinToString("; "))
 
-            staging = File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
+            val root = File.createTempFile("ngr-${component.id}-", ".stage", stagingParent).also {
                 if (!it.delete() || !it.mkdir()) throw IllegalStateException("Unable to create staging directory")
             }
-            val root = staging
+            staging = root
             val rootCanonical = root.canonicalFile
             var files = 0
             var totalBytes = 0L
 
-            ZipFile(snapshot).use { zip ->
+            ZipFile(snapshotFile).use { zip ->
                 val entries = zip.entries()
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
