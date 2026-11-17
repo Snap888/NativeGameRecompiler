@@ -37,3 +37,10 @@ The Kotlin validator checks an already-extracted package directory. A separate r
 - Produce actionable diagnostics and isolate backend failures where practical.
 - Do not distribute copyrighted ROMs, BIOS images, proprietary keys or game assets.
 - CI publishes artifacts only after successful tests and builds.
+
+
+## Backend plugin ABI v1
+
+The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h` and is currently ABI 1.0. It is for trusted execution backends only. The exported entry point is `ngr_backend_get_api_v1`; versioned structs use `struct_size`, API tables carry major/minor versions, and strings use explicit UTF-8 pointer/length views. The host API exposes bounded logging, package-handle-relative file access and monotonic time. The lifecycle table defines probe/create/load/start/request_stop/destroy.
+
+N64Recomp is treated as a build-time compiler, not as a runtime execution plugin. Graphics-provider and compiler APIs require separate contracts. The header is compiled as both C and C++ by the Android native build, but the host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The plugin ABI capability therefore remains planned. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation are implemented.
