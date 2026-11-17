@@ -30,6 +30,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(status)
         root.addView(TextView(this).apply { text = "\nVulkan devices"; textSize = 18f })
         root.addView(TextView(this).apply { text = nativeVulkanProbe(); textSize = 13f })
+        root.addView(TextView(this).apply { text = "\nRuntime capabilities"; textSize = 18f })
+        root.addView(TextView(this).apply { text = nativeCapabilityReport(); textSize = 12f })
         root.addView(TextView(this).apply { text = "\nInput devices"; textSize = 18f })
         devices = TextView(this).apply { textSize = 14f }
         root.addView(devices)
