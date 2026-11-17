@@ -32,7 +32,7 @@ object NgrLogger {
     fun info(category: String, message: String) = write("INFO", category, message)
     fun warn(category: String, message: String) = write("WARN", category, message)
     fun error(category: String, message: String, error: Throwable? = null) {
-        val details = if (error == null) message else "$message: \${error.javaClass.simpleName}: \${error.message}\\n" +
+        val details = if (error == null) message else "$message: \${error.javaClass.simpleName}: \${error.message}\n" +
             error.stackTraceToString().take(8_000)
         write("ERROR", category, details)
     }
@@ -65,7 +65,7 @@ object NgrLogger {
         val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date())
-        val line = "$timestamp $level/$safeCategory [\${Thread.currentThread().name}] \${message.replace("\\r", "").take(MAX_LINE)}\\n"
+        val line = "$timestamp $level/$safeCategory [\${Thread.currentThread().name}] \${message.replace("\\r", "").take(MAX_LINE)}\n"
         when (level) {
             "ERROR" -> Log.e(TAG, line.trimEnd())
             "WARN" -> Log.w(TAG, line.trimEnd())
