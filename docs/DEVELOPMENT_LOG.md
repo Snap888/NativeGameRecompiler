@@ -78,3 +78,45 @@ This is the durable project memory. Update it in every development session.
 1. Inspect the Actions run triggered by commit `eef1bfecab9d50e8cff0812be72be03e3153c33f`.
 2. If Kotlin compilation passes, inspect JVM test results and continue through CMake/NDK APK build.
 3. Only after green CI, download and verify the `NGR-arm64-debug` artifact.
+
+
+## Session 2026-11-17 — Stage 2 green; NGRPACK inspection started
+
+### Verified Stage 2 CI
+- Latest fully successful Stage 2 build before archive-inspector work: [Actions run 44159630877](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44159630877), run #38, commit `9e320b49891222eaa325bef382fcefee3a772684`.
+- Confirmed all steps passed: Android SDK setup, NDK/CMake install, Gradle setup, JVM unit tests, arm64-v8a debug APK build and artifact upload.
+- Artifact: `NGR-arm64-debug`, ID `14363545555`, size 1,268,161 bytes, SHA-256 `b72af12f866abb9539e157c55c5b5b9c5ee07d5b2392ed63745afb5293ab2ec9`.
+- Device installation, Vulkan runtime probe and physical gamepad hotplug remain untested.
+
+### Manifest validator hardening
+- Commit `75a4e3c8585a8d6e844afea8b3327a2903677c58`: strict schema-property/type checks, manifest size limit, display-name/path limits, maximum file count, per-file and total payload size limits, normalized path collision detection, no-follow regular-file checks and package-root symlink rejection.
+- Commit `f87405b131310ca806560d874c26278db120b3c6`: corrected Kotlin escape literals in path normalization.
+- Commit `a99660f536a73bab6c56bd6a71e79727e61110dd`: added schema parity, display-name limit and slash/backslash duplicate-path regression tests.
+- Commit `9e320b49891222eaa325bef382fcefee3a772684`: JSON Schema now expresses entry point/path max length and files min/max count.
+- Run #37 (commit a99660f) succeeded, confirming validator regression tests and APK build.
+- Run #38 (commit 9e320b4) succeeded, confirming schema-aligned validator and APK build.
+
+### NGRPACK archive inspection implementation
+- Commit `58a684b24f103b7e551baf28229053617d0bc976`: introduced read-only `NgrPackArchiveInspector`.
+- Commit `2b62e95bf82f9987611524a8ea8a26a0e2f85eaa`: corrected ZIP path escape literals after CI run #39 found unsupported Kotlin escape sequences in the earlier commit.
+- Commit `1740619083481550faacc9117c429ff0c925250d`: added archive tests for valid ZIP, ZIP Slip, case-colliding names, compression ratio, Unix symlink metadata and entry-count limits.
+- Commit `5a4b0fa34153a40b8317534238ac875b89c380e1`: changed compression-ratio comparison to an exact multiplication bound.
+- Inspector checks central-directory structure, rejects multi-disk/ZIP64/encrypted/unsupported-method entries, rejects Unix symlinks and special file types, rejects unsafe/duplicate/case-colliding paths, enforces entry/path/manifest/per-file/total-size/compression-ratio limits, and reads only a bounded root `ngr-manifest.json`.
+- The inspector is read-only: it does not extract, install, verify payload hashes against extracted files, or execute anything.
+- CI run #39 [44159792179](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44159792179) failed at Kotlin compilation because it tested the initial inspector commit with invalid escape literals. The correction is in commit 2b62e95; runs #40–#42 must be inspected to confirm the corrected source and the new archive tests.
+- Do not claim the archive inspector is build-verified until a run containing commit 5a4b0fa or later is green.
+
+### Remaining risks / next steps
+1. Verify latest CI for commit 5a4b0fa, especially `NgrPackArchiveInspectorTest`.
+2. Fix any compile/test failures before adding extraction.
+3. Add central-directory/local-header consistency and malformed-name tests if needed.
+4. Implement bounded extraction to a private staging directory; create files with CREATE_NEW, reject existing symlink parents and verify actual streamed bytes against limits.
+5. Run full manifest SHA-256 validation after extraction.
+6. Implement atomic install/replace with rollback and crash cleanup.
+7. Keep unsigned development packages non-executable by default; define signed release trust policy before payload execution.
+
+### Architecture / safety decisions
+- NGRPACK inspection is a separate read-only phase; extraction/install is a later phase.
+- Do not trust ZIP metadata alone: extraction must count actual streamed bytes and re-check file paths.
+- No payload execution during inspect/install.
+- ZIP64 and multi-disk archives are intentionally rejected in this first bounded implementation rather than partially supported.
