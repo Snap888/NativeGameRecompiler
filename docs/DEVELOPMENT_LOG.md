@@ -664,3 +664,9 @@ This is the durable project memory. Update it in every development session.
 - Catalog dependency-cycle detection now includes both explicit `dependencies` and `constraints.requiredComponents`; added regression coverage for a cycle formed through required-component constraints. Also reject a component that both requires and forbids the same component, or requires a component it declares as a conflict, and validate the minimum NGR version field length.
 - Commits: `16ee463e` (constraint graph validation), `7d6ec05d` (required-component cycle test), `2f7be573` and `1dc58268` (duplicate parser removal).
 - Runs #241–#243 and subsequent latest-main CI must be checked; do not use the earlier green APK artifacts as proof of this exact latest source.
+
+
+### Follow-up CI failures and fixes
+- Runs #239 (`44190109701`) and #240 (`44190235891`) failed because the temporary duplicate-parser test asserted an error message from the duplicate decoder; that decoder and its test suite have been removed in favor of `NgrComponentCatalogParser`.
+- Run #241 (`44190262305`) failed compiling the new required-component-cycle test because the catalog constructor was called positionally with schemaVersion first. Corrected the test to use named arguments in commit `b7563d5948e598a4af2705adab2a2028afe3ce53`.
+- Verify the parser cleanup and cycle test fixes in the newest CI before treating catalog validation as green.
