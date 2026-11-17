@@ -60,4 +60,17 @@ class NgrEnvironmentProfileCodecTest {
         val invalid = profile().copy(environmentVariables = mapOf("PATH" to "/tmp"))
         assertFalse(runCatching { NgrEnvironmentProfileCodec.encode(invalid) }.isSuccess)
     }
+    @Test fun roundTripsArm64EcFexCoreAndUnixLibraries() {
+        val arm64ec = NgrEnvironmentProfile(
+            profileId = "arm64ec",
+            displayName = "ARM64EC Wine",
+            containerMode = NgrEnvironmentProfile.ContainerMode.ARM64EC,
+            wineLayerId = "wine-arm64ec",
+            cpuTranslator = NgrEnvironmentProfile.CpuTranslator.FEXCORE,
+            fexCoreComponentId = "fexcore",
+            fexUnixLibsComponentId = "fex-unixlibs",
+            wowBox64ComponentId = "wowbox64"
+        )
+        assertEquals(arm64ec, NgrEnvironmentProfileCodec.decode(NgrEnvironmentProfileCodec.encode(arm64ec)))
+    }
 }
