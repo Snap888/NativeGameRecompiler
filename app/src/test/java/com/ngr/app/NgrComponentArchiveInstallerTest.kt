@@ -51,7 +51,7 @@ class NgrComponentArchiveInstallerTest {
             assertTrue(result.error ?: "extraction failed", result.success)
             assertEquals(2, result.extractedFiles)
             assertEquals(5L, result.extractedBytes)
-            assertEquals(listOf(1, 2, 3), result.stagingDirectory!!.resolve("x64/d3d11.dll").readBytes().toList())
+            assertEquals(listOf<Byte>(1, 2, 3), result.stagingDirectory!!.resolve("x64/d3d11.dll").readBytes().toList())
             assertTrue(result.stagingDirectory.resolve("x64/dxgi.dll").isFile)
         } finally {
             archive.delete()
