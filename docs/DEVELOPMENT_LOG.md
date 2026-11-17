@@ -356,3 +356,28 @@ This is the durable project memory. Update it in every development session.
 - Artifact: `NGR-arm64-debug`, ID `14366828932`, size 1,335,715 bytes, SHA-256 `59b2916d8257869641b19317a6bc061ed9c0caa7d7ec3dd9383a954fc1ba966a`; expires 2026-12-01.
 - The repeat-import regression test passed: importing the same game folder twice keeps one installed package identity and exercises the package manager update path.
 - This remains CI/JVM evidence. Real SAF folder/ZIP import and Lethal Company package installation still require testing on the user's Android device.
+
+
+## Session 2026-11-17 — Lethal Company device import feedback and entry-point correction
+
+### Device evidence supplied by user
+- Folder import copied 270 files / 946,666,949 bytes, generated a valid NGRPACK, passed archive inspection, extraction, manifest validation and payload SHA-256 checks, and committed successfully.
+- Inventory reported one valid installed package and zero invalid packages.
+- Ordinary ZIP import of the same game completed the same pipeline successfully; it resolved to the same deterministic package ID and installed as an update rather than a duplicate.
+- Removal also completed successfully.
+- Important defect: both imports selected `unins000.exe` as entryPoint and classified it as Windows x86. This is an uninstaller, not the game executable. Package integrity is proven; correct game entry-point selection is not.
+
+### Corrective change
+- Added explicit exclusion rules for common installer, uninstaller, redistributable and crash-handler executables.
+- Candidate ranking now prefers an executable whose normalized filename matches the selected game name, then shipping binaries, then root-level candidates; architecture and path are used as deterministic tie-breakers.
+- Builder logs the detected candidate count, usable candidate count, selected path/architecture and up to 20 candidate names.
+- If only installer/uninstaller/helper executables exist, import now fails with a specific diagnostic rather than silently installing an unusable package.
+- Added JVM regression tests: x86 uninstaller + x64 game executable selects the game executable; uninstaller-only folder is rejected; missing-executable assertion updated.
+- Changes: `87b9b34d` (selection heuristic), `bc79495f` (regression tests), `a16e483d` (diagnostic assertion).
+- CI for these changes is pending; do not distribute a new APK until it passes.
+
+### Remaining work
+1. Verify the new candidate selection against a real Lethal Company folder/ZIP; if the game EXE is absent or not recognized, inspect the actual candidate list from the new log.
+2. Add a user-facing executable chooser when multiple plausible game binaries remain.
+3. Preserve the selected entry point on reimport and expose it in the installed package details.
+4. Only after correct entry-point selection, proceed to Windows x64 backend implementation; package import itself does not execute the game.
