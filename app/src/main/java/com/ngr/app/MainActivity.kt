@@ -51,7 +51,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         status = TextView(this).apply { textSize = 14f }
         root.addView(status)
         root.addView(TextView(this).apply { text = "\nVulkan devices"; textSize = 18f })
-        root.addView(TextView(this).apply { text = nativeVulkanProbe(); textSize = 13f })
+        NgrLogger.info("vulkan", "Starting Vulkan physical-device enumeration")
+        val vulkanReport = nativeVulkanProbe()
+        NgrLogger.info("vulkan", "Vulkan probe completed; reportChars=${vulkanReport.length}")
+        root.addView(TextView(this).apply { text = vulkanReport; textSize = 13f })
         root.addView(TextView(this).apply { text = "\nRuntime capabilities"; textSize = 18f })
         root.addView(TextView(this).apply { text = nativeCapabilityReport(); textSize = 12f })
         root.addView(TextView(this).apply { text = "\nInput devices"; textSize = 18f })
@@ -92,6 +95,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
 
     override fun onDestroy() {
+        NgrLogger.info("app", "MainActivity.onDestroy")
         packageWorker.shutdownNow()
         super.onDestroy()
     }
@@ -99,6 +103,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private fun refresh() {
         NgrLogger.info("runtime", "Refreshing runtime information and Vulkan probe")
         status.text = nativeRuntimeInfo()
+        NgrLogger.info("runtime", "Runtime info refreshed; chars=${status.text.length}")
         val found = inputManager.inputDeviceIds.asSequence().mapNotNull { id: Int ->
             inputManager.getInputDevice(id)?.takeIf {
                 it.sources and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
