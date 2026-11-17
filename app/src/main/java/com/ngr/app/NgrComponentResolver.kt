@@ -26,7 +26,7 @@ object NgrComponentResolver {
     ): Plan {
         val errors = mutableListOf<String>()
         errors += catalog.validate()
-        errors += profile.validate()
+        errors += profile.validateLaunchReady()
         if (requestedIds.isEmpty() && profileSelectedIds(profile).isEmpty()) {
             errors += "No components were selected"
         }
@@ -112,7 +112,10 @@ object NgrComponentResolver {
 
     private fun profileSelectedIds(profile: NgrEnvironmentProfile): Set<String> = buildSet {
         profile.wineLayerId?.let(::add)
+        profile.box64ComponentId?.let(::add)
+        profile.box86ComponentId?.let(::add)
         profile.fexCoreComponentId?.let(::add)
+        profile.fexUnixLibsComponentId?.let(::add)
         profile.wowBox64ComponentId?.let(::add)
         profile.dxvkComponentId?.let(::add)
         profile.vkd3dComponentId?.let(::add)
