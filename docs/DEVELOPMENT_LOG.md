@@ -381,3 +381,25 @@ This is the durable project memory. Update it in every development session.
 2. Add a user-facing executable chooser when multiple plausible game binaries remain.
 3. Preserve the selected entry point on reimport and expose it in the installed package details.
 4. Only after correct entry-point selection, proceed to Windows x64 backend implementation; package import itself does not execute the game.
+
+
+### Entry-point fix: device retest and CI confirmation (2026-11-17)
+
+- User retested the ordinary ZIP import of Lethal Company on Android after the entry-point selection fix.
+- Builder diagnostic: `detected=5; usable=1; selected=Lethal Company.exe (windows/x86_64)`; only the game executable remained usable after installer/uninstaller/helper filtering.
+- ZIP conversion recorded `platform=windows; architecture=x86_64; entryPoint=Lethal Company.exe`.
+- NGRPACK inspection passed: 271 entries, approximately 946.7 MB uncompressed; manifest accepted; extraction and SHA-256 validation completed; install committed.
+- Inventory: valid=1, invalid=0, errors=0. User also confirmed package removal and subsequent re-import; deterministic package ID `import.lethal-company.e8aa165a41c0` was reused.
+- This is real-device evidence for ZIP import, executable detection, x86_64 classification, package install/update/remove and inventory. It is not evidence that the game launches; no Windows x64 execution backend exists yet.
+
+### CI confirmation for entry-point fix
+- Actions run #122 [44175441095](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44175441095) completed successfully for main commit `61910de7a7912aaeafa8d05a2961a97cc4001db3`.
+- JVM unit tests, arm64-v8a debug APK build and artifact upload all succeeded.
+- Artifact: `NGR-arm64-debug`, ID `14370371440`, size 1,337,720 bytes, SHA-256 `dbf8bd96292aab37797b6c6a85461c7bf1f9a89f02b63cc35ab4452c4773619d`; expires 2026-12-01.
+- Runs #118–#122 are green; latest run #122 includes installer/uninstaller filtering, regression tests and development-log updates.
+
+### Next engineering priorities
+1. Add an explicit executable chooser for archives with multiple plausible PE/ELF candidates; show architecture and selected path before install.
+2. Show installed package entry point, platform and architecture in package details, preserving/validating them on update.
+3. Add archive local-header/central-directory consistency and malformed filename tests.
+4. Continue backend ABI loader/conformance work only after keeping package import stable. NGR still does not launch Windows games.
