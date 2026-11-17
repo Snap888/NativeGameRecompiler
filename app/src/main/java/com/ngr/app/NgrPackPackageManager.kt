@@ -309,6 +309,7 @@ class NgrPackPackageManager(
         if (Files.isSymbolicLink(directory.toPath()) ||
             !Files.isDirectory(directory.toPath(), LinkOption.NOFOLLOW_LINKS) ||
             !Files.isRegularFile(manifestFile.toPath(), LinkOption.NOFOLLOW_LINKS)) return null
+        if (Files.size(manifestFile.toPath()) > NgrManifestValidator.MAX_MANIFEST_BYTES) return null
         val text = try { manifestFile.readText(Charsets.UTF_8) } catch (_: Exception) { return null }
         val validation = NgrManifestValidator.validate(text, directory, verifyHashes)
         if (!validation.valid) return null
