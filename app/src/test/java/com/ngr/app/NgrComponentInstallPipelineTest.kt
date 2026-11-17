@@ -47,7 +47,7 @@ class NgrComponentInstallPipelineTest {
                 .installVerifiedArchive(component(sha256(archive)), archive)
             assertTrue(result.error ?: "pipeline install failed", result.success)
             assertEquals("0.3.2", result.version)
-            assertTrue(result.activeDirectory!!.resolve("runtime/box64/box64").isFile)
+            assertTrue(result.activeDirectory!!.resolve("box64").isFile)
         } finally {
             archive.delete()
             root.deleteRecursively()
