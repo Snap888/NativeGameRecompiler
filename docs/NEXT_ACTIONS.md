@@ -108,3 +108,8 @@ Mark complete only when evidence exists.
 - [x] Payload layout and local archive install pipeline tests passed in run #202 (44186403039).
 - [x] Component resolver tests passed in run #205 (44186662469), artifact ID 14375191502.
 - [ ] Verify latest ZIP backslash normalization regression test and current main CI.
+
+
+## CI follow-up — 2026-11-18
+- [x] Fix Kotlin compile error in profile editor: form container is now initialized before local field helper (`9b3e91eb`).
+- [ ] Confirm run #231 (`44189626075`), #232 (`44189719581`), #233 (`44189758325`) and #234 (`44189803672`) outcomes; newest parser/installer code still needs a complete green CI and uploaded APK.
