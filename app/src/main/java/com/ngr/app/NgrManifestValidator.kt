@@ -4,6 +4,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import java.nio.file.Files
 
 /** Validates an already extracted NGR package directory. ZIP extraction is a separate step. */
 object NgrManifestValidator {
@@ -32,6 +33,7 @@ object NgrManifestValidator {
         if (!isSafeRelativePath(entryPoint)) errors += "Unsafe or missing entryPoint"
         else if (!File(packageRoot, entryPoint).isFile) errors += "entryPoint file does not exist"
 
+        val hashedPaths = mutableSetOf<String>()
         val files = manifest.optJSONArray("files")
         if (files == null || files.length() == 0) errors += "files must contain at least one entry"
         else {
@@ -43,14 +45,18 @@ object NgrManifestValidator {
                 val expected = item.optString("sha256", "")
                 if (!isSafeRelativePath(path)) { errors += "files[$i] has an unsafe path"; continue }
                 if (!seen.add(path)) errors += "Duplicate file path: $path"
+                hashedPaths += path
                 if (!sha256Pattern.matches(expected)) { errors += "Invalid SHA-256 for $path"; continue }
                 val root = packageRoot.canonicalFile
                 val file = File(packageRoot, path).canonicalFile
                 if (!file.toPath().startsWith(root.toPath())) { errors += "Path escapes package root: $path"; continue }
+                if (Files.isSymbolicLink(file.toPath())) { errors += "Symbolic links are not allowed: $path"; continue }
                 if (!file.isFile) errors += "Package file does not exist: $path"
                 else if (verifyHashes && sha256(file) != expected.lowercase()) errors += "SHA-256 mismatch: $path"
             }
         }
+        if (isSafeRelativePath(entryPoint) && entryPoint !in hashedPaths)
+            errors += "entryPoint must be included in the hashed files list"
         return Result(errors.isEmpty(), errors)
     }
 
