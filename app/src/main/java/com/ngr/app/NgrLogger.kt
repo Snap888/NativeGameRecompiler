@@ -44,7 +44,11 @@ object NgrLogger {
         val file = logFile ?: return@synchronized "NGR logger is not initialized"
         if (!file.isFile) return@synchronized "No log file yet"
         runCatching {
-            val content = file.readText(Charsets.UTF_8)
+            val previous = File(file.parentFile, "ngr-runtime.previous.log")
+            val content = buildString {
+                if (previous.isFile) append(previous.readText(Charsets.UTF_8))
+                append(file.readText(Charsets.UTF_8))
+            }
             if (content.length <= maxChars) content else content.takeLast(maxChars)
         }.getOrElse { "Unable to read log: ${it.message}" }
     }
