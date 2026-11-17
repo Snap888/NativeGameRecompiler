@@ -2,14 +2,14 @@
 
 Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
 
-> **Current status:** Stage 1 runtime shell, Stage 2 capability/manifest validation, and Stage 3 NGRPACK inspection + package install manager are implemented and CI-built. Physical-device validation and all game execution backends remain pending. NGR is not a general-purpose game recompiler.
+> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. The Wine/Proton process launcher and static-recompilation backend are not implemented yet. Physical-device validation remains pending. NGR is not a general-purpose game recompiler.
 
 ## Project direction
 
 - Android host application with Kotlin UI and a native C++20 runtime core.
 - ARM64 as the initial Android target.
 - Independent execution modes: Wine compatibility, static recompilation and native ARM64.
-- Planned NGR Environment Manager for containers, Wine/Proton, Box64, FEXCore, DXVK/VKD3D, Turnip and ReShade/shader profiles.
+- NGR Environment Manager foundation: versioned profiles, per-game overrides, component version pins, typed catalog, HTTPS/SHA-256 download, ZIP staging, atomic component store/rollback and dependency resolution.
 - Vulkan graphics-provider abstraction; system Vulkan loader first, optional isolated per-game Turnip integration later.
 - Touch controls and physical gamepad discovery.
 - Versioned NGRPACK package manifest with SHA-256 payload hashes.
@@ -27,8 +27,8 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 - Android UI: Document Picker import/update, installed package list and removal, including corrupt-package cleanup.
 - JVM regression tests for manifest validation, ZIP inspection, package installation/update/removal and recovery.
 - Versioned execution-backend ABI v1 C header contract, compiled as both C and C++; the runtime plugin loader and lifecycle are not yet implemented.
-- WinNative runtime reuse and Environment Manager architecture documented in `docs/WINNATIVE_INTEGRATION_PLAN.md`; source-level port and all compatibility backends remain pending.
-- Latest successful CI: [run #71](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162883678). APK artifact is available from the run page.
+- WinNative source audit and integration plan documented in `docs/WINNATIVE_INTEGRATION_PLAN.md`; no WinNative source/binary has been copied into NGR. Licensing/provenance inventory is in `docs/LICENSING_AND_PROVENANCE.md`.
+- GitHub Actions runs JVM tests and builds an arm64-v8a debug APK. Check the Actions page for the latest branch status; no APK is claimed for a commit until its complete CI run succeeds.
 - GitHub Actions workflow configured to run unit tests and build arm64-v8a debug APK.
 
 ## Build
@@ -46,6 +46,7 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 ## Project journal
 
 - [Development log](docs/DEVELOPMENT_LOG.md)
+- [Licensing and provenance](docs/LICENSING_AND_PROVENANCE.md)
 - [Next actions](docs/NEXT_ACTIONS.md)
 - [Continuation prompt for new chats](docs/CONTINUATION_PROMPT.md)
 - [Technical audit](docs/TECHNICAL_AUDIT.md)
@@ -53,7 +54,7 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 
 ## Not implemented yet
 
-No backend plugin loader, static game recompiler, dynamic translator, N64Recomp integration, FEX, Box64, Wine, DXVK, VKD3D-Proton, Turnip provider manager, ReShade integration or game execution is included yet. Package signing/trust policy and sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
+No backend plugin loader, static game recompiler, dynamic translator, N64Recomp integration or Windows guest process launch is included yet. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
 
 ## Legal
 
