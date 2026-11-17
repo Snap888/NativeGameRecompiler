@@ -493,3 +493,14 @@ This is the durable project memory. Update it in every development session.
 3. Implement versioned NGR environment profile/catalog models and JVM tests before runtime binary integration.
 4. Proceed with Wine + Box64 standard x86_64 launch path, then ARM64EC/FEX and graphics components.
 5. Continue the static recompiler track independently.
+
+
+### Environment profile model — initial implementation
+- Added `NgrEnvironmentProfile.kt`, a versioned declarative model for container mode, Wine layer, CPU translator, Box64 preset, FEXCore/WOWBox64 references, DXVK/VKD3D, Vulkan provider/Turnip, X11/Wayland prerequisites, ReShade/shader packages, audio, desktop size/DPI, environment variables and per-game overrides.
+- Validation keeps standard x86_64 + Box64 separate from ARM64EC + FEXCore; requires a FEXCore component for ARM64EC; gates Wayland on compatible Wine and Turnip declarations; and prevents ReShade presets without an enabled ReShade component.
+- Environment variable validation rejects runtime-managed names (LD_*, NGR_*, PATH, HOME, PREFIX), malformed keys, NULs, excessive values and excessive variable counts.
+- Added `NgrEnvironmentProfileTest.kt` covering these compatibility and validation rules.
+- This is a configuration model only: no component catalog downloader, installer, Wine process launcher or ReShade injector is present yet.
+- Source commits: `0091a8526f097a7c28c14a96cc6e33653d6294b0`; tests: `5969959ba40a2c7e75c6f625ca023b5e76e62198`.
+- Native capability registry now explicitly lists Wine runtime, Environment Manager, FEXCore/ARM64EC, Wayland and ReShade as planned (not available): `fc742d1b4cf356e3228fcf79abbeaabb0c285060`.
+- CI for the new Kotlin model/tests must pass before this milestone is marked build-verified.
