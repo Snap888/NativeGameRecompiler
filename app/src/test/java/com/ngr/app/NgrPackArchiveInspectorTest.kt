@@ -47,6 +47,16 @@ class NgrPackArchiveInspectorTest {
         } finally { file.delete() }
     }
 
+    @Test fun acceptsOrdinaryZipWithoutManifestWhenExplicitlyRequested() {
+        val file = archive(listOf("Game/Game.exe" to byteArrayOf(0x4D, 0x5A), "Game/data.bin" to byteArrayOf(1, 2, 3)))
+        try {
+            val result = NgrPackArchiveInspector.inspect(file, requireManifest = false)
+            assertTrue(result.errors.joinToString(), result.valid)
+            assertTrue(result.manifestText == null)
+            assertTrue(result.entries.any { it.path == "Game/Game.exe" })
+        } finally { file.delete() }
+    }
+
     @Test fun rejectsZipSlipEntry() {
         val file = archive(listOf("ngr-manifest.json" to manifest, "../outside" to byteArrayOf(1)))
         try {
