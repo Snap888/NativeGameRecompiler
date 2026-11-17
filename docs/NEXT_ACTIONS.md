@@ -4,7 +4,8 @@ Mark complete only when evidence exists.
 
 ## P0 — Build and validate current Stage 2
 - [ ] Inspect latest GitHub Actions run for main.
-- [ ] Fix compile/test failures before unrelated feature work.
+- [x] Fix the observed MainActivity IntArray/mapNotNull Kotlin compile failure (commit eef1bfec); verify the fix in CI.
+- [ ] Fix any remaining compile/test failures before unrelated feature work.
 - [ ] Confirm testDebugUnitTest passes.
 - [ ] Confirm NGR-arm64-debug artifact exists and downloads.
 - [ ] Install APK on Snapdragon/Adreno device; record Vulkan and controller results.
@@ -15,7 +16,7 @@ Mark complete only when evidence exists.
 - [ ] Design safe archive extraction with ZIP-slip protection, entry-count/size and decompression-bomb limits.
 - [ ] Define unsigned development vs signed release trust policy.
 - [ ] Define manifest version migration.
-- [ ] Require entryPoint to be present in the hashed files list.
+- [x] Require entryPoint to be present in the hashed files list (implementation and regression test committed; CI verification pending).
 
 ## P2 — Package manager
 - [ ] Inspect and safely extract NGRPACK archives into app-private storage.
