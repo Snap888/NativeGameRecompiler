@@ -36,7 +36,10 @@ object NgrEnvironmentProfileCodec {
             .put("gameOverrides", JSONObject())
 
         putNullable(root, "wineLayerId", profile.wineLayerId)
+        putNullable(root, "box64ComponentId", profile.box64ComponentId)
+        putNullable(root, "box86ComponentId", profile.box86ComponentId)
         putNullable(root, "fexCoreComponentId", profile.fexCoreComponentId)
+        putNullable(root, "fexUnixLibsComponentId", profile.fexUnixLibsComponentId)
         putNullable(root, "wowBox64ComponentId", profile.wowBox64ComponentId)
         putNullable(root, "dxvkComponentId", profile.dxvkComponentId)
         putNullable(root, "vkd3dComponentId", profile.vkd3dComponentId)
@@ -87,9 +90,12 @@ object NgrEnvironmentProfileCodec {
             displayName = requiredString(root, "displayName"),
             containerMode = enumValue(requiredString(root, "containerMode"), NgrEnvironmentProfile.ContainerMode::valueOf, "containerMode"),
             wineLayerId = optionalString(root, "wineLayerId"),
+            box64ComponentId = optionalString(root, "box64ComponentId"),
+            box86ComponentId = optionalString(root, "box86ComponentId"),
             cpuTranslator = enumValue(requiredString(root, "cpuTranslator"), NgrEnvironmentProfile.CpuTranslator::valueOf, "cpuTranslator"),
             box64Preset = enumValue(requiredString(root, "box64Preset"), NgrEnvironmentProfile.Box64Preset::valueOf, "box64Preset"),
             fexCoreComponentId = optionalString(root, "fexCoreComponentId"),
+            fexUnixLibsComponentId = optionalString(root, "fexUnixLibsComponentId"),
             wowBox64ComponentId = optionalString(root, "wowBox64ComponentId"),
             dxvkComponentId = optionalString(root, "dxvkComponentId"),
             vkd3dComponentId = optionalString(root, "vkd3dComponentId"),
@@ -188,8 +194,8 @@ object NgrEnvironmentProfileCodec {
     }
 
     private val ROOT_KEYS = setOf(
-        "schemaVersion", "profileId", "displayName", "containerMode", "wineLayerId",
-        "cpuTranslator", "box64Preset", "fexCoreComponentId", "wowBox64ComponentId",
+        "schemaVersion", "profileId", "displayName", "containerMode", "wineLayerId", "box64ComponentId", "box86ComponentId",
+        "cpuTranslator", "box64Preset", "fexCoreComponentId", "fexUnixLibsComponentId", "wowBox64ComponentId",
         "dxvkComponentId", "vkd3dComponentId", "graphicsProvider", "turnipComponentId",
         "displayBackend", "waylandWineSupported", "waylandTurnipSupported", "reshade",
         "audioBackend", "desktopWidth", "desktopHeight", "dpi", "environmentVariables", "gameOverrides"
