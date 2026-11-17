@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(ngr_runtime LANGUAGES C CXX)
-add_library(ngr_runtime SHARED src/jni_bridge.cpp src/runtime_info.cpp src/vulkan_probe.cpp)
+add_library(ngr_runtime SHARED src/jni_bridge.cpp src/runtime_info.cpp src/vulkan_probe.cpp src/capability_registry.cpp)
 target_include_directories(ngr_runtime PRIVATE include)
 target_compile_features(ngr_runtime PRIVATE cxx_std_20)
 target_compile_options(ngr_runtime PRIVATE -Wall -Wextra -Wpedantic)
