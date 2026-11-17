@@ -97,6 +97,9 @@ data class NgrEnvironmentProfile(
         if (reshade.presetPath != null && !reshade.enabled) {
             errors += "A ReShade preset requires ReShade to be enabled"
         }
+        if (reshade.presetPath != null && !isSafeRelativePath(reshade.presetPath)) {
+            errors += "ReShade preset path must be a safe relative path"
+        }
         if (reshade.shaderPackageIds.any { !it.matches(ID_PATTERN) }) {
             errors += "One or more shader package IDs are invalid"
         }
@@ -110,6 +113,10 @@ data class NgrEnvironmentProfile(
             if (!gameId.matches(ID_PATTERN)) errors += "Invalid game override key: $gameId"
             if (override.wineLayerId != null && !override.wineLayerId.matches(ID_PATTERN)) {
                 errors += "Invalid Wine layer in override for $gameId"
+            }
+            if (override.displayBackend == DisplayBackend.WAYLAND &&
+                (!waylandWineSupported || !waylandTurnipSupported || graphicsProvider != GraphicsProvider.TURNIP)) {
+                errors += "Wayland override for $gameId requires a compatible Wine and Turnip profile"
             }
             listOf(override.dxvkComponentId, override.vkd3dComponentId, override.turnipComponentId)
                 .filterNotNull().filterNot { it.matches(ID_PATTERN) }
@@ -135,5 +142,11 @@ data class NgrEnvironmentProfile(
         const val CURRENT_SCHEMA_VERSION = 1
         private val ID_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
         private val ENV_KEY_PATTERN = Regex("^[A-Z_][A-Z0-9_]{0,127}$")
+
+        private fun isSafeRelativePath(value: String): Boolean =
+            value.isNotBlank() && value.length <= 512 && !value.startsWith("/") &&
+                !value.startsWith("\\") && !value.contains('\\') && !value.contains(':') &&
+                !value.contains(0.toChar()) &&
+                value.split('/').all { it.isNotBlank() && it != "." && it != ".." }
     }
 }
