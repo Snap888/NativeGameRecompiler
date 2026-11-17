@@ -120,7 +120,7 @@ class NgrGamePackageBuilder(
                 count++
                 if (count > limits.maxEntries) throw IOException("ZIP entry count limit exceeded")
                 val raw = entry.name
-                val relative = (if (entry.isDirectory) raw.removeSuffix("/") else raw).replace('\\\\', '/')
+                val relative = (if (entry.isDirectory) raw.removeSuffix("/") else raw).replace('\\', '/')
                 validateRelativePath(relative)
                 val target = destination.resolve(relative).normalize()
                 if (!target.startsWith(destination) || target == destination) throw IOException("ZIP path escapes import root: $raw")
@@ -171,7 +171,7 @@ class NgrGamePackageBuilder(
                 if (attrs.size() > limits.maxFileBytes) throw IOException("Game file exceeds size limit: $relative")
                 if (total > limits.maxTotalBytes - attrs.size()) throw IOException("Game exceeds total size limit")
                 total += attrs.size()
-                files += file
+                files.add(file)
                 if (files.size > minOf(limits.maxEntries - 1, NgrManifestValidator.MAX_FILES))
                     throw IOException("Game contains too many files for an NGR package")
                 return FileVisitResult.CONTINUE
@@ -298,7 +298,7 @@ class NgrGamePackageBuilder(
     private fun validateRelativePath(path: String) {
         if (path.isBlank() || path.length > limits.maxPathChars || path.startsWith("/") ||
             path.startsWith("\\\\") || path.contains(':') || path.contains('\u0000') ||
-            path.replace('\\\\', '/').split('/').any { it.isBlank() || it == "." || it == ".." })
+            path.replace('\\', '/').split('/').any { it.isBlank() || it == "." || it == ".." })
             throw IOException("Unsafe game path: $path")
     }
 
