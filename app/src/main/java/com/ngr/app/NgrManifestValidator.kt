@@ -152,11 +152,11 @@ object NgrManifestValidator {
         }
     }
 
-    private fun normalizePath(path: String) = path.replace('\\\\', '/')
+    private fun normalizePath(path: String) = path.replace('\\', '/')
 
     private fun isSafeRelativePath(path: String): Boolean {
-        if (path.isBlank() || path.length > MAX_PATH_CHARS || path.startsWith("/") || path.startsWith("\\\\")) return false
-        if (path.contains('\\u0000') || path.contains(':')) return false
+        if (path.isBlank() || path.length > MAX_PATH_CHARS || path.startsWith("/") || path.startsWith("\\")) return false
+        if (path.contains('\u0000') || path.contains(':')) return false
         return normalizePath(path).split('/').none { it.isBlank() || it == "." || it == ".." }
     }
 
