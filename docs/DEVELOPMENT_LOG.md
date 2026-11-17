@@ -335,4 +335,10 @@ This is the durable project memory. Update it in every development session.
 - CI run #102 reached Kotlin compilation and reported one remaining unsupported backslash character literal in `MainActivity.kt`; corrected it in commit `c47aace3ac7d024c8b388b313596dbfd66548fda`.
 - Added explicit 64-level nesting bounds to both local folder copying and SAF folder traversal (`33812dfa`, `70892ab8`).
 - Added Linux ELF x86_64 detection regression coverage in commit `8d06364c`.
-- Latest commit at this update: `c47aace3ac7d024c8b388b313596dbfd66548fda`; Actions run #108 is pending. CI is not yet green.
+- Latest code commit: `c47aace3ac7d024c8b388b313596dbfd66548fda`; Actions run #108 [44170793636](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44170793636) passed JVM unit tests, arm64-v8a APK build and artifact upload.
+
+
+### Folder/ZIP import CI result
+- Actions run #108 completed the required test, native build, APK build and artifact upload steps successfully for code commit `c47aace3ac7d024c8b388b313596dbfd66548fda`.
+- Artifact: `NGR-arm64-debug`, ID `14367787571`, size 1,335,563 bytes, SHA-256 `6d530d4c4436c2b39f25236e1a95b56f86436d8fbc8289ead6fdae4904d93357`; expires 2026-12-01.
+- This confirms CI compilation and JVM tests only. Physical-device folder/ZIP selection and Lethal Company import remain untested.
