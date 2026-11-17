@@ -16,6 +16,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     companion object { init { System.loadLibrary("ngr_runtime") } }
     private external fun nativeRuntimeInfo(): String
     private external fun nativeVulkanProbe(): String
+    private external fun nativeCapabilityReport(): String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
