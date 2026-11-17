@@ -26,8 +26,7 @@ Requirements: JDK 17, Android SDK, Android NDK 27.2.12479018, CMake 3.22.1.
 ```bash
 git clone https://github.com/Snap888/NativeGameRecompiler.git
 cd NativeGameRecompiler
-git submodule update --init --recursive
-./gradlew assembleDebug
+gradle --no-daemon :app:assembleDebug
 ```
 
 The CI workflow builds the debug APK and publishes it as a workflow artifact.
