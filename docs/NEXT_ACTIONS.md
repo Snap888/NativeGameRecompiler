@@ -112,4 +112,5 @@ Mark complete only when evidence exists.
 
 ## CI follow-up — 2026-11-18
 - [x] Fix Kotlin compile error in profile editor: form container is now initialized before local field helper (`9b3e91eb`).
-- [ ] Confirm run #231 (`44189626075`), #232 (`44189719581`), #233 (`44189758325`) and #234 (`44189803672`) outcomes; newest parser/installer code still needs a complete green CI and uploaded APK.
+- [x] Run #231 (`44189626075`, profile editor fix) passed.
+- [ ] Confirm runs #232 (`44189719581`), #233 (`44189758325`), #234 (`44189803672`), #235 (`44189890969`) and #236 (`44189916010`); latest parser/installer code still needs a complete green CI and uploaded APK.
