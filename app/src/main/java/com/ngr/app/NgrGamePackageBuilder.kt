@@ -180,18 +180,46 @@ class NgrGamePackageBuilder(
             }
         })
         if (files.isEmpty()) throw IOException("No game files were found in the selected source")
-        val candidates = files.map { file ->
+        val detectedCandidates = files.map { file ->
             val relative = payload.relativize(file).toString().replace(File.separatorChar, '/')
             val kind = executableKind(file)
             Triple(relative, kind.first, kind.second)
         }.filter { it.second != null }
-        if (candidates.isEmpty())
-            throw IOException("No Windows EXE or Linux ELF executable was found. The folder/archive may contain only data or an installer.")
+        if (detectedCandidates.isEmpty())
+            throw IOException("No valid Windows PE EXE or Linux ELF executable was found. The selected source may contain only game data or unsupported files.")
+
+        val candidates = detectedCandidates.filterNot { isInstallerOrUtilityExecutable(it.first) }
+        if (candidates.isEmpty()) {
+            val names = detectedCandidates.take(12).joinToString { it.first }
+            throw IOException("Only installer, uninstaller or helper executables were detected; no game executable was found. Detected: $names")
+        }
+
+        val normalizedGameName = requestedName.substringAfterLast('/').substringBeforeLast('.')
+            .lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }
+        fun candidateScore(candidate: Triple<String, String?, String?>): Int {
+            val fileName = candidate.first.substringAfterLast('/').substringBeforeLast('.')
+                .lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }
+            return when {
+                normalizedGameName.isNotEmpty() && fileName == normalizedGameName -> 0
+                normalizedGameName.length >= 5 &&
+                    (fileName.contains(normalizedGameName) || normalizedGameName.contains(fileName)) -> 1
+                candidate.first.contains("shipping", ignoreCase = true) -> 2
+                !candidate.first.contains('/') -> 3
+                else -> 4
+            }
+        }
         val selected = candidates.sortedWith(
-            compareBy<Triple<String, String?, String?>> { if (it.second == "windows") 0 else 1 }
-                .thenBy { if (it.first.substringAfterLast('/').contains("shipping", true)) 1 else 0 }
+            compareBy<Triple<String, String?, String?>> { candidateScore(it) }
+                .thenBy { if (it.second == "windows") 0 else 1 }
                 .thenBy { it.first.length }
+                .thenBy { it.first.lowercase(Locale.ROOT) }
         ).first()
+        NgrLogger.info(
+            "package.builder",
+            "Executable scan: detected=${detectedCandidates.size}; usable=${candidates.size}; " +
+                "selected=${selected.first} (${selected.second}/${selected.third}); " +
+                "candidates=${candidates.take(20).joinToString { "${it.first} [${it.second}/${it.third}]" }}"
+        )
         val display = requestedName.trim().ifBlank { selected.first.substringAfterLast('/').substringBeforeLast('.') }
             .take(160)
         val safeName = display.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), "-").trim('-').take(80)
@@ -246,6 +274,19 @@ class NgrGamePackageBuilder(
             output.delete()
             throw IOException("Generated NGRPACK exceeds archive size limit")
         }
+    }
+
+    private fun isInstallerOrUtilityExecutable(relativePath: String): Boolean {
+        val name = relativePath.substringAfterLast('/').lowercase(Locale.ROOT)
+        return name.matches(Regex("unins.*\\.exe")) ||
+            name.matches(Regex("uninstall(?:er)?(?:[-_].*)?\\.exe")) ||
+            name.matches(Regex("install(?:er)?(?:[-_].*)?\\.exe")) ||
+            name.matches(Regex("setup(?:[-_].*)?\\.exe")) ||
+            name in setOf(
+                "vc_redist.x64.exe", "vc_redist.x86.exe", "dxsetup.exe",
+                "unitycrashhandler64.exe", "unitycrashhandler32.exe",
+                "crashhandler.exe", "crashreportclient.exe"
+            )
     }
 
     private fun executableKind(file: Path): Pair<String?, String?> {
