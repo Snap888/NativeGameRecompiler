@@ -153,7 +153,7 @@ class NgrGamePackageBuilderTest {
             File(game, "readme.txt").writeText("not a game executable")
             val result = NgrGamePackageBuilder().buildFromFolder(game, File(base, "out.ngrpack"))
             assertFalse(result.success)
-            assertTrue(result.errors.any { it.contains("No Windows EXE or Linux ELF") })
+            assertTrue(result.errors.any { it.contains("No valid Windows PE EXE or Linux ELF") })
         } finally { base.deleteRecursively() }
     }
 }
