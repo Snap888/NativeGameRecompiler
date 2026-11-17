@@ -34,6 +34,19 @@ class NgrPackArchiveInspectorTest {
         } finally { file.delete() }
     }
 
+    @Test fun explainsManifestWrappedInTopLevelFolder() {
+        val file = archive(listOf(
+            "ExportedGame/ngr-manifest.json" to manifest,
+            "ExportedGame/bin/game.so" to byteArrayOf(1, 2, 3)
+        ))
+        try {
+            val result = NgrPackArchiveInspector.inspect(file)
+            assertFalse(result.valid)
+            assertTrue(result.errors.joinToString().contains("Manifest found only inside subdirectory"))
+            assertTrue(result.errors.joinToString().contains("ExportedGame/ngr-manifest.json"))
+        } finally { file.delete() }
+    }
+
     @Test fun rejectsZipSlipEntry() {
         val file = archive(listOf("ngr-manifest.json" to manifest, "../outside" to byteArrayOf(1)))
         try {
