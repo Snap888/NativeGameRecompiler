@@ -8,7 +8,8 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 
 - Android host application with Kotlin UI and a native C++20 runtime core.
 - ARM64 as the initial Android target.
-- Modular backends for static recompilation and dynamic translation.
+- Independent execution modes: Wine compatibility, static recompilation and native ARM64.
+- Planned NGR Environment Manager for containers, Wine/Proton, Box64, FEXCore, DXVK/VKD3D, Turnip and ReShade/shader profiles.
 - Vulkan graphics-provider abstraction; system Vulkan loader first, optional isolated per-game Turnip integration later.
 - Touch controls and physical gamepad discovery.
 - Versioned NGRPACK package manifest with SHA-256 payload hashes.
@@ -26,6 +27,7 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 - Android UI: Document Picker import/update, installed package list and removal, including corrupt-package cleanup.
 - JVM regression tests for manifest validation, ZIP inspection, package installation/update/removal and recovery.
 - Versioned execution-backend ABI v1 C header contract, compiled as both C and C++; the runtime plugin loader and lifecycle are not yet implemented.
+- WinNative runtime reuse and Environment Manager architecture documented in `docs/WINNATIVE_INTEGRATION_PLAN.md`; source-level port and all compatibility backends remain pending.
 - Latest successful CI: [run #71](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44162883678). APK artifact is available from the run page.
 - GitHub Actions workflow configured to run unit tests and build arm64-v8a debug APK.
 
@@ -51,7 +53,7 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 
 ## Not implemented yet
 
-No backend plugin ABI, static game recompiler, dynamic translator, N64Recomp integration, FEX, Box64, Wine, DXVK, VKD3D-Proton, Turnip provider manager or game execution is included yet. Package signing/trust policy and sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
+No backend plugin loader, static game recompiler, dynamic translator, N64Recomp integration, FEX, Box64, Wine, DXVK, VKD3D-Proton, Turnip provider manager, ReShade integration or game execution is included yet. Package signing/trust policy and sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
 
 ## Legal
 
