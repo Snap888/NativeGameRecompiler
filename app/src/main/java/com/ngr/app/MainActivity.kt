@@ -3,6 +3,7 @@ package com.ngr.app
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.provider.OpenableColumns
 import android.net.Uri
 import android.os.Bundle
 import android.view.InputDevice
@@ -27,6 +28,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     companion object {
         private const val REQUEST_NGRPACK = 4102
+        private const val REQUEST_EXPORT_LOG = 4103
         init { System.loadLibrary("ngr_runtime") }
     }
 
@@ -36,6 +38,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NgrLogger.initialize(this)
+        NgrLogger.info("app", "MainActivity.onCreate")
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
 
@@ -64,6 +68,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
 
+        root.addView(TextView(this).apply { text = "\nDiagnostics"; textSize = 18f })
+        root.addView(Button(this).apply { text = "View runtime log"; setOnClickListener { showLogs() } })
+        root.addView(Button(this).apply { text = "Save log to storage"; setOnClickListener { saveLogs() } })
+
         setContentView(ScrollView(this).apply {
             isFillViewport = true
             addView(root)
@@ -89,6 +97,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
 
     private fun refresh() {
+        NgrLogger.info("runtime", "Refreshing runtime information and Vulkan probe")
         status.text = nativeRuntimeInfo()
         val found = inputManager.inputDeviceIds.asSequence().mapNotNull { id: Int ->
             inputManager.getInputDevice(id)?.takeIf {
@@ -96,6 +105,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             }?.let { "• ${it.name} (id=${it.id})" }
         }.toList()
         devices.text = if (found.isEmpty()) "No gamepad detected" else found.joinToString("\n")
+        NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
     }
 
     private fun choosePackageArchive() {
@@ -108,22 +118,47 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 "application/octet-stream"
             ))
         }
+        NgrLogger.info("package.import", "Opening document picker")
         startActivityForResult(intent, REQUEST_NGRPACK)
     }
 
     @Deprecated("Uses the platform document picker callback for compatibility with Activity")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_EXPORT_LOG) {
+            if (resultCode == RESULT_OK) {
+                val destination = data?.data ?: return
+                runCatching {
+                    val bytes = NgrLogger.recentText(2_500_000).toByteArray(Charsets.UTF_8)
+                    contentResolver.openOutputStream(destination)?.use { it.write(bytes) }
+                        ?: throw IllegalStateException("Unable to open destination")
+                    Toast.makeText(this, "Log saved (${bytes.size} bytes)", Toast.LENGTH_SHORT).show()
+                    NgrLogger.info("diagnostics", "Exported runtime log; bytes=${bytes.size}")
+                }.onFailure {
+                    NgrLogger.error("diagnostics", "Log export failed", it)
+                    Toast.makeText(this, "Log export failed: ${it.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            return
+        }
         if (requestCode != REQUEST_NGRPACK || resultCode != RESULT_OK) return
         val uri: Uri = data?.data ?: return
+        val pickedName = runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                if (it.moveToFirst()) it.getString(0) else null
+            }
+        }.getOrNull()
+        NgrLogger.info("package.import", "Selected archive name=${pickedName ?: "unknown"}; scheme=${uri.scheme ?: "unknown"}")
         packageStatus.text = "Copying and inspecting package archive…"
         packageWorker.execute {
             var temporary: File? = null
             val result = try {
                 temporary = File.createTempFile("ngr-import-", ".ngrpack", cacheDir)
                 copyPickedArchive(uri, temporary)
+                NgrLogger.info("package.import", "Private archive copy ready; bytes=${temporary.length()}")
                 packageManager.install(temporary)
             } catch (e: Exception) {
+                NgrLogger.error("package.import", "Import pipeline exception", e)
                 NgrPackPackageManager.OperationResult(
                     false,
                     "Package import failed",
@@ -132,6 +167,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             } finally {
                 temporary?.delete()
             }
+            NgrLogger.info("package.import", "Result success=${result.success}; message=${result.message}; errors=${result.errors.joinToString(" | ")}")
             runOnUiThread {
                 packageStatus.text = buildString {
                     append(result.message)
@@ -145,6 +181,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     private fun copyPickedArchive(uri: Uri, destination: File) {
         val maxBytes = NgrPackArchiveInspector.Limits().maxArchiveBytes
+        NgrLogger.info("package.import", "Copying SAF stream; limit=$maxBytes bytes")
         val input = contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Unable to open selected file")
         var copied = 0L
         input.use { source ->
@@ -160,11 +197,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             }
         }
         if (copied == 0L) throw IllegalArgumentException("Selected archive is empty")
+        NgrLogger.info("package.import", "SAF stream copied; bytes=$copied")
     }
 
     private fun refreshPackages() {
         packageWorker.execute {
+            NgrLogger.info("package.inventory", "Scanning installed packages")
             val inventory = packageManager.listInstalled()
+            NgrLogger.info("package.inventory", "Inventory valid=${inventory.packages.size}; invalid=${inventory.invalidPackageIds.size}; errors=${inventory.errors.size}")
             runOnUiThread {
                 packageList.removeAllViews()
                 if (inventory.packages.isEmpty()) {
@@ -216,7 +256,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             .setPositiveButton("Remove") { _, _ ->
                 packageStatus.text = "Removing $packageId…"
                 packageWorker.execute {
+                    NgrLogger.info("package.remove", "Removing packageId=$packageId")
                     val result = packageManager.remove(packageId)
+                    NgrLogger.info("package.remove", "Removal success=${result.success}; message=${result.message}")
                     runOnUiThread {
                         packageStatus.text = result.message
                         refreshPackages()
@@ -226,7 +268,28 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             .show()
     }
 
-    override fun onInputDeviceAdded(deviceId: Int) = refresh()
-    override fun onInputDeviceRemoved(deviceId: Int) = refresh()
-    override fun onInputDeviceChanged(deviceId: Int) = refresh()
+
+    private fun showLogs() {
+        NgrLogger.info("diagnostics", "Opened log viewer")
+        AlertDialog.Builder(this)
+            .setTitle("NGR runtime log")
+            .setMessage(NgrLogger.recentText())
+            .setPositiveButton("Close", null)
+            .setNeutralButton("Save…") { _, _ -> saveLogs() }
+            .show()
+    }
+
+    private fun saveLogs() {
+        NgrLogger.info("diagnostics", "Requested log export")
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "ngr-runtime-log.txt")
+        }
+        startActivityForResult(intent, REQUEST_EXPORT_LOG)
+    }
+
+    override fun onInputDeviceAdded(deviceId: Int) { NgrLogger.info("input", "Device added id=$deviceId"); refresh() }
+    override fun onInputDeviceRemoved(deviceId: Int) { NgrLogger.info("input", "Device removed id=$deviceId"); refresh() }
+    override fun onInputDeviceChanged(deviceId: Int) { NgrLogger.info("input", "Device changed id=$deviceId"); refresh() }
 }
