@@ -29,19 +29,23 @@ Mark complete only when evidence exists.
 - [x] Add versioned Kotlin environment profile model with standard x86_64/Box64 vs ARM64EC/FEX validation, Turnip/Wayland gating, ReShade/shader references, audio/display settings and per-game overrides.
 - [x] Add JVM validation tests for architecture mismatch, Wayland prerequisites, ReShade requirements, protected environment variables and profile bounds.
 - [x] Audit WinNative container model/manager, Proton catalog/install flow, CPU preset managers, graphics-driver catalog, Wayland capability gate, ReShade effect manager/downloader, component recipe installer and environment-variable representation.
-- [ ] Complete launch-pipeline and Wine layer resolver mapping; pin exact source files and runtime call sequence.
+- [x] Map WinNative XServerDisplayActivity, GuestProgramLauncherComponent, standard Box64 vs ARM64EC FEX/WOWBox64 launch selection, PRoot/Proton path and ReShade/vkBasalt environment handoff.
+- [ ] Complete Wine layer version resolver and exact binary/runtime dependency provenance.
 - [ ] Audit Box64/Box86 presets, FEXCore/FEX unixlibs, ARM64EC routing and WOWBox64 compatibility.
 - [ ] Audit DXVK/VKD3D/D8VK/D7VK selection and component install/rollback.
 - [ ] Audit AdrenoTools/Turnip provider selection and Vulkan isolation.
 - [ ] Audit ReShade injection, shader catalogs, presets and texture packages; distinguish catalog availability from runtime support.
 - [ ] Review GPL-3.0 and every transitive component license; confirm NGR licensing strategy before copying donor code.
-- [ ] Pin donor commit and create component provenance/SPDX inventory.
+- [x] Pin donor source audit to WinNative commit 99c3305d163780de5ca39b493aefcde436acad5c.
+- [ ] Create component provenance/SPDX inventory for donor submodules, downloaded binaries and every runtime dependency.
 - [x] Add versioned typed component catalog model with target ABI, SHA-256, SPDX license, source provenance, dependency/conflict constraints, safe install layout and rollback slot.
 - [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
-- [ ] Implement container profiles, Wine prefix lifecycle and global/per-game override schema.
+- [x] Add dependency/ABI/profile compatibility resolver with dependency-first install order and conflict checks.
+- [ ] Persist environment profiles, implement container roots/Wine prefix lifecycle and connect global/per-game overrides to runtime launch.
 - [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.
 - [x] Add HTTPS-only component downloader with redirect downgrade protection, bounded streaming, timeouts, Content-Length validation and SHA-256 verification.
-- [ ] Add TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [x] Add atomic component version promotion, active/previous state, rollback, inactive-version removal and uninstall for verified ZIP components.
+- [ ] Add HTTPS downloader integration tests and TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers with bounded extraction and expected-layout validation. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
@@ -95,4 +99,12 @@ Mark complete only when evidence exists.
 
 ## HTTPS downloader checkpoint
 - [x] Add downloader implementation and URL-policy tests. Network permission is declared; redirects remain HTTPS-only and only HTTP 200 payloads are accepted.
-- [ ] Verify latest CI for downloader and manifest changes.
+- [x] Downloader, manifest permission and URL policy tests passed in CI run #186 (44185530255).
+- [ ] Verify latest main after ZIP path normalization and launch-audit documentation commits.
+
+
+## Latest resolver/store integration
+- [x] Component store and rollback tests passed in run #190 (44185844227).
+- [x] Payload layout and local archive install pipeline tests passed in run #202 (44186403039).
+- [x] Component resolver tests passed in run #205 (44186662469), artifact ID 14375191502.
+- [ ] Verify latest ZIP backslash normalization regression test and current main CI.
