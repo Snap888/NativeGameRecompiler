@@ -46,7 +46,8 @@ class NgrPackPackageManager(
 
     data class InventoryResult(
         val packages: List<InstalledPackage>,
-        val errors: List<String>
+        val errors: List<String>,
+        val invalidPackageIds: List<String> = emptyList()
     )
 
     companion object {
@@ -140,18 +141,23 @@ class NgrPackPackageManager(
         catch (e: Exception) { return InventoryResult(emptyList(), listOf(e.message ?: "storage error")) }
         if (errors.isNotEmpty()) return InventoryResult(emptyList(), errors)
         val packages = mutableListOf<InstalledPackage>()
+        val invalidPackageIds = mutableListOf<String>()
         Files.newDirectoryStream(root).use { stream ->
             for (path in stream) {
                 val name = path.fileName.toString()
                 if (name.startsWith(".")) continue
                 if (Files.isSymbolicLink(path) || !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) continue
                 val info = readPackageInfo(path.toFile(), verifyHashes = false)
-                if (info == null) errors += "Ignoring invalid installed package directory: $name"
-                else if (info.packageId != name) errors += "Installed package directory identity mismatch: $name"
-                else packages += info
+                if (info == null) {
+                    errors += "Invalid installed package directory: $name"
+                    if (packageIdPattern.matches(name)) invalidPackageIds += name
+                } else if (info.packageId != name) {
+                    errors += "Installed package directory identity mismatch: $name"
+                    if (packageIdPattern.matches(name)) invalidPackageIds += name
+                } else packages += info
             }
         }
-        return InventoryResult(packages.sortedBy { it.packageId }, errors)
+        return InventoryResult(packages.sortedBy { it.packageId }, errors, invalidPackageIds.sorted())
     }
 
     @Synchronized
@@ -165,9 +171,9 @@ class NgrPackPackageManager(
         if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) return OperationResult(false, "Package not found")
         if (Files.isSymbolicLink(target) || !Files.isDirectory(target, LinkOption.NOFOLLOW_LINKS))
             return OperationResult(false, "Refusing to remove a non-directory package path")
+        // Removal is intentionally allowed for corrupt package contents. The target is
+        // constrained to this exact safe child path and deleteTree never follows symlinks.
         val info = readPackageInfo(target.toFile(), verifyHashes = false)
-            ?: return OperationResult(false, "Refusing to remove an invalid package directory")
-        if (info.packageId != packageId) return OperationResult(false, "Package identity mismatch")
         val tombstone = root.resolve(".trash-${UUID.randomUUID()}")
         return try {
             atomicMove(target, tombstone)
