@@ -52,30 +52,26 @@ object NgrComponentResolver {
         val resolved = mutableSetOf<String>()
 
         fun include(id: String) {
-            val pinnedVersion = profile.componentVersions[id]
-            if (id in installedIds) {
-                if (pinnedVersion != null) {
-                    val installedVersion = installedVersions[id]
-                    if (installedVersion == null) {
-                        errors += "Pinned component $id has no verified installed version metadata"
-                    } else if (installedVersion != pinnedVersion) {
-                        errors += "Installed component $id version $installedVersion does not match pinned version $pinnedVersion"
-                    }
-                }
-                alreadyInstalled.add(id)
-                return
-            }
             if (id in resolved || errors.isNotEmpty()) return
             val component = byId[id]
             if (component == null) {
-                errors += "Selected component is not present in catalog: $id"
+                errors += "Selected or installed component is not present in catalog: $id"
                 return
             }
             if (!visiting.add(id)) {
                 errors += "Component dependency cycle encountered while resolving: $id"
                 return
             }
-            if (pinnedVersion != null && component.version != pinnedVersion) {
+            val pinnedVersion = profile.componentVersions[id]
+            val isInstalled = id in installedIds
+            if (isInstalled && pinnedVersion != null) {
+                val installedVersion = installedVersions[id]
+                if (installedVersion == null) {
+                    errors += "Pinned component $id has no verified installed version metadata"
+                } else if (installedVersion != pinnedVersion) {
+                    errors += "Installed component $id version $installedVersion does not match pinned version $pinnedVersion"
+                }
+            } else if (!isInstalled && pinnedVersion != null && component.version != pinnedVersion) {
                 errors += "Catalog component $id version ${component.version} does not match pinned version $pinnedVersion"
             }
             if (component.targetAbis.none { it in compatibleAbis }) {
@@ -99,7 +95,7 @@ object NgrComponentResolver {
             }
             visiting.remove(id)
             resolved.add(id)
-            selected.add(id)
+            if (isInstalled) alreadyInstalled.add(id) else selected.add(id)
         }
 
         (requestedIds + profileSelectedIds(profile)).forEach(::include)
