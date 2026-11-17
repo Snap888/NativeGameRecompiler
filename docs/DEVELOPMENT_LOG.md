@@ -597,3 +597,12 @@ This is the durable project memory. Update it in every development session.
 - Confirmed JVM unit-test task, ARM64 debug APK build and artifact upload all succeeded. The test log includes the catalog parser and component archive installer suites, including executable-bit preservation.
 - Artifact: `NGR-arm64-debug`, ID `14373866839`, SHA-256 `487fef223d1c011e6008d1a8fd3ab8192cab5090a1f0f0ed5635eb77b0ea5f50`, expires 2026-12-01.
 - Replaced deprecated test-only `createTempDir` calls with `Files.createTempDirectory` in commit `7955754a4d2c303cb4495436154e7d12a2fb5b97`; its own CI run is pending. This is a test-fixture hygiene change only; production code is unchanged from the successful #172 build.
+
+
+### HTTPS component downloader — 2026-11-18
+- Added `NgrComponentDownloader.kt` and declared Android INTERNET permission.
+- Downloader accepts only HTTPS URLs without credentials/fragments, disables automatic redirects, follows a bounded number of redirects only when each target remains HTTPS, rejects encoded HTTP responses and non-200 status codes, applies connect/read timeouts, enforces declared and streamed byte limits, checks Content-Length consistency and verifies SHA-256 while writing.
+- Downloaded bytes are written to a temporary file in the supplied app-private directory; failed downloads remove the temporary file. A successful result is a verified file only: no extraction, installation, activation or execution occurs here.
+- Added URL policy and preflight rejection tests. Live network behavior, redirect servers and TLS failure cases still need dedicated integration tests.
+- Code commits: downloader `caca5fd0`, manifest permission `56880434`, output-file correction `2c3c0ffc`, URL tests `427b32f0`, strict HTTP 200 handling `ef2ef3c6`.
+- CI for downloader/manifest commits is pending; do not claim the new downloader is verified until the latest workflow passes.
