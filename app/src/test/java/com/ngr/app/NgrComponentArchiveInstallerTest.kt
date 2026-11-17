@@ -162,7 +162,7 @@ class NgrComponentArchiveInstallerTest {
     }
 
     @Test fun normalizesBackslashSeparatorsToSafeRelativePaths() {
-        val archive = archive(listOf("bin\\\\runner.exe" to byteArrayOf(1, 2, 3)))
+        val archive = archive(listOf("bin\\runner.exe" to byteArrayOf(1, 2, 3)))
         val parent = Files.createTempDirectory("ngr-stage-parent-").toFile()
         try {
             val result = NgrComponentArchiveInstaller.extractZip(archive, component(sha256(archive)), parent)
