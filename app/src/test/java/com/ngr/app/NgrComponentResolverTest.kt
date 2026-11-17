@@ -121,4 +121,36 @@ class NgrComponentResolverTest {
         assertFalse(plan.valid)
         assertTrue(plan.errors.any { it.contains("requires Wayland") })
     }
+    @Test fun enforcesPinnedVersionsForCatalogAndInstalledComponents() {
+        val pinnedProfile = profile.copy(componentVersions = mapOf("wine" to "1.0.0"))
+        val catalogMismatch = NgrComponentResolver.resolve(
+            catalog(component("wine").copy(version = "2.0.0"), component("box64")),
+            pinnedProfile,
+            setOf("wine"),
+            capabilities = capabilities
+        )
+        assertFalse(catalogMismatch.valid)
+        assertTrue(catalogMismatch.errors.any { it.contains("does not match pinned version") })
+
+        val installedMismatch = NgrComponentResolver.resolve(
+            catalog(component("wine"), component("box64")),
+            pinnedProfile,
+            setOf("wine"),
+            installedIds = setOf("wine"),
+            capabilities = capabilities,
+            installedVersions = mapOf("wine" to "0.9.0")
+        )
+        assertFalse(installedMismatch.valid)
+        assertTrue(installedMismatch.errors.any { it.contains("does not match pinned version") })
+
+        val installedWithoutMetadata = NgrComponentResolver.resolve(
+            catalog(component("wine"), component("box64")),
+            pinnedProfile,
+            setOf("wine"),
+            installedIds = setOf("wine"),
+            capabilities = capabilities
+        )
+        assertFalse(installedWithoutMetadata.valid)
+        assertTrue(installedWithoutMetadata.errors.any { it.contains("verified installed version metadata") })
+    }
 }
