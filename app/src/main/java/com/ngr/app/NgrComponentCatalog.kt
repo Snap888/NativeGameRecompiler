@@ -61,6 +61,30 @@ data class NgrComponentCatalog(
         val byId = components.groupBy { it.id }
         byId.filterValues { it.size > 1 }.keys.forEach { errors += "Duplicate component ID: $it" }
         val ids = byId.keys
+        val uniqueComponents = byId.values.mapNotNull { it.firstOrNull() }
+        val dependents = mutableMapOf<String, MutableList<String>>()
+        val remainingDependencies = mutableMapOf<String, Int>()
+        uniqueComponents.forEach { component ->
+            val validDependencies = component.dependencies.filter { it in ids }
+            remainingDependencies[component.id] = validDependencies.size
+            validDependencies.forEach { dependency ->
+                dependents.getOrPut(dependency) { mutableListOf() }.add(component.id)
+            }
+        }
+        val ready = java.util.ArrayDeque<String>()
+        remainingDependencies.filterValues { it == 0 }.keys.forEach(ready::addLast)
+        var resolved = 0
+        while (ready.isNotEmpty()) {
+            val resolvedId = ready.removeFirst()
+            resolved++
+            dependents[resolvedId].orEmpty().forEach { dependent ->
+                val remaining = (remainingDependencies[dependent] ?: 0) - 1
+                remainingDependencies[dependent] = remaining
+                if (remaining == 0) ready.addLast(dependent)
+            }
+        }
+        if (resolved != uniqueComponents.size) errors += "Component dependency graph contains a cycle"
+
         components.forEach { component ->
             val prefix = "component ${component.id}: "
             if (!component.id.matches(ID_PATTERN)) errors += prefix + "invalid ID"
