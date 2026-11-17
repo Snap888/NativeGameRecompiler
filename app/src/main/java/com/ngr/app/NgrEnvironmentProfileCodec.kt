@@ -28,6 +28,7 @@ object NgrEnvironmentProfileCodec {
             .put("desktopHeight", profile.desktopHeight)
             .put("dpi", profile.dpi)
             .put("environmentVariables", stringMap(profile.environmentVariables))
+            .put("componentVersions", stringMap(profile.componentVersions))
             .put("reshade", JSONObject()
                 .put("enabled", profile.reshade.enabled)
                 .put("componentId", nullable(profile.reshade.componentId))
@@ -115,7 +116,8 @@ object NgrEnvironmentProfileCodec {
             desktopHeight = integer(root, "desktopHeight"),
             dpi = integer(root, "dpi"),
             environmentVariables = readStringMap(root.getJSONObject("environmentVariables")),
-            gameOverrides = overrides
+            gameOverrides = overrides,
+            componentVersions = if (root.has("componentVersions")) readStringMap(root.getJSONObject("componentVersions")) else emptyMap()
         )
         val errors = profile.validate()
         require(errors.isEmpty()) { errors.joinToString("; ") }
@@ -198,7 +200,7 @@ object NgrEnvironmentProfileCodec {
         "cpuTranslator", "box64Preset", "fexCoreComponentId", "fexUnixLibsComponentId", "wowBox64ComponentId",
         "dxvkComponentId", "vkd3dComponentId", "graphicsProvider", "turnipComponentId",
         "displayBackend", "waylandWineSupported", "waylandTurnipSupported", "reshade",
-        "audioBackend", "desktopWidth", "desktopHeight", "dpi", "environmentVariables", "gameOverrides"
+        "audioBackend", "desktopWidth", "desktopHeight", "dpi", "environmentVariables", "gameOverrides", "componentVersions"
     )
     private val RESHADE_KEYS = setOf("enabled", "componentId", "presetPath", "shaderPackageIds")
     private val OVERRIDE_KEYS = setOf(
