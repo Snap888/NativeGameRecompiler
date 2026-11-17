@@ -40,7 +40,8 @@ Mark complete only when evidence exists.
 - [x] Add strict bounded catalog JSON parser, schema fixture and dependency-cycle validation.
 - [ ] Implement container profiles, Wine prefix lifecycle and global/per-game override schema.
 - [x] Implement bounded ZIP component archive inspection, SHA-256 verification, private snapshot, path-safe staging extraction and executable-bit preservation.
-- [ ] Add HTTPS downloader, TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
+- [x] Add HTTPS-only component downloader with redirect downgrade protection, bounded streaming, timeouts, Content-Length validation and SHA-256 verification.
+- [ ] Add TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout validation, atomic activation, rollback and uninstall. Do not port WinNative ComponentInstaller ZIP extraction or direct ReShade extraction; audit found unsafe path handling and non-atomic replacement.
 - [ ] Integrate Wine + Box64 standard x86_64 path and launch a legal test executable.
 - [ ] Add ARM64EC + FEXCore path using a matching Wine/Proton layer.
 - [ ] Add DXVK/VKD3D and isolated Turnip provider.
@@ -90,3 +91,8 @@ Mark complete only when evidence exists.
 ## Latest component staging checkpoint
 - [x] Run #172 passed; artifact `NGR-arm64-debug` ID `14373866839`, SHA-256 `487fef223d1c011e6008d1a8fd3ab8192cab5090a1f0f0ed5635eb77b0ea5f50`, expires 2026-12-01.
 - [ ] Latest main includes test-only temporary-directory cleanup and documentation commits after #172; verify their CI before calling the entire branch green.
+
+
+## HTTPS downloader checkpoint
+- [x] Add downloader implementation and URL-policy tests. Network permission is declared; redirects remain HTTPS-only and only HTTP 200 payloads are accepted.
+- [ ] Verify latest CI for downloader and manifest changes.
