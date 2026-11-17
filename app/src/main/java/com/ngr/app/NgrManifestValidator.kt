@@ -50,7 +50,7 @@ object NgrManifestValidator {
                 val root = packageRoot.canonicalFile
                 var unresolved = root.toPath()
                 var hasSymlink = false
-                for (segment in path.replace('\\\\', '/').split('/')) {
+                for (segment in path.replace('\\', '/').split('/')) {
                     unresolved = unresolved.resolve(segment)
                     if (Files.isSymbolicLink(unresolved)) { hasSymlink = true; break }
                 }
