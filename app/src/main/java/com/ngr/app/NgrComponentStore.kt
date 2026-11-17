@@ -182,10 +182,11 @@ class NgrComponentStore(private val privateRoot: File) {
         require(!Files.isSymbolicLink(stateFile.toPath()) && stateFile.isFile && stateFile.length() <= 512L) {
             "Component state file is invalid"
         }
-        val lines = stateFile.readText(Charsets.UTF_8).split('\n')
-        require(lines.size == 2) { "Component state file is malformed" }
-        val current = lines[0].ifEmpty { null }
-        val previous = lines[1].ifEmpty { null }
+        val rawState = stateFile.readText(Charsets.UTF_8)
+        val separator = rawState.indexOf('\n')
+        require(separator >= 0 && rawState.indexOf('\n', separator + 1) < 0) { "Component state file is malformed" }
+        val current = rawState.substring(0, separator).ifEmpty { null }
+        val previous = rawState.substring(separator + 1).ifEmpty { null }
         require((current == null || isSafeVersion(current)) && (previous == null || isSafeVersion(previous))) {
             "Component state contains an invalid version"
         }
