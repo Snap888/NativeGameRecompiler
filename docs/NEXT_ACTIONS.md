@@ -4,13 +4,12 @@ Mark complete only when evidence exists.
 
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
-- [x] Fix MainActivity IntArray/mapNotNull Kotlin compile failure.
 - [x] Confirm NGR-arm64-debug artifact upload in Actions run #56.
-- [ ] Install APK on Snapdragon/Adreno Android device.
+- [ ] Install latest APK on Snapdragon/Adreno Android device.
 - [ ] Verify app launch, Vulkan physical-device enumeration and controller hotplug.
 - [ ] Exercise NGRPACK picker/import/list/update/remove and restart recovery on device.
 
-## P1 — NGRPACK security review
+## P1 — NGRPACK trust and security
 - [x] Manifest schema parity, strict metadata typing and unknown-property rejection.
 - [x] Reject path traversal, slash/backslash collisions, symlink roots/components and non-regular files.
 - [x] Reject unlisted payload files; require entryPoint in the hashed file list.
@@ -23,13 +22,15 @@ Mark complete only when evidence exists.
 - [ ] Define manifest version migration.
 - [ ] Define unsigned development vs signed release trust policy and signature verification before any code execution.
 
-## P2 — Runtime and package integration
-- [ ] Add per-package configuration and runtime compatibility declarations.
-- [ ] Define stable versioned NGR ABI and backend plugin C ABI with size/version negotiation.
-- [ ] Add backend lifecycle: probe, initialize, load, run, stop, destroy.
+## P2 — Backend ABI and runtime
+- [x] Define ABI v1 C contract for execution backends and compile-check public header as C and C++.
+- [ ] Implement host-side ABI negotiation and validation (major/minor, struct sizes, IDs, required callbacks).
+- [ ] Add trusted built-in/test backend fixture; never load NGRPACK game payloads as plugins.
+- [ ] Implement backend registry and lifecycle: probe, create, load, start, request_stop, wait, destroy.
+- [ ] Add conformance tests for ABI mismatch, truncated structs, missing callbacks, invalid string views and stop/destroy ordering.
 - [ ] Add structured logging with session IDs and bounded files.
 - [ ] Add crash/error reporting and cleanup rules.
-- [ ] Never auto-launch package payloads before trust and isolation design is approved.
+- [ ] Do not mark plugin ABI available until loader and conformance tests pass.
 
 ## P3 — First static recompiler proof of concept
 - [ ] Pin N64Recomp upstream commit and review SPDX/transitive licenses.
