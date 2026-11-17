@@ -27,9 +27,15 @@ This is the durable project memory. Update it in every development session.
 - No Turnip provider switching, DXVK, VKD3D, Wine, FEX or Box64 runtime is integrated.
 - No successful CI result or APK artifact has been confirmed. Latest queried commit status returned no entries; CI remains unverified.
 
+### CI investigation and correction
+- Inspected failed run 44156896963 and its full job log.
+- Failure occurred in android-actions/setup-android@v3 before Gradle: the action requested obsolete SDK package 'tools'; sdkmanager reported 'Failed to find package tools'.
+- Updated workflow to explicitly request only 'platform-tools'. Commit: e16ac5540790a6cb69fd8242fd3a23da2b62844b.
+- New run 44157299377 was queued at handoff; build/test result is not yet known.
+
 ### Validation required
-1. Inspect GitHub Actions run for latest main push and complete logs.
-2. Fix Gradle/Kotlin/CMake/NDK errors.
+1. Inspect run 44157299377 and verify Android SDK setup now succeeds.
+2. Fix any subsequent Gradle/Kotlin/CMake/NDK errors.
 3. Confirm JVM tests pass.
 4. Confirm APK artifact upload.
 5. Install on Snapdragon/Adreno hardware and test Vulkan enumeration and controller hotplug.
