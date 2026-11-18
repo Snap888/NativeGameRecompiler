@@ -265,3 +265,9 @@ Mark complete only when evidence exists.
 - [ ] Verify controller profile JVM tests and Android build in latest CI.
 - [ ] Add event-capture/remap wizard and per-game profile selection.
 - [ ] Connect profiles to the native session input bridge; no mapping affects game input until this integration exists.
+
+
+### CI repair
+- [x] Normalize component install/activation branch results to a common typed outcome after CI caught Kotlin's incompatible branch result types.
+- [x] Refresh controller profile connection status on InputManager hotplug events.
+- [ ] Verify latest CI run after the repair and controller additions.
