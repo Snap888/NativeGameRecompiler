@@ -193,3 +193,13 @@ Mark complete only when evidence exists.
 - [x] Fix over-escaped shell line continuations in CI (#321–#324); corrected in `28ad3d4eac093b58849f93872fcc102248b1396a`.
 - [ ] Verify run #327 (`44270340309`) native tests, JVM tests, ARM64 APK and artifact upload.
 - [ ] After green CI, add trusted built-in backend fixture and lifecycle state machine; NGRPACK payloads remain data-only.
+
+
+## P0 — ABI v1 registry foundation
+- [x] Verify ABI validation run #334 (`44270549436`): native conformance tests, JVM tests, ARM64 APK and artifact upload all passed.
+- [x] Download and verify artifact ID `14413025119`; APK SHA-256 `8abd8b7c6dc6ed1bdef25e2b4fb4d16316547f3d44fed6703a1e020f0aec501f`.
+- [x] Audit ABI header, validator, CMake, JNI and capability registry.
+- [x] Add duplicate-safe, thread-safe in-process built-in backend registry foundation; no dynamic loading or package payload access.
+- [ ] Verify new registry native tests and complete Android CI.
+- [ ] Implement lifecycle state machine with explicit stop-completion/join contract and tests.
+- [ ] Design signed/provenance-verified library policy before considering dynamic loading; NGRPACK game payloads remain data-only.
