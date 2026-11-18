@@ -56,10 +56,22 @@ int main() {
     h.read_file = nullptr;
     assert(!ngr::validate_host_api_v1(h, &error));
     assert(error.find("callback") != std::string::npos);
+    h = host();
+    h.abi_major = 2;
+    assert(!ngr::validate_host_api_v1(h, &error));
+    h = host();
+    h.abi_minor = NGR_BACKEND_ABI_V1_MINOR + 1;
+    assert(!ngr::validate_host_api_v1(h, &error));
+    h = host();
+    h.struct_size = sizeof(h) - 1;
+    assert(!ngr::validate_host_api_v1(h, &error));
 
     auto b = backend();
     assert(ngr::validate_backend_api_v1(b, &error));
     b.abi_major = 2;
+    assert(!ngr::validate_backend_api_v1(b, &error));
+    b = backend();
+    b.abi_minor = NGR_BACKEND_ABI_V1_MINOR + 1;
     assert(!ngr::validate_backend_api_v1(b, &error));
     b = backend();
     b.backend_id = {"Bad ID", 6};
