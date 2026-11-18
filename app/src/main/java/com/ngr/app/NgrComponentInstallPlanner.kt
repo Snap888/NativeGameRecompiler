@@ -15,7 +15,8 @@ object NgrComponentInstallPlanner {
     fun resolve(
         catalog: NgrComponentCatalog,
         requestedIds: Set<String>,
-        installedIds: Set<String> = emptySet()
+        installedIds: Set<String> = emptySet(),
+        installedVersions: Map<String, String> = emptyMap()
     ): Plan {
         val errors = catalog.validate().toMutableList()
         if (requestedIds.isEmpty()) errors += "At least one component must be selected"
@@ -42,7 +43,7 @@ object NgrComponentInstallPlanner {
             (component.dependencies + component.constraints.requiredComponents).sorted().forEach(::visit)
             visiting.remove(id)
             visited += id
-            if (id in installedIds) already += id
+            if (id in installedIds && installedVersions[id] == component.version) already += id
             else {
                 selected += id
                 order += component
