@@ -12,16 +12,21 @@ import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
 
-/** Bilingual first-stage N64Recomp flow: import and inspect an N64 ELF. */
+/** N64Recomp import, ELF analysis and native C-code generation flow. */
 class N64RecompilerActivity : Activity() {
     private var language = "en"
+    private var selectedElfPath: String? = null
     private lateinit var status: TextView
+    private lateinit var generateButton: Button
+
     companion object {
         private const val REQUEST_ELF = 6201
         private const val MAX_ELF_BYTES = 512L * 1024L * 1024L
         init { System.loadLibrary("ngr_runtime") }
     }
+
     private external fun nativeInspectN64Elf(path: String): String
+    private external fun nativeGenerateN64C(inputPath: String, outputPath: String): String
     private fun ru() = language == "ru"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +44,8 @@ class N64RecompilerActivity : Activity() {
         val scroll = ScrollView(this).apply { addView(root) }
         root.addView(TextView(this).apply {
             text = if (ru()) "Рекомпилятор Nintendo 64" else "Nintendo 64 Recompiler"
-            textSize = 24f; setTextColor(Color.WHITE)
+            textSize = 24f
+            setTextColor(Color.WHITE)
         })
         root.addView(Button(this).apply {
             text = if (ru()) "Русский / English" else "English / Русский"
@@ -51,26 +57,63 @@ class N64RecompilerActivity : Activity() {
         })
         root.addView(TextView(this).apply {
             text = if (ru())
-                "N64 / MIPS → C → ARM64\n\nЭтап 1: анализ ELF и таблицы символов встроенным ядром N64Recomp. Для генерации ARM64-кода и запуска игры также потребуются ROM/символьные данные, конфигурация проекта и совместимое N64 runtime."
+                "N64 / MIPS → C → ARM64\n\n1. Импорт ELF с таблицей символов.\n2. Генерация исходников C встроенным N64Recomp.\n3. Следующий этап — сборка ARM64 и подключение игрового N64 runtime. Пока runtime не подключён, созданные исходники не являются запускаемой игрой."
             else
-                "N64 / MIPS → C → ARM64\n\nStage 1: inspect the ELF and symbol table using the integrated N64Recomp core. ARM64 code generation and game execution also require ROM/symbol data, project configuration and a compatible N64 runtime."
-            textSize = 14f; setTextColor(Color.rgb(180, 190, 205)); setPadding(0, 20, 0, 20)
+                "N64 / MIPS → C → ARM64\n\n1. Import an ELF with symbol data.\n2. Generate C sources using the integrated N64Recomp core.\n3. Next: ARM64 compilation and integration of the game-specific N64 runtime. Generated sources are not a playable game until that runtime is available."
+            textSize = 14f
+            setTextColor(Color.rgb(180, 190, 205))
+            setPadding(0, 20, 0, 20)
         })
         root.addView(Button(this).apply {
             text = if (ru()) "Выбрать ELF-файл" else "Choose ELF file"
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE); type = "application/octet-stream"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/octet-stream"
                 }
                 startActivityForResult(intent, REQUEST_ELF)
             }
         })
+        generateButton = Button(this).apply {
+            text = if (ru()) "Рекомпилировать в C" else "Recompile to C"
+            isEnabled = selectedElfPath != null
+            setOnClickListener { generateC() }
+        }
+        root.addView(generateButton)
         status = TextView(this).apply {
             text = if (ru()) "Ожидание ELF-файла…" else "Waiting for an ELF file…"
-            textSize = 13f; setTextColor(Color.rgb(105, 166, 255)); setPadding(0, 20, 0, 0)
+            textSize = 13f
+            setTextColor(Color.rgb(105, 166, 255))
+            setPadding(0, 20, 0, 0)
         }
         root.addView(status)
         setContentView(scroll)
+    }
+
+    private fun generateC() {
+        val input = selectedElfPath ?: return
+        generateButton.isEnabled = false
+        status.text = if (ru()) "Рекомпиляция MIPS → C… Не закрывайте приложение." else "Recompiling MIPS → C… Keep the app open."
+        Thread {
+            val output = File(filesDir, "n64recomp/generated/run-${System.currentTimeMillis()}")
+            try {
+                output.parentFile?.mkdirs()
+                val report = nativeGenerateN64C(input, output.absolutePath)
+                runOnUiThread {
+                    status.text = report
+                    generateButton.isEnabled = true
+                    Toast.makeText(this, if (report.startsWith("OK")) {
+                        if (ru()) "Исходники C созданы" else "C sources generated"
+                    } else report, Toast.LENGTH_LONG).show()
+                }
+            } catch (failure: Exception) {
+                runOnUiThread {
+                    status.text = (if (ru()) "Ошибка рекомпиляции: " else "Recompiler error: ") +
+                        (failure.message ?: "unknown")
+                    generateButton.isEnabled = true
+                }
+            }
+        }.start()
     }
 
     @Deprecated("Legacy callback retained for compatibility with the host Activity API")
@@ -99,10 +142,16 @@ class N64RecompilerActivity : Activity() {
                 }
                 require(total >= 64) { "Selected file is too small to be an ELF" }
                 val report = nativeInspectN64Elf(target.absolutePath)
-                runOnUiThread { status.text = report }
+                runOnUiThread {
+                    selectedElfPath = target.absolutePath
+                    status.text = report
+                    generateButton.isEnabled = report.startsWith("OK")
+                }
             } catch (failure: Exception) {
                 runOnUiThread {
-                    status.text = (if (ru()) "Ошибка импорта ELF: " else "ELF import failed: ") + (failure.message ?: "unknown")
+                    status.text = (if (ru()) "Ошибка импорта ELF: " else "ELF import failed: ") +
+                        (failure.message ?: "unknown")
+                    generateButton.isEnabled = false
                     Toast.makeText(this, status.text, Toast.LENGTH_LONG).show()
                 }
             }
