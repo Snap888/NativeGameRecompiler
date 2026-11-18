@@ -569,6 +569,16 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         }
         val wine = field("Wine / Proton layer ID", profile.wineLayerId)
         val winePrefix = field("Managed Wine prefix ID", profile.winePrefixId)
+        form.addView(secondaryButton("Choose existing prefix") {
+            val available = prefixManager.list()
+            val labels = listOf("No prefix") + available.map { "${it.displayName} · ${it.id} · ${it.state}" }
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("Assign Wine prefix")
+                .setItems(labels.toTypedArray()) { _, which ->
+                    winePrefix.setText(if (which == 0) "" else available[which - 1].id)
+                }
+                .show()
+        })
         val box64 = field("Box64 component ID", profile.box64ComponentId)
         val box86 = field("Box86 component ID (optional)", profile.box86ComponentId)
         val fex = field("FEXCore component ID", profile.fexCoreComponentId)
