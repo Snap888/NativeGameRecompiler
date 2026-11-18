@@ -1,6 +1,6 @@
 # ADR 0003: Versioned C ABI for execution backend plugins
 
-**Status:** Accepted for ABI v1 design; loader and runtime integration are not implemented.
+**Status:** ABI v1 design and host-side API-table validation implemented; dynamic loader, trusted backend fixture and runtime lifecycle integration are not implemented.
 
 ## Scope
 
@@ -43,6 +43,13 @@ The ABI is not a sandbox. A shared library loaded into the app process has the a
 - monotonic time in nanoseconds.
 
 Input, audio, display, threading, graphics-provider and asynchronous event services are intentionally not part of v1. Add them only through a minor-version extension or separate ABI after concrete backend requirements are audited.
+
+## Host-side validation implementation
+
+- `backend_abi_validation.hpp/.cpp` validates host and backend API tables before future lifecycle integration.
+- Checks include struct size, ABI major/minor, execution backend kind, bounded backend ID/version string views and required callbacks.
+- Native conformance tests cover valid tables and representative malformed tables. The Android CMake target compiles this validator.
+- This validation is not a sandbox, signature verifier or dynamic loader. Only trusted, provenance-verified shared libraries may ever be loaded in-process.
 
 ## Validation
 
