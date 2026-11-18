@@ -249,3 +249,10 @@ Mark complete only when evidence exists.
 - [ ] Add archive handlers for TAR_GZ/TAR_XZ/TAR_ZSTD/RAW only with dedicated security tests; ZIP remains the only enabled installer format.
 - [ ] Add installed component detail/rollback/uninstall UI and prevent removal of components referenced by profiles.
 - [ ] Add component version compatibility checks and launch-readiness integration for per-game overrides.
+
+
+### Component version lifecycle follow-up
+- [x] Pass installed component version metadata into dependency planning so mismatched versions are treated as updates, not silently accepted.
+- [x] Reactivate a previously stored version without re-downloading its archive; validate the stored tree and payload path before atomically changing the version pointer.
+- [x] Add rollback and uninstall actions in the component manager; block uninstall while a profile/game override or installed dependent component references the component.
+- [ ] Verify stored-version activation and manager maintenance actions in latest CI run #380.
