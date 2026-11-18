@@ -47,4 +47,6 @@ Input, audio, display, threading, graphics-provider and asynchronous event servi
 ## Validation
 
 - Public header is compiled as C and C++ by the Android native build. Struct-size helpers and the exported entry-point declaration are part of the header.
-- Loader conformance tests, version negotiation tests, lifecycle tests and hostile-plugin tests are required before marking the backend ABI capability available.
+- Host-side validation checks struct sizes, ABI major/minor compatibility, execution backend kind, bounded backend ID/version views and all required lifecycle callbacks.
+- Native host conformance tests exercise valid tables, missing callbacks, invalid IDs, truncated structs and major-version mismatch.
+- The validator does not load shared libraries. Trusted-library loading, lifecycle orchestration, package-file handle implementation and hostile-plugin tests are still required before marking the backend ABI capability available.
