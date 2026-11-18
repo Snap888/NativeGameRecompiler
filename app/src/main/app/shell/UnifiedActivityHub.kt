@@ -311,6 +311,7 @@ internal fun UnifiedActivity.UnifiedHub() {
 
     val storeVisible = remember { mutableStateMapOf(*initialStoreVisible.entries.map { it.key to it.value }.toTypedArray()) }
     var showAddCustomGame by remember { mutableStateOf(false) }
+    var showLegacyAddCustomGame by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var searchQueryTfv by remember { mutableStateOf(TextFieldValue("")) }
     val searchQuery = searchQueryTfv.text
@@ -1237,12 +1238,47 @@ internal fun UnifiedActivity.UnifiedHub() {
     }
 
     if (showAddCustomGame) {
-        AddCustomGameDialog(
-            onDismiss = {
-                showAddCustomGame = false
-                localLibraryRefreshKey++
+        AlertDialog(
+            onDismissRequest = { showAddCustomGame = false },
+            title = { Text("Добавить игру или приложение") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FilledTonalButton(
+                        onClick = { showAddCustomGame = false; showLegacyAddCustomGame = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.FolderOpen, contentDescription = null)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Выберите исполняемый файл или ROM…")
+                    }
+                    FilledTonalButton(
+                        onClick = { showAddCustomGame = false; showLinuxClient = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.SportsEsports, contentDescription = null)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Добавить клиент Steam")
+                    }
+                    FilledTonalButton(
+                        onClick = {
+                            showAddCustomGame = false
+                            startActivity(Intent(this@UnifiedHub, com.ngr.app.NgrRecompilerPickerActivity::class.java))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.Memory, contentDescription = null)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Рекомпилятор")
+                    }
+                }
             },
-            onInstallLinuxClient = { showLinuxClient = true },
+            confirmButton = { TextButton(onClick = { showAddCustomGame = false }) { Text("Отмена") } },
+        )
+    }
+    if (showLegacyAddCustomGame) {
+        AddCustomGameDialog(
+            onDismiss = { showLegacyAddCustomGame = false; localLibraryRefreshKey++ },
+            onInstallLinuxClient = { showLegacyAddCustomGame = false; showLinuxClient = true },
         )
     }
 
@@ -1276,6 +1312,8 @@ internal fun UnifiedActivity.UnifiedHub() {
             globalSettingsGogGame = null
         } else if (showAddCustomGame) {
             showAddCustomGame = false
+        } else if (showLegacyAddCustomGame) {
+            showLegacyAddCustomGame = false
         } else {
             showExitDialog = true
         }
