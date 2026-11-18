@@ -301,7 +301,7 @@ class NgrGamePackageBuilder(
         )
         } catch (e: Exception) {
             NgrLogger.error("package.builder", "In-place folder preparation failed", e)
-            Result(false, "Game folder preparation failed", errors = listOf(e.message ?: e.javaClass.simpleName))
+            return Result(false, "Game folder preparation failed", errors = listOf(e.message ?: e.javaClass.simpleName))
         }
     }
 
