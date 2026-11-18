@@ -162,6 +162,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         hero.addView(importActions)
         root.addView(hero, sectionParams())
 
+        root.addView(primaryButton("N64 Recompiler · Nintendo 64 / MIPS") {
+            startActivity(Intent(this, N64RecompilerActivity::class.java))
+        }, sectionParams())
+
         addSection(root, "LIBRARY", "Installed games")
         packageStatus = mutedText()
         root.addView(packageStatus)
