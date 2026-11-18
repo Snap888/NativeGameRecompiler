@@ -739,3 +739,25 @@ This is the durable project memory. Update it in every development session.
 - UI source and Android manifest committed to main.
 - Android CI was triggered for the UI commits; do not share a new APK until the latest run passes JVM tests, ARM64 APK packaging and artifact upload.
 - No visual inspection on a physical device has yet been performed. User should verify spacing and contrast on the target phone after installing the CI artifact.
+
+ 
+## Session 2026-11-18 — Large game folder import limits
+
+### Device log analysis
+- User-provided session 99aee2c1 shows normal app startup, Vulkan probe and input enumeration; the controller list did not include the previously attached GameSir device in this session.
+- Folder import reached copyDocumentDirectory and failed at the explicit size guard in MainActivity.kt:892.
+- The old limits were 512 MiB per file and 2 GiB total uncompressed payload. The log does not include the selected folder's exact size, so it is not possible to determine whether the per-file or total-payload threshold fired.
+- This is an import policy limit, not an executable detection, package validator corruption, Vulkan or runtime launch failure.
+
+### Changes
+- Raised the bounded per-file payload limit to 2 GiB and total uncompressed game payload limit to 8 GiB.
+- Raised maximum NGRPACK archive input/output size to 3 GiB. This deliberately stays below the current ZIP32 implementation limit; ZIP64 remains unsupported and must not be implied.
+- Kept the 4,096-entry limit, path/depth checks, regular-file/symlink rejection, SHA-256 manifest verification and bounded streaming extraction.
+- Folder-import errors now identify whether the per-file or total payload limit was exceeded and include the offending relative path.
+- Reused one limits object per directory traversal rather than allocating it for every 64 KiB read.
+- Added a unit test asserting archive/manifest size-limit consistency.
+
+### Validation
+- Source commits: 47d9afc9 archive limits, 8264e01c manifest limits, 6efde3cb folder diagnostics, 04c61cb5 tests, 76019797 streaming-loop allocation cleanup.
+- Android CI must pass JVM tests, ARM64 APK build and artifact upload before this larger-import change is considered validated.
+- The larger limits increase possible temporary storage use. They do not bypass Android free-space constraints; import still needs room for its private staging copies and final package installation.
