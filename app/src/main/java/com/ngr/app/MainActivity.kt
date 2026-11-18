@@ -1215,6 +1215,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                         environmentOverrides = env,
                         launchMode = selectedMode
                     )
+                    require(profileStore.get(updated.environmentProfileId) != null) { "Selected environment profile does not exist" }
                     val result = shortcutStore.save(updated)
                     if (!result.success) throw IllegalArgumentException(result.error ?: "Shortcut validation failed")
                     refreshShortcuts()
@@ -1317,6 +1318,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     NgrLogger.info("package.remove", "Removing packageId=$packageId")
                     val result = packageManager.remove(packageId)
                     NgrLogger.info("package.remove", "Removal success=${result.success}; message=${result.message}")
+                    if (result.success) {
+                        shortcutStore.loadAll().shortcuts.filter { it.packageId == packageId }.forEach { shortcutStore.delete(it.shortcutId) }
+                    }
                     runOnUiThread {
                         packageStatus.text = result.message
                         refreshPackages()
