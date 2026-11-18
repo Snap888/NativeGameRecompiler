@@ -320,8 +320,9 @@ Mark complete only when evidence exists.
 - [x] Link the N64Recomp core into the Android ARM64 JNI runtime; verified by Actions run [44343916041](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44343916041).
 - [x] Add JNI pipeline to parse supported N64 ELF and emit per-function C source, static-function discoveries, `funcs.h` and a machine-readable generation manifest.
 - [x] Add Android “Recompile to C” action.
-- [ ] Verify C-generation commits `4f0f90a` and `ab200f1` with a fresh Android CI build.
+- [ ] Verify N64 code-generation and source-set repair in the current Android CI runs; run #44379837404 exposed the omitted `src/main/java` source root.
 - [ ] Add synthetic, redistributable MIPS ELF fixture tests for actual generated C and error paths.
+- [x] Include the pinned upstream `recomp.h` ABI header and N64Recomp license in generated output; add a README describing the missing title-runtime services.
 - [ ] Add N64Recomp TOML configuration import and preserve required metadata/entrypoint.
 - [ ] Provision Android ARM64 Clang and compile generated C against a real title runtime.
 - [ ] Integrate a compatible N64 title runtime, including CPU/memory, RSP, graphics, audio, save data and platform services.
@@ -345,3 +346,10 @@ Mark complete only when evidence exists.
 - [ ] Compile generated C to ARM64 using a verified managed Clang toolchain and link the title runtime.
 - [ ] Package title-specific runtime, generated library and legally supplied ROM/data.
 - [ ] Device-test a legally supplied title; only then mark “launchable”.
+
+
+## N64 recompiler build repair — 2026-11-18
+- [x] Diagnose Kotlin source resolution failure: NGR sources were preserved under `app/src/main/java`, but WinNative's custom Gradle source roots excluded that directory.
+- [x] Add the source root in Gradle and make the donor-import workflow restore it after every import.
+- [x] Bundle upstream N64Recomp ABI header and license in generated C output.
+- [ ] Verify latest CI, then add synthetic ELF code-generation regression tests.
