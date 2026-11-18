@@ -29,8 +29,8 @@ object NgrManifestValidator {
     const val MAX_MANIFEST_BYTES = 1024 * 1024
     const val MAX_FILES = 4096
     const val MAX_PATH_CHARS = 1024
-    const val MAX_FILE_BYTES = 512L * 1024 * 1024
-    const val MAX_TOTAL_BYTES = 2L * 1024 * 1024 * 1024
+    const val MAX_FILE_BYTES = 2L * 1024 * 1024 * 1024
+    const val MAX_TOTAL_BYTES = 8L * 1024 * 1024 * 1024
 
     fun validate(manifestText: String, packageRoot: File, verifyHashes: Boolean = true): Result {
         val errors = mutableListOf<String>()
