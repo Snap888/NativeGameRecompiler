@@ -375,6 +375,11 @@ Mark complete only when evidence exists.
 
 
 ## Xbox 360 / XDroid360 integration
+- [x] Stabilize the WinNative import workflow against concurrent pushes and repair the source-root insertion script.
+- [x] Add tested XEX2/STFS header detection to NGR auto-detection. This is format recognition only; no generic ISO/XEX execution is enabled.
+- [ ] Verify unit tests and Android APK build after Xbox 360 detector changes.
+- [ ] Implement a safe XEX/STFS/XISO import and bounded extraction pipeline based on XDroid360/XenonUtils; do not shell out to arbitrary commands.
+
 - [x] Diagnose and fix the Kotlin Byte-vs-Int ELF magic comparison from run #44399528476.
 - [x] Preserve the XDroid360 submodule mapping through WinNative donor imports and add CI source-pin checks.
 - [ ] Check runs #44401088392, #44401119729 and #44401136332; repair any recursive submodule or Android build failures.
