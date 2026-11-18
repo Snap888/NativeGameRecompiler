@@ -842,13 +842,15 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             for (component in plan.installOrder) {
                 NgrLogger.info("component.install", "Activating or installing ${component.id} v${component.version}")
                 val stored = componentStore.storedVersionDirectory(component.id, component.version)
-                val result = if (stored != null) {
-                    componentStore.activateStoredVersion(component)
+                val outcome = if (stored != null) {
+                    val activated = componentStore.activateStoredVersion(component)
+                    activated.success to activated.error
                 } else {
-                    pipeline.downloadAndInstall(component)
+                    val downloaded = pipeline.downloadAndInstall(component)
+                    downloaded.success to downloaded.error
                 }
-                if (!result.success) {
-                    failure = "${component.id}: ${result.error ?: "install failed"}"
+                if (!outcome.first) {
+                    failure = "${component.id}: ${outcome.second ?: "install failed"}"
                     NgrLogger.error("component.install", failure)
                     break
                 }
