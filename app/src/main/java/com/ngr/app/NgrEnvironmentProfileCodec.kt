@@ -37,6 +37,7 @@ object NgrEnvironmentProfileCodec {
             .put("gameOverrides", JSONObject())
 
         putNullable(root, "wineLayerId", profile.wineLayerId)
+        putNullable(root, "winePrefixId", profile.winePrefixId)
         putNullable(root, "box64ComponentId", profile.box64ComponentId)
         putNullable(root, "box86ComponentId", profile.box86ComponentId)
         putNullable(root, "fexCoreComponentId", profile.fexCoreComponentId)
@@ -67,6 +68,8 @@ object NgrEnvironmentProfileCodec {
         val root = try { JSONObject(json) }
         catch (e: Exception) { throw IllegalArgumentException("Invalid environment profile JSON", e) }
         rejectUnknown(root, ROOT_KEYS, "profile")
+        val sourceSchemaVersion = integer(root, "schemaVersion")
+        require(sourceSchemaVersion in 1..NgrEnvironmentProfile.CURRENT_SCHEMA_VERSION) { "Unsupported environment profile schema: $sourceSchemaVersion" }
         val reshadeJson = root.getJSONObject("reshade")
         rejectUnknown(reshadeJson, RESHADE_KEYS, "profile.reshade")
         val overridesJson = root.getJSONObject("gameOverrides")
@@ -86,11 +89,12 @@ object NgrEnvironmentProfileCodec {
             )
         }
         val profile = NgrEnvironmentProfile(
-            schemaVersion = integer(root, "schemaVersion"),
+            schemaVersion = NgrEnvironmentProfile.CURRENT_SCHEMA_VERSION,
             profileId = requiredString(root, "profileId"),
             displayName = requiredString(root, "displayName"),
             containerMode = enumValue(requiredString(root, "containerMode"), NgrEnvironmentProfile.ContainerMode::valueOf, "containerMode"),
             wineLayerId = optionalString(root, "wineLayerId"),
+            winePrefixId = optionalString(root, "winePrefixId"),
             box64ComponentId = optionalString(root, "box64ComponentId"),
             box86ComponentId = optionalString(root, "box86ComponentId"),
             cpuTranslator = enumValue(requiredString(root, "cpuTranslator"), NgrEnvironmentProfile.CpuTranslator::valueOf, "cpuTranslator"),
@@ -196,7 +200,7 @@ object NgrEnvironmentProfileCodec {
     }
 
     private val ROOT_KEYS = setOf(
-        "schemaVersion", "profileId", "displayName", "containerMode", "wineLayerId", "box64ComponentId", "box86ComponentId",
+        "schemaVersion", "profileId", "displayName", "containerMode", "wineLayerId", "winePrefixId", "box64ComponentId", "box86ComponentId",
         "cpuTranslator", "box64Preset", "fexCoreComponentId", "fexUnixLibsComponentId", "wowBox64ComponentId",
         "dxvkComponentId", "vkd3dComponentId", "graphicsProvider", "turnipComponentId",
         "displayBackend", "waylandWineSupported", "waylandTurnipSupported", "reshade",
