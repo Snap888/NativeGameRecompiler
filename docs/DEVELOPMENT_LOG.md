@@ -972,3 +972,22 @@ This is the durable project memory. Update it in every development session.
 - The UI clearly labels shortcuts as metadata-only because no process launcher is connected. Android home-screen pinning, icon/cover import and actual process launch remain pending.
 - CI run #344 (44280634973) failed one JVM assertion: the test created two shortcut fixtures with different default timestamps and compared them as equal. Corrected the fixture by retaining and comparing the same object in commit d3dc6110e610c93b7e522ef89067cc6f74910fb7.
 - Current verification run #351 (44280992531) includes the timestamp fixture correction; it was still running at the time of this update. Runs #349/#350 were triggered by earlier intermediate commits and are not authoritative for the current HEAD.
+
+
+## Session continuation 2026-11-18 — Launch configuration resolver
+
+### CI and artifact verification
+- Verified main commit `c33a2b9334bb2665ab3ef8da3303fcf734871da9` and Actions run #353 (`44281090326`): native ABI conformance, backend registry tests, JVM tests, ARM64 debug APK and artifact upload all succeeded.
+- Downloaded artifact ID `14417860254` (`NGR-arm64-debug`), extracted `app-debug.apk` (2,437,013 bytes). Artifact ZIP SHA-256 `1d00a39473d4e50de4ac5778f03b9fdeb74164e1ae5348e07604c58de2d76acf`; APK SHA-256 `0de237786a36559cc7ce1f65c521743432bcbbe9d75e6a4d80f63d8c4f6cd8f2`.
+
+### Implementation
+- Added centralized `NgrEnvironmentVariablePolicy` and applied it to both environment profiles and per-game shortcut overrides. It blocks host/runtime-owned loader paths, Vulkan ICD/layer selection, Adrenotools driver injection, Wine prefix/loader and FEX rootfs controls, in addition to PATH/HOME/PREFIX, LD_* and NGR_*.
+- Added `NgrLaunchConfigurationResolver`: validates shortcut/profile identity; requires Wine/Box64 or FEX components for Wine mode; leaves static-recompiled and native ARM64 modes independent of Wine; merges base profile, package-specific override and shortcut override in deterministic precedence; resolves Wine/DXVK/VKD3D/Turnip/display choices; rejects unsupported Wayland combinations.
+- Added JVM tests for merge precedence, profile mismatch, Wine readiness, Wine-independent execution modes, Wayland provider selection and environment injection prevention.
+- Added a per-shortcut UI action to preview the resolved configuration and effective environment. It explicitly reports that no process will be started.
+- Commits: `dbd802f24d87f9c7467692669750540e81c11d27` (profile validation policy), `c96cc2d59b6daec1fd86d09f2382387d73364395` (shortcut policy), `28610d0f1d84eebd8b4d6513826c0ae3580704f0` (policy object), `8f1e8648cbdcc7580c764e51e9f67928ba3e03a8` (resolver), `cf7a165e2f7eae8f50f32147b80d59954b191408` (per-game Wayland override validation), `3333e6f8628bb553da8565160b323ff5db8adb40` (tests), `9f38e4788c47c26b6656b17c37eb9a9135fc3cd6` (UI preview), `9ad75f09503007557276ce0fa719bf3398faa422` (test assertion fix).
+
+### Status and limits
+- CI run #353 passed the previous shortcut UI stage. The resolver and preview commits are newer and still require a fresh CI result.
+- The resolver is configuration-only. It does not verify component payloads against the installed component store/catalog, activate Vulkan drivers, initialize Wine prefixes or start a process.
+- No physical-device launch test has been performed.
