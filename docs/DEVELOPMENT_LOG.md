@@ -806,7 +806,8 @@ This is the durable project memory. Update it in every development session.
 - Added strict prefix ID validation and codec round-trip/migration tests.
 - Profile editor now allows assigning a managed Wine prefix ID through a picker; profile cards show the binding and report missing, unsafe or PREPARED prefixes as draft prerequisites.
 - Prefix deletion is blocked while one or more profiles reference it, preventing silent dangling references.
-- Added `NgrEnvironmentReadiness`, which combines profile launch validation, actual prefix state, installed component active-version state, version pins, catalog compatibility and Vulkan/Wayland capability checks.
+- Added `NgrEnvironmentReadiness`, which combines profile launch validation, actual prefix state, installed component active-version state, version pins, catalog compatibility and Vulkan/Wayland capability checks. It also reports selected components and transitive dependencies that still need installation.
+- Added readiness tests for missing prefix/components and PREPARED prefix rejection.
 - Readiness is an inspection report only. It does not activate components, load libraries, initialize Wine or launch games.
 
 ### Current constraints
