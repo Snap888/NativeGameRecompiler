@@ -19,6 +19,7 @@ object NgrEnvironmentProfileCodec {
             .put("containerMode", profile.containerMode.name)
             .put("cpuTranslator", profile.cpuTranslator.name)
             .put("box64Preset", profile.box64Preset.name)
+            .put("fexPreset", profile.fexPreset.name)
             .put("graphicsProvider", profile.graphicsProvider.name)
             .put("displayBackend", profile.displayBackend.name)
             .put("waylandWineSupported", profile.waylandWineSupported)
@@ -99,6 +100,7 @@ object NgrEnvironmentProfileCodec {
             box86ComponentId = optionalString(root, "box86ComponentId"),
             cpuTranslator = enumValue(requiredString(root, "cpuTranslator"), NgrEnvironmentProfile.CpuTranslator::valueOf, "cpuTranslator"),
             box64Preset = enumValue(requiredString(root, "box64Preset"), NgrEnvironmentProfile.Box64Preset::valueOf, "box64Preset"),
+            fexPreset = optionalEnum(root, "fexPreset", NgrEnvironmentProfile.FexPreset::valueOf) ?: NgrEnvironmentProfile.FexPreset.BALANCED,
             fexCoreComponentId = optionalString(root, "fexCoreComponentId"),
             fexUnixLibsComponentId = optionalString(root, "fexUnixLibsComponentId"),
             wowBox64ComponentId = optionalString(root, "wowBox64ComponentId"),
@@ -201,7 +203,7 @@ object NgrEnvironmentProfileCodec {
 
     private val ROOT_KEYS = setOf(
         "schemaVersion", "profileId", "displayName", "containerMode", "wineLayerId", "winePrefixId", "box64ComponentId", "box86ComponentId",
-        "cpuTranslator", "box64Preset", "fexCoreComponentId", "fexUnixLibsComponentId", "wowBox64ComponentId",
+        "cpuTranslator", "box64Preset", "fexPreset", "fexCoreComponentId", "fexUnixLibsComponentId", "wowBox64ComponentId",
         "dxvkComponentId", "vkd3dComponentId", "graphicsProvider", "turnipComponentId",
         "displayBackend", "waylandWineSupported", "waylandTurnipSupported", "reshade",
         "audioBackend", "desktopWidth", "desktopHeight", "dpi", "environmentVariables", "gameOverrides", "componentVersions"
