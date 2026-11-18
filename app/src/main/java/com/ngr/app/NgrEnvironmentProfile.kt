@@ -16,6 +16,7 @@ data class NgrEnvironmentProfile(
     val box86ComponentId: String? = null,
     val cpuTranslator: CpuTranslator,
     val box64Preset: Box64Preset = Box64Preset.BALANCED,
+    val fexPreset: FexPreset = FexPreset.BALANCED,
     val fexCoreComponentId: String? = null,
     val fexUnixLibsComponentId: String? = null,
     val wowBox64ComponentId: String? = null,
@@ -41,6 +42,8 @@ data class NgrEnvironmentProfile(
     enum class ContainerMode { STANDARD_X86_64, ARM64EC }
     enum class CpuTranslator { BOX64, FEXCORE }
     enum class Box64Preset { COMPATIBILITY, BALANCED, PERFORMANCE }
+    /** User-selected FEX tuning intent; runtime-specific options are not emitted until a verified FEX adapter exists. */
+    enum class FexPreset { COMPATIBILITY, BALANCED, PERFORMANCE }
     enum class GraphicsProvider { SYSTEM_VULKAN, TURNIP }
     enum class DisplayBackend { X11, WAYLAND }
     enum class AudioBackend { AUTO, DIRECT_AUDIO, OBOE }
@@ -168,7 +171,7 @@ data class NgrEnvironmentProfile(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 2
+        const val CURRENT_SCHEMA_VERSION = 3
         private val ID_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
         private val VERSION_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._+-]{0,127}$")
         private val ENV_KEY_PATTERN = Regex("^[A-Z_][A-Z0-9_]{0,127}$")
