@@ -128,3 +128,12 @@ Mark complete only when evidence exists.
 
 ## Latest code CI gate — 2026-11-18
 - [ ] Confirm #261 (44191960463) downloader integration tests and #262 (44191981786) cleanup run; #263 (44192131858) and #264 (44192157349) include installed-dependency resolver fix/tests.
+
+
+## UI refresh — 2026-11-18
+- [x] Replace the plain main screen with a dark WinNative-inspired NGR dashboard, blue accent system, hero import panel and grouped library/runtime/device/diagnostics sections.
+- [x] Align Android Material dialogs with the dark dashboard theme.
+- [x] Preserve existing package import/install/remove, environment profile, Vulkan, input and diagnostics behavior.
+- [ ] Verify latest UI commit in Android CI: JVM tests, arm64-v8a APK build and artifact upload.
+- [ ] Install the UI build on the target phone and review contrast, scrolling, dialog styling and compact-screen layout.
+- [ ] Follow up with polished game/profile list cards and navigation only after device feedback.
