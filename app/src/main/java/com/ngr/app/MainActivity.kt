@@ -77,6 +77,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("app", "MainActivity.onCreate")
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
+        packageWorker.execute {
+            val removed = packageManager.cleanupAbandonedFolderStaging()
+            if (removed > 0) NgrLogger.info("package.import", "Cleaned $removed abandoned folder import staging directory/directories")
+        }
         shortcutStore = NgrGameShortcutStore(File(filesDir, "ngr-runtime"))
         catalogStore = NgrComponentCatalogStore(File(filesDir, "ngr-runtime"))
         componentStore = NgrComponentStore(File(filesDir, "ngr-runtime"))
