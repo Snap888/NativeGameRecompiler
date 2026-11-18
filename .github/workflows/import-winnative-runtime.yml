@@ -1,9 +1,5 @@
 name: Import WinNative Runtime Base into NGR
 
-concurrency:
-  group: winnative-import-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches:
@@ -98,20 +94,6 @@ jobs:
           if "org.json:json" not in source:
               source = source.replace(dependencies, dependencies + "\n    testImplementation 'org.json:json:20240303'")
           gradle.write_text(source)
-
-          drawer = Path("app/src/main/app/shell/UnifiedActivityDrawer.kt")
-          source = drawer.read_text()
-          anchor = "            DrawerExitAppCard(onClick = onExitApp)"
-          action = """            DrawerActionCard(
-                icon = Icons.Outlined.Memory,
-                label = "Native Game Recompiler",
-                onClick = { (context as? Activity)?.startActivity(Intent(context, com.ngr.app.MainActivity::class.java)) },
-            )
-            Spacer(Modifier.height(12.dp))
-"""
-          if 'label = "Native Game Recompiler"' not in source:
-              source = source.replace(anchor, action + anchor)
-          drawer.write_text(source)
 
           license_doc = Path("docs/ngr/LICENSING_AND_PROVENANCE.md")
           if license_doc.exists():
