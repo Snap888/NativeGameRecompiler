@@ -298,12 +298,12 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
     // It defines recomp_context, memory helpers and generated-code macros; title services
     // (get_function, cop0 handlers, RSP, graphics/audio/input) remain a separate runtime.
     try {
-        const upstreamInclude = std::filesystem::path(NGR_N64RECOMP_INCLUDE_DIR);
+        const std::filesystem::path upstreamInclude(NGR_N64RECOMP_INCLUDE_DIR);
         std::filesystem::copy_file(
             upstreamInclude / "recomp.h",
             staging / "recomp.h",
             std::filesystem::copy_options::overwrite_existing);
-        const licensePath = std::filesystem::path(NGR_N64RECOMP_LICENSE_FILE);
+        const std::filesystem::path licensePath(NGR_N64RECOMP_LICENSE_FILE);
         if (std::filesystem::exists(licensePath)) {
             std::filesystem::copy_file(
                 licensePath, staging / "LICENSE-N64Recomp.txt",
