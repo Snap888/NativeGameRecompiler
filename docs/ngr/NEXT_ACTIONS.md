@@ -333,3 +333,17 @@ Mark complete only when evidence exists.
 - N64Recomp currently needs ELF/symbol metadata; ROM-only automatic function discovery is not promised.
 - Do not include copyrighted ROMs, ELFs, assets or title-specific generated code in CI/repository.
 - Host-tool compilation is not the same as Android embedding or game execution.
+
+
+## P5 — N64Recomp Android core (active — 2026-11-18)
+
+- [x] Add pinned N64Recomp to Android CMake graph.
+- [x] Link N64Recomp ELF/core libraries into NGR JNI runtime.
+- [x] Add bounded JNI ELF inspection entry point.
+- [x] Add bilingual English/Russian screen and SAF import.
+- [x] Restore N64Recomp submodule metadata after WinNative import and register the activity in CI import script.
+- [ ] Verify CI submodule initialization and host tools.
+- [ ] Verify Android ARM64 compile/link of N64Recomp core.
+- [ ] Add ROM + symbol/config inputs and real C code generation.
+- [ ] Compile generated C with NDK Clang and link a compatible N64 title runtime.
+- [ ] Add synthetic fixture tests and device validation.
