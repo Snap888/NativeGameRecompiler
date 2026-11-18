@@ -5,3 +5,6 @@
 	path = app/src/main/cpp/vkbasalt
 	url = https://github.com/WinNative-Emu/vkBasalt.git
 	branch = Test
+[submodule "native/recompilers/N64Recomp"]
+	path = native/recompilers/N64Recomp
+	url = https://github.com/N64Recomp/N64Recomp.git
