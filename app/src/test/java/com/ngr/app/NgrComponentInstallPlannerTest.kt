@@ -50,6 +50,20 @@ class NgrComponentInstallPlannerTest {
         assertEquals(setOf("box64"), plan.alreadyInstalled)
     }
 
+
+    @Test fun plansUpdateWhenInstalledVersionDiffersFromCatalog() {
+        val value = catalog(component("wine"))
+        val plan = NgrComponentInstallPlanner.resolve(
+            value,
+            setOf("wine"),
+            installedIds = setOf("wine"),
+            installedVersions = mapOf("wine" to "0.9")
+        )
+        assertTrue(plan.errors.toString(), plan.valid)
+        assertEquals(listOf("wine"), plan.installOrder.map { it.id })
+        assertTrue(plan.alreadyInstalled.isEmpty())
+    }
+
     @Test fun rejectsUnknownSelectionsAndConflicts() {
         val unknown = NgrComponentInstallPlanner.resolve(catalog(component("wine")), setOf("missing"))
         assertFalse(unknown.valid)
