@@ -312,3 +312,24 @@ Mark complete only when evidence exists.
 - [x] JVM unit tests passed, including FEX schema migration and stale folder staging cleanup.
 - [x] ARM64 Debug APK built and uploaded; artifact ID 14433695246 downloaded and inspected.
 - [ ] Install APK and test SAF import of a multi-GB game folder on physical Snapdragon/Adreno hardware.
+
+
+## P4 — N64Recomp integration (active — 2026-11-18)
+- [x] Pin N64Recomp MIT upstream at `598ce2080004a5672d604dceadbda436045307b7` as `native/recompilers/N64Recomp`.
+- [x] Preserve recursive dependency submodules and upstream license notices.
+- [x] Add reproducible host-tool build of N64Recomp and RSPRecomp to integration CI.
+- [ ] Verify CI can recursively fetch all N64Recomp dependency submodules and build both tools.
+- [ ] Add Android JNI wrapper around the N64Recomp core API with bounded job lifecycle, cancellation and progress/log reporting.
+- [ ] Build N64Recomp core/dependencies for Android ARM64 (do not package a host executable in the APK).
+- [ ] Add validated ROM/ELF metadata inspection and a clear unsupported-input report.
+- [ ] Generate C source into app-private workspace and compile it with NDK Clang for arm64-v8a.
+- [ ] Integrate a versioned N64 title runtime; do not assume N64Recomp output is self-contained.
+- [ ] Add a synthetic/redistributable end-to-end fixture and verify generated ARM64 output.
+- [ ] Register the static backend with trusted built-in ABI lifecycle and launch only validated generated packages.
+- [ ] Verify the resulting app APK and device execution before marking N64 support available.
+
+### Scope guard
+- N64/MIPS is the first bounded proof of concept only.
+- N64Recomp currently needs ELF/symbol metadata; ROM-only automatic function discovery is not promised.
+- Do not include copyrighted ROMs, ELFs, assets or title-specific generated code in CI/repository.
+- Host-tool compilation is not the same as Android embedding or game execution.
