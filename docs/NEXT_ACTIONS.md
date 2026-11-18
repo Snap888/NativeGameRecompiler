@@ -182,3 +182,13 @@ Mark complete only when evidence exists.
 - [ ] Verify CI for commits `45a4f8fe` through `c09e1a84`; fix any native test/compiler errors before proceeding.
 - [ ] Implement trusted backend registration and serialized lifecycle; no NGRPACK payload may be loaded as a shared library.
 - [ ] Add app-bundled/verified library provenance policy before enabling dynamic loading.
+
+
+## Backend ABI validation — 2026-11-18
+- [x] Implement host/backend ABI v1 table validation for struct sizes, major/minor versions, backend kind, bounded ID/version views and required callbacks.
+- [x] Add native conformance tests for valid and malformed API tables.
+- [x] Link validator into the Android C++20 runtime target.
+- [x] Add native conformance test step to Android CI.
+- [x] Fix over-escaped shell line continuations in CI (#321–#324); corrected in `28ad3d4eac093b58849f93872fcc102248b1396a`.
+- [ ] Verify run #327 (`44270340309`) native tests, JVM tests, ARM64 APK and artifact upload.
+- [ ] After green CI, add trusted built-in backend fixture and lifecycle state machine; NGRPACK payloads remain data-only.
