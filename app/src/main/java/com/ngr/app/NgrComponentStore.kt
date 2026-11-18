@@ -140,6 +140,44 @@ class NgrComponentStore(private val privateRoot: File) {
         }
     }
 
+    fun storedVersionDirectory(componentId: String, version: String): File? {
+        if (!isSafeId(componentId) || !isSafeVersion(version)) return null
+        return try {
+            val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), componentId)
+            val versionsRoot = File(componentRoot, VERSIONS_DIRECTORY)
+            if (Files.isSymbolicLink(componentRoot.toPath()) || !componentRoot.isDirectory ||
+                Files.isSymbolicLink(versionsRoot.toPath()) || !versionsRoot.isDirectory) return null
+            val root = versionsRoot.canonicalFile
+            val candidate = File(root, version)
+            if (candidate.canonicalFile.parentFile != root || !candidate.isDirectory ||
+                Files.isSymbolicLink(candidate.toPath())) return null
+            validateTree(candidate.toPath())
+            candidate
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Atomically selects an already stored, validated version without downloading it again. */
+    fun activateStoredVersion(component: NgrComponentCatalog.Component): Result {
+        validateComponent(component)?.let { return Result(false, error = it) }
+        return try {
+            val versionRoot = storedVersionDirectory(component.id, component.version)
+                ?: return Result(false, error = "Requested component version is not stored")
+            val payload = File(versionRoot, component.installSubdirectory).canonicalFile
+            require(payload.path.startsWith(versionRoot.canonicalPath + File.separator) &&
+                payload.isDirectory && !Files.isSymbolicLink(payload.toPath())) {
+                "Stored component payload is missing or unsafe"
+            }
+            val componentRoot = File(File(privateRoot, COMPONENTS_DIRECTORY), component.id)
+            val previous = readState(componentRoot)
+            writeState(componentRoot, State(component.version, previous.current))
+            Result(true, versionRoot, component.version)
+        } catch (e: Exception) {
+            Result(false, error = e.message ?: "Unable to activate stored component version")
+        }
+    }
+
     fun activeComponentPath(component: NgrComponentCatalog.Component): File? {
         if (validateComponent(component) != null) return null
         val versionRoot = activeVersionDirectory(component.id) ?: return null
