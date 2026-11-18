@@ -887,9 +887,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                             if (read < 0) break
                             fileBytes += read
                             budget.bytes += read
-                            if (fileBytes > NgrPackArchiveInspector.Limits().maxFileBytes ||
-                                budget.bytes > NgrPackArchiveInspector.Limits().maxTotalBytes)
-                                throw IOException("Game folder exceeds import size limits")
+                            val limits = NgrPackArchiveInspector.Limits()
+                            if (fileBytes > limits.maxFileBytes)
+                                throw IOException("Game file exceeds the ${limits.maxFileBytes / (1024L * 1024)} MiB per-file import limit: $childRelative")
+                            if (budget.bytes > limits.maxTotalBytes)
+                                throw IOException("Game folder exceeds the ${limits.maxTotalBytes / (1024L * 1024)} MiB total import limit after copying $childRelative")
                             output.write(buffer, 0, read)
                         }
                     }
