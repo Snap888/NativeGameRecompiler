@@ -579,10 +579,13 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         catalog: NgrComponentCatalog,
         selected: NgrComponentCatalog.Component
     ) {
-        val installedIds = catalog.components.filter { component ->
-            componentStore.activeVersionDirectory(component.id)?.name == component.version
-        }.map { it.id }.toSet()
-        val plan = NgrComponentInstallPlanner.resolve(catalog, setOf(selected.id), installedIds)
+        val installedVersions = catalog.components.mapNotNull { component ->
+            componentStore.activeVersionDirectory(component.id)?.name?.let { component.id to it }
+        }.toMap()
+        val installedIds = installedVersions.keys
+        val plan = NgrComponentInstallPlanner.resolve(
+            catalog, setOf(selected.id), installedIds, installedVersions
+        )
         if (!plan.valid) {
             AlertDialog.Builder(this)
                 .setTitle("Component dependency plan rejected")
