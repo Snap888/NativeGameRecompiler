@@ -1188,3 +1188,16 @@ This is the durable project memory. Update it in every development session.
 - [ ] Implement an N64 ROM/decompilation project workflow (ROM + matching source/config/symbol metadata) before enabling ROM-to-native game generation.
 - [ ] Implement console and PC recompilers only through dedicated, legally sourced backend integrations; catalog entries remain unavailable meanwhile.
 - [x] Initialize the NGR logger from the actual launcher (`UnifiedActivity`); the previous initialization was only in the legacy NGR activity and did not cover the WinNative launcher flow.
+
+
+## Session 2026-11-19 — Xbox 360 XDroid360 backend audit and source pin
+- [x] Audited `Snap888/XDroid360` and its upstream parent `udarmolota/XDroid360`; confirmed it is a static PowerPC Xenon → C++ → ARM64 pipeline, not a universal Xbox 360 ROM-to-native converter.
+- [x] Identified XenonRecomp, XenonUtils/XEX, Clang/LLD toolchain, per-title DAORecomp/SoDRecomp runtimes, Xenia Vulkan GPU, native Vulkan renderer, XenosRecomp/DXC shader pipeline, XMA/FFmpeg audio and Android SDL front end.
+- [x] Confirmed the current README supports Dragon Age: Origins and State of Decay only; each title requires a matching profile/runtime and version/hash validation.
+- [x] Audited license obligations: XDroid360 own MIT code; native renderer GPL-3.0; XenonRecomp GPL-2.0-or-later as distributed with GNU binutils disassembler; Xenia BSD-3-Clause; FFmpeg LGPL and additional third-party notices. Preserve all license files and notices.
+- [x] Added XDroid360 as a pinned source submodule at `native/recompilers/XDroid360` (fork commit `f388d11fc207502cd5975899c8adc06600cfe34f`); its nested DAORecomp source submodule must be initialized recursively.
+- [x] Added the Xbox 360 integration audit and phased NGR host-adapter plan.
+- [ ] Verify recursive submodule checkout and CI build; source pin alone does not yet build or enable Xbox 360 execution in NGR.
+- [ ] Extract/adapt XenonRecomp + XenonUtils and toolchain packaging without importing XDroid360's duplicate Android launcher.
+- [ ] Port the recipe runner to NGR build jobs and implement the first validated title profile/runtime.
+- [ ] Connect generated ARM64 game library to NGR shortcut store only after link/package validation; keep launch disabled until device verification.

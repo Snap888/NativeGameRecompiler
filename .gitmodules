@@ -8,3 +8,6 @@
 [submodule "native/recompilers/N64Recomp"]
 	path = native/recompilers/N64Recomp
 	url = https://github.com/N64Recomp/N64Recomp.git
+[submodule "native/recompilers/XDroid360"]
+	path = native/recompilers/XDroid360
+	url = https://github.com/Snap888/XDroid360.git

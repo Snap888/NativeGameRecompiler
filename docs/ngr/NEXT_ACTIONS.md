@@ -371,3 +371,16 @@ Mark complete only when evidence exists.
 - [ ] Add unit tests for N64 ROM byte-order probes and malformed headers.
 - [ ] Implement a legal N64 ROM + decompilation-project metadata workflow before exposing ROM-to-native compilation.
 - [ ] Add dedicated backend interfaces and implementations for each planned console/PC system; do not mark catalog entries available prematurely.
+
+
+
+## Xbox 360 / XDroid360 integration
+- [x] Audit `Snap888/XDroid360` fork and upstream architecture; record supported-title limits and license provenance.
+- [x] Pin XDroid360 source at `f388d11fc207502cd5975899c8adc06600cfe34f` under `native/recompilers/XDroid360`; nested DAORecomp submodule requires recursive checkout.
+- [ ] Verify recursive checkout and inspect nested submodule commit/license state in CI.
+- [ ] Port XenonRecomp + XenonUtils/XEX as an NGR backend without the donor launcher UI.
+- [ ] Port the pinned Clang/LLD toolchain packaging and version/hash compatibility checks.
+- [ ] Adapt bounded recipe execution, extraction, progress, cancellation, resume and detailed per-step logs to NGR build jobs.
+- [ ] Integrate a first title-specific runtime/profile (DAO or State of Decay); arbitrary Xbox 360 XEX/ISO must remain unsupported without a matching profile.
+- [ ] Add NGR Android host adapters for Vulkan surface, audio/XMA, controller input, storage, lifecycle and per-game settings; reuse WinNative services instead of adding duplicate managers.
+- [ ] Compile/link one legally supplied title to ARM64, validate its package, register a shortcut and verify actual launch on device before enabling the backend.
