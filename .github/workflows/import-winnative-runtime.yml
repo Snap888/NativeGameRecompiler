@@ -41,6 +41,9 @@ jobs:
           cp -a app/src/main/java/com/ngr /tmp/ngr-preserve/app/src/main/java/com/
           cp -a app/src/test/java/com/ngr /tmp/ngr-preserve/app/src/test/java/com/
           cp -a native/ngr-runtime /tmp/ngr-preserve/ngr-runtime
+          mkdir -p /tmp/ngr-preserve/app/src/main/app/shell
+          cp app/src/main/app/shell/UnifiedActivityHub.kt /tmp/ngr-preserve/app/src/main/app/shell/
+          cp app/src/main/app/shell/UnifiedActivityDrawer.kt /tmp/ngr-preserve/app/src/main/app/shell/
           cp -a docs /tmp/ngr-preserve/docs
           cp -a schemas /tmp/ngr-preserve/schemas
           cp LICENSE /tmp/ngr-preserve/LICENSE-MIT
@@ -61,6 +64,7 @@ jobs:
           cp -a /tmp/ngr-preserve/app/src/main/java/com/ngr app/src/main/java/com/
           cp -a /tmp/ngr-preserve/app/src/test/java/com/ngr app/src/test/java/com/
           cp -a /tmp/ngr-preserve/ngr-runtime native/ngr-runtime
+          cp -a /tmp/ngr-preserve/app/src/main/app/shell/. app/src/main/app/shell/
           mkdir -p docs/ngr
           cp -a /tmp/ngr-preserve/docs/. docs/ngr/
           cp /tmp/ngr-preserve/LICENSE-MIT docs/ngr/LICENSE-MIT
