@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
+#include <exception>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -36,14 +37,6 @@ std::string json_escape(const std::string& value) {
         }
     }
     return out;
-}
-
-bool valid_identifier(const std::string& name) {
-    if (name.empty() || !(std::isalpha(static_cast<unsigned char>(name[0])) || name[0] == '_')) return false;
-    for (unsigned char ch : name) {
-        if (!(std::isalnum(ch) || ch == '_')) return false;
-    }
-    return true;
 }
 
 std::string unique_identifier(const std::string& input, std::unordered_set<std::string>& used) {
