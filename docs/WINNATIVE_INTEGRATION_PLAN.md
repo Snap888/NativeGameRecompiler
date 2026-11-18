@@ -267,3 +267,10 @@ The compatibility/game-management layer is a required milestone before static re
 - At least one legal Windows test executable launches through a verified Wine + CPU translator path on target hardware; graphics/audio/controller/suspend/resume/stop/logging are tested.
 - Each driver/effects/frame-generation capability is reported independently; unsupported choices are disabled with a reason.
 - Static recompilation remains a separate execution mode with no Wine dependency.
+
+
+## Launch configuration resolution contract
+- The profile defaults are merged first, then the package-ID-specific `gameOverrides`, then the shortcut's per-game overrides. Later layers replace earlier values only for permitted keys.
+- `NgrEnvironmentVariablePolicy` owns host/runtime control variables: PATH/HOME/PREFIX, LD_*, NGR_*, Vulkan ICD/driver/layer variables, ADRENOTOOLS_*, Wine prefix/loader controls and FEX rootfs/config controls. User values cannot override them.
+- Wine compatibility mode requires the selected Wine/Proton and architecture-specific CPU translator components. Static-recompiled and native ARM64 modes do not inherit a Wine requirement.
+- The resolved preview is diagnostic only. Before launch it must be augmented with catalog provenance, installed component/version verification, prefix READY validation and backend capability checks.
