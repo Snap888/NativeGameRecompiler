@@ -45,6 +45,8 @@ class NgrLaunchConfigurationResolverTest {
         assertEquals("C:/Games/Test", config.workingDirectory)
         assertEquals(listOf("-windowed", "-novid"), config.arguments)
         assertTrue(config.requiresWineCompatibilityRuntime)
+        assertEquals(NgrEnvironmentProfile.Box64Preset.BALANCED, config.box64Preset)
+        assertEquals(NgrEnvironmentProfile.FexPreset.BALANCED, config.fexPreset)
     }
 
     @Test fun rejectsShortcutBoundToAnotherProfile() {
