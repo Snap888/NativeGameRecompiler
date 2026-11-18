@@ -1110,6 +1110,36 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val dxvk = field("DXVK component ID", profile.dxvkComponentId)
         val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
         val turnip = field("Turnip component ID", profile.turnipComponentId)
+        val box64PresetGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val box64PresetButtons = NgrEnvironmentProfile.Box64Preset.values().associateWith { preset ->
+            RadioButton(this).apply {
+                id = View.generateViewId()
+                text = when (preset) {
+                    NgrEnvironmentProfile.Box64Preset.COMPATIBILITY -> "Box64 · Compatibility"
+                    NgrEnvironmentProfile.Box64Preset.BALANCED -> "Box64 · Balanced"
+                    NgrEnvironmentProfile.Box64Preset.PERFORMANCE -> "Box64 · Performance"
+                }
+                isChecked = profile.box64Preset == preset
+            }.also(box64PresetGroup::addView)
+        }
+        form.addView(TextView(this).apply { text = "Box64 preset (saved intent; runtime adapter pending)"; textSize = 12f })
+        form.addView(box64PresetGroup)
+
+        val fexPresetGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val fexPresetButtons = NgrEnvironmentProfile.FexPreset.values().associateWith { preset ->
+            RadioButton(this).apply {
+                id = View.generateViewId()
+                text = when (preset) {
+                    NgrEnvironmentProfile.FexPreset.COMPATIBILITY -> "FEX · Compatibility"
+                    NgrEnvironmentProfile.FexPreset.BALANCED -> "FEX · Balanced"
+                    NgrEnvironmentProfile.FexPreset.PERFORMANCE -> "FEX · Performance"
+                }
+                isChecked = profile.fexPreset == preset
+            }.also(fexPresetGroup::addView)
+        }
+        form.addView(TextView(this).apply { text = "FEX preset (saved intent; runtime adapter pending)"; textSize = 12f })
+        form.addView(fexPresetGroup)
+
         val componentVersions = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             minLines = 2
@@ -1181,6 +1211,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     val standardMode = profile.containerMode == NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64
                     val updated = profile.copy(
                         componentVersions = parsedVersions,
+                        box64Preset = box64PresetButtons.entries.firstOrNull { it.value.id == box64PresetGroup.checkedRadioButtonId }?.key ?: profile.box64Preset,
+                        fexPreset = fexPresetButtons.entries.firstOrNull { it.value.id == fexPresetGroup.checkedRadioButtonId }?.key ?: profile.fexPreset,
                         wineLayerId = wine.text.toString().trim().ifEmpty { null },
                         winePrefixId = winePrefix.text.toString().trim().ifEmpty { null },
                         box64ComponentId = if (standardMode) box64.text.toString().trim().ifEmpty { null } else null,
@@ -1221,7 +1253,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             "Profile ID: ${profile.profileId}",
             "Mode: ${profile.containerMode}",
             "Wine/Proton: ${profile.wineLayerId ?: "not selected"}",
-            "Box64: ${profile.box64ComponentId ?: "not selected"}",
+            "Box64: ${profile.box64ComponentId ?: "not selected"} · preset ${profile.box64Preset}",
+            "FEX: preset ${profile.fexPreset} (configuration only; runtime adapter pending)",
             "Box86: ${profile.box86ComponentId ?: "not selected"}",
             "FEXCore: ${profile.fexCoreComponentId ?: "not selected"}",
             "FEX UnixLibs: ${profile.fexUnixLibsComponentId ?: "not selected"}",
