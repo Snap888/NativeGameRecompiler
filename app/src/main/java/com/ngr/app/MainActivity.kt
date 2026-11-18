@@ -499,6 +499,37 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     }
                 }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { leftMargin = dp(6) })
                 row.addView(actions)
+                if (installedVersion != null) {
+                    val maintenance = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                    maintenance.addView(secondaryButton("Rollback") {
+                        val result = componentStore.rollback(component.id)
+                        Toast.makeText(this@MainActivity,
+                            result.error ?: "Stored component version rolled back to ${result.activeVersion}",
+                            Toast.LENGTH_LONG).show()
+                        refreshComponents()
+                    }, LinearLayout.LayoutParams(0, dp(40), 1f))
+                    maintenance.addView(secondaryButton("Uninstall") {
+                        val references = componentReferences(component.id, catalog)
+                        if (references.isNotEmpty()) {
+                            Toast.makeText(this@MainActivity,
+                                "Component is still referenced by: ${references.joinToString()}",
+                                Toast.LENGTH_LONG).show()
+                        } else {
+                            AlertDialog.Builder(this@MainActivity)
+                                .setTitle("Uninstall stored component?")
+                                .setMessage("${component.id} · v$installedVersion. This removes its stored versions; no running runtime is modified.")
+                                .setNegativeButton("Cancel", null)
+                                .setPositiveButton("Uninstall") { _, _ ->
+                                    val result = componentStore.uninstall(component.id)
+                                    Toast.makeText(this@MainActivity,
+                                        result.error ?: "Component removed from private store",
+                                        Toast.LENGTH_LONG).show()
+                                    refreshComponents()
+                                }.show()
+                        }
+                    }, LinearLayout.LayoutParams(0, dp(40), 1f).apply { leftMargin = dp(6) })
+                    row.addView(maintenance)
+                }
                 componentList.addView(row)
             }
             componentList.addView(secondaryButton("Remove catalog") {
@@ -513,6 +544,35 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     }.show()
             })
         }
+    }
+
+
+    private fun componentReferences(
+        componentId: String,
+        catalog: NgrComponentCatalog
+    ): List<String> {
+        val references = mutableListOf<String>()
+        profileStore.loadAll().profiles.forEach { profile ->
+            val baseReferences = listOfNotNull(
+                profile.wineLayerId, profile.box64ComponentId, profile.box86ComponentId,
+                profile.fexCoreComponentId, profile.fexUnixLibsComponentId, profile.wowBox64ComponentId,
+                profile.dxvkComponentId, profile.vkd3dComponentId, profile.turnipComponentId,
+                profile.reshade.componentId
+            ) + profile.reshade.shaderPackageIds
+            val overrideReferences = profile.gameOverrides.values.flatMap { override ->
+                listOfNotNull(override.wineLayerId, override.dxvkComponentId,
+                    override.vkd3dComponentId, override.turnipComponentId)
+            }
+            if (componentId in baseReferences || componentId in overrideReferences) {
+                references += "profile:${profile.displayName}"
+            }
+        }
+        catalog.components.filter { candidate ->
+            candidate.id != componentId &&
+                (candidate.dependencies + candidate.constraints.requiredComponents).contains(componentId) &&
+                componentStore.activeVersionDirectory(candidate.id) != null
+        }.forEach { references += "installed dependent:${it.id}" }
+        return references.distinct()
     }
 
     private fun installCatalogComponent(
