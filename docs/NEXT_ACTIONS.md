@@ -235,7 +235,7 @@ Mark complete only when evidence exists.
 - [x] Resolve profile defaults + package-specific override + shortcut override in deterministic precedence; validate profile identity and launch mode requirements.
 - [x] Resolve per-game Wine/DXVK/VKD3D/Turnip/display choices and reject unverified Wayland combinations.
 - [x] Add in-app resolved-configuration preview; it explicitly does not start a process.
-- [ ] Verify resolver JVM tests and ARM64 build in latest Actions run.
+- [x] Verify resolver JVM tests and ARM64 build in Actions run #400 (all jobs passed).
 - [ ] Add component catalog selection and installed-version readiness to preview; never infer availability from IDs alone.
 - [ ] Implement Android pinned shortcuts and safe icon import.
 
@@ -244,7 +244,7 @@ Mark complete only when evidence exists.
 - [x] Persist imported catalogs after strict schema/provenance-field validation with bounded size, atomic replacement, safe IDs and symlink checks.
 - [x] Add dependency-first manual component install planner with conflict/forbidden checks and installed-component skipping.
 - [x] Add in-app catalog import/list, source link, install/update action, SHA-256-verified HTTPS download, bounded ZIP extraction and atomic version promotion.
-- [ ] Verify catalog/planner JVM tests, full JVM suite and ARM64 APK in latest Actions run.
+- [x] Verify catalog/planner JVM tests, full JVM suite and ARM64 APK in Actions run #400.
 - [ ] Add signed catalog trust roots or explicit user-pinned catalog fingerprints before treating remote catalogs as trusted.
 - [ ] Add archive handlers for TAR_GZ/TAR_XZ/TAR_ZSTD/RAW only with dedicated security tests; ZIP remains the only enabled installer format.
 - [ ] Add installed component detail/rollback/uninstall UI and prevent removal of components referenced by profiles.
@@ -255,14 +255,14 @@ Mark complete only when evidence exists.
 - [x] Pass installed component version metadata into dependency planning so mismatched versions are treated as updates, not silently accepted.
 - [x] Reactivate a previously stored version without re-downloading its archive; validate the stored tree and payload path before atomically changing the version pointer.
 - [x] Add rollback and uninstall actions in the component manager; block uninstall while a profile/game override or installed dependent component references the component.
-- [ ] Verify stored-version activation and manager maintenance actions in latest CI run #380.
+- [x] Verify stored-version activation and manager maintenance actions in Actions run #400.
 
 
 ## P1 — Controller mapping profiles
 - [x] Add persisted controller profiles bound to Android device descriptors, with game-specific optional assignment.
 - [x] Add validated key/axis/hat bindings, duplicate physical-input rejection, dead zones, per-stick sensitivity, inversion, stick curves, trigger threshold, vibration and touch layout tuning.
 - [x] Add controller profile create/edit/delete UI and current connected-device status.
-- [ ] Verify controller profile JVM tests and Android build in latest CI.
+- [x] Verify controller profile JVM tests and Android build in Actions run #400.
 - [ ] Add event-capture/remap wizard and per-game profile selection.
 - [ ] Connect profiles to the native session input bridge; no mapping affects game input until this integration exists.
 
@@ -270,10 +270,18 @@ Mark complete only when evidence exists.
 ### CI repair
 - [x] Normalize component install/activation branch results to a common typed outcome after CI caught Kotlin's incompatible branch result types.
 - [x] Refresh controller profile connection status on InputManager hotplug events.
-- [ ] Verify latest CI run after the repair and controller additions.
+- [x] Latest integrated build passed in Actions run #400.
 
 
 - [x] Fix controller enumeration to process Android's `IntArray` device IDs through a sequence.
 - [x] Diagnose run #397: 126 JVM tests, one planner assertion failed; native ABI and registry checks passed, APK steps skipped.
 - [x] Fix installed-ID-only planner compatibility while retaining explicit version mismatch updates (commit `255a4684614b69319b5328787b9ad4db725c01aa`).
-- [ ] Verify CI for planner compatibility fix; require JVM suite, ARM64 APK build and artifact upload.
+- [x] Planner compatibility fix verified in Actions run #398; full integrated commit verified in run #400.
+
+## P0 — Direct folder import (2026-11-18)
+- [x] Copy SAF folder contents directly into private package staging; eliminate cacheDir payload copy and generated multi-GB NGRPACK for folder import.
+- [x] Generate executable inventory and SHA-256 manifest in place; preserve multiple-executable selection without recopying payload.
+- [x] Validate staged package and atomically promote with backup/rollback; restrict staging path to UUID child under private managed root.
+- [x] Add JVM tests for direct folder preparation/install, manifest integrity and staging-path rejection.
+- [ ] Verify new direct-import code in Actions and inspect resulting APK artifact.
+- [ ] Test large folder import on Android with constrained free storage; verify cancellation, interrupted import recovery and update rollback.
