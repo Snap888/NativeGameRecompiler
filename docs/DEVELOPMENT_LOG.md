@@ -991,3 +991,21 @@ This is the durable project memory. Update it in every development session.
 - CI run #353 passed the previous shortcut UI stage. The resolver and preview commits are newer and still require a fresh CI result.
 - The resolver is configuration-only. It does not verify component payloads against the installed component store/catalog, activate Vulkan drivers, initialize Wine prefixes or start a process.
 - No physical-device launch test has been performed.
+
+
+## Session continuation 2026-11-18 — Component catalog and manager UI
+
+### Implementation
+- Added `NgrComponentCatalogStore`: strict parser validation, 4 MiB catalog bound, app-private atomic replacement, catalog ID/filename consistency, symlink rejection, bounded catalog count, corrupt-catalog reporting and safe delete.
+- Added `NgrComponentInstallPlanner`: dependency-first closure, installed dependency skipping, unknown dependency rejection and conflict/forbidden-component checks.
+- Added JVM tests for catalog store lifecycle/validation/corrupt files and dependency planning/order/conflicts.
+- Added the Components & Drivers UI: import catalog JSON through SAF, list catalog components with type/version/license/ABI, open upstream source, install/update ZIP components and dependencies through the existing HTTPS + SHA-256 + bounded extraction + atomic promotion pipeline. Partial installation is reported explicitly. Non-ZIP formats are disabled.
+- The UI warns that catalog metadata is untrusted and that stored payloads remain inert; no driver is activated or loaded into Vulkan, and no Wine/Box64/FEX process is launched.
+- Commits: `24b809ad735cfb3f0b26bbe3c817ea52a904793c` (catalog store), `564ad20b677a170abe45fcdef9edd9714ce29773` (catalog tests), `8199a14bf64fe6bef75276c73474095757b9c86e` (dependency planner), `3dc78efabf3aa18b7f8a1677b9024a9e533e72fa` (planner tests), `045a40e73dbc92bb91a4c4f7a182465d986fdd4a` (catalog/driver manager UI).
+
+### Validation status
+- Launch resolver JVM tests passed in Actions run #360 (`44284421245`), including native ABI and registry checks. Later launch preview and catalog manager changes require a fresh run.
+- Latest UI/catalog build run #370 (`44284848217`) was still running at the time of this entry.
+- Catalog metadata has no signature trust chain yet; HTTPS and archive SHA-256 protect transport/integrity relative to the imported catalog, not the trustworthiness of the catalog author. Use only trusted catalogs until signature/pinning is implemented.
+- Only ZIP component archives are installable. TAR/RAW formats remain disabled.
+- No physical-device component download/install or runtime activation test has been performed.
