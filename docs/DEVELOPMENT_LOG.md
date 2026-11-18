@@ -964,3 +964,11 @@ This is the durable project memory. Update it in every development session.
 3. Implement launch settings/profile resolution and the session API.
 4. Continue with controller profiles, runtime presets, driver/effects management and real Wine/Box64/FEX launcher integration.
 5. Keep static recompilation blocked until the completion gate in WINNATIVE_INTEGRATION_PLAN.md is satisfied.
+
+
+### Shortcut UI follow-up — 2026-11-18
+- Added a Game Shortcuts section to the NGR dashboard. Users can create a shortcut from an installed package and existing environment profile, then edit title, package-relative executable, working directory, arguments, profile ID, execution mode and per-game environment overrides.
+- Shortcut records are removed when their game package is successfully removed. Saving validates that the selected environment profile exists.
+- The UI clearly labels shortcuts as metadata-only because no process launcher is connected. Android home-screen pinning, icon/cover import and actual process launch remain pending.
+- CI run #344 (44280634973) failed one JVM assertion: the test created two shortcut fixtures with different default timestamps and compared them as equal. Corrected the fixture by retaining and comparing the same object in commit d3dc6110e610c93b7e522ef89067cc6f74910fb7.
+- Current verification run #351 (44280992531) includes the timestamp fixture correction; it was still running at the time of this update. Runs #349/#350 were triggered by earlier intermediate commits and are not authoritative for the current HEAD.
