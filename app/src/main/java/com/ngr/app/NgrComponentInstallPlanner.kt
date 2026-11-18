@@ -43,7 +43,7 @@ object NgrComponentInstallPlanner {
             (component.dependencies + component.constraints.requiredComponents).sorted().forEach(::visit)
             visiting.remove(id)
             visited += id
-            if (id in installedIds && installedVersions[id] == component.version) already += id
+            if (id in installedIds && (id !in installedVersions || installedVersions[id] == component.version)) already += id
             else {
                 selected += id
                 order += component
