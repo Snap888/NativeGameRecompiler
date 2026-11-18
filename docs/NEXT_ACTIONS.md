@@ -283,5 +283,10 @@ Mark complete only when evidence exists.
 - [x] Generate executable inventory and SHA-256 manifest in place; preserve multiple-executable selection without recopying payload.
 - [x] Validate staged package and atomically promote with backup/rollback; restrict staging path to UUID child under private managed root.
 - [x] Add JVM tests for direct folder preparation/install, manifest integrity and staging-path rejection.
-- [ ] Verify new direct-import code in Actions and inspect resulting APK artifact.
+- [x] Verify direct-import code and JVM tests in Actions run #409; inspect APK artifact ID 14422691411 and confirm ARM64 native library.
 - [ ] Test large folder import on Android with constrained free storage; verify cancellation, interrupted import recovery and update rollback.
+
+### Latest direct-import build
+- [x] Actions run #409 passed native ABI, backend registry, JVM tests, ARM64 APK and artifact upload.
+- [x] Downloaded and inspected NGR-arm64-debug; verified lib/arm64-v8a/libngr_runtime.so.
+- [ ] Physical-device test of direct SAF import with a multi-GB game folder.
