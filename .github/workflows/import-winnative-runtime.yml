@@ -197,6 +197,7 @@ jobs:
       - name: Verify N64Recomp C generation is wired into the Android host
         run: |
           grep -q "Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C" native/ngr-runtime/src/n64recomp_bridge.cpp
+          grep -q "fixed point" native/ngr-runtime/src/n64recomp_bridge.cpp
           grep -q "nativeGenerateN64C" app/src/main/java/com/ngr/app/N64RecompilerActivity.kt
 
       - name: Build imported WinNative host with NGR native runtime
