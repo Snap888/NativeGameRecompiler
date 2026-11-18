@@ -1090,7 +1090,7 @@ This is the durable project memory. Update it in every development session.
 - Added a versioned FEX preset preference to environment profiles; schema advanced from v2 to v3. Existing v1/v2 profile JSON migrates with FEX preset defaulting to BALANCED.
 - Added Box64 and FEX Compatibility/Balanced/Performance choices to the environment profile editor and details. UI labels explicitly identify them as saved intent, not active runtime flags.
 - Extended resolved launch configuration and preview to expose both translator presets; resolver still does not execute a process or translate these choices into Box64/FEX runtime options.
-- Added codec migration/round-trip tests and launch resolver assertions. CI verification is pending for the latest commits.
+- Added codec migration/round-trip tests and launch resolver assertions. Translator profile and preview changes passed CI run #420; abandoned-staging cleanup and its retention test passed in run #429.
 - Commits: 522768655b7cc8c7fafd00a7f4110c51db479200, b5eaa86ee0dfb624bc1fd1615f97b39bf52ad3e9, 06f8b0a8fe561f8ad325e65e37786d331500f988, 14a959a9436b4a50d9071a6e0a322242c1170864, 6cc85681e6250162fbb7ce4b509e4ec615d793d4, 749480364aaa8d1960e10ffd51d225c4d8f12458, 41409ac1f1812a265680efb2850c184298eff417, 1946f9da99ee1403e149cd431967325c62da219b.
 
 ### Latest verified artifact
@@ -1110,3 +1110,12 @@ This is the durable project memory. Update it in every development session.
 - Actions run #411 (44293256826), commit 0d1f3c1332f455ffedcc58ef2c4c4546606d439d, passed native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and upload.
 - Artifact ID 14422247556 downloaded; ZIP contains app-debug.apk (2,486,165 bytes), APK SHA-256 00393af5291eb636157b7df792f0b99ebe90214b41ed5b93d0fd23bf5a70d802.
 - This artifact predates the translator-preset schema/UI changes. The latest preset changes must receive their own successful CI artifact before being called verified.
+
+
+## Abandoned folder staging cleanup and current verified build — 2026-11-18
+- Added `NgrPackPackageManager.cleanupAbandonedFolderStaging()`; it removes only UUID-named real staging directories older than 30 days under the private `.folder-staging` root. Symlink roots/children and recent directories are skipped.
+- MainActivity schedules cleanup on its package worker at startup; added a JVM test confirming expired staging is removed while recent staging is retained.
+- Commits: cleanup method `179217a62bc9b505ed8fea56f7b19a2c6be11f3b`, startup hook `aa8ac8117684f50eb7d8201e2659057313eeb85a`, test `03f369e5fed7bf657bca68c76674cdfe466030cd`.
+- Actions run #429 (44316501792), commit `03f369e5fed7bf657bca68c76674cdfe466030cd`, passed Native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
+- Artifact ID `14433695246` downloaded and inspected. ZIP contains `app-debug.apk` (2,486,165 bytes), including `lib/arm64-v8a/libngr_runtime.so`. APK SHA-256: `5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44`.
+- Physical Android installation and multi-GB SAF import remain unverified; no device test is claimed.
