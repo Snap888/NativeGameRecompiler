@@ -239,6 +239,7 @@ class NgrRecompilerPickerActivity : Activity() {
             }
             val elfs = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_MIPS }
             val roms = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_ROM }
+            val xbox360 = detected.filter { it.third == NgrRecompilerCatalog.SystemId.XBOX_360 }
             runOnUiThread {
                 if (selectedMode == Mode.MANUAL && targetSystem != NgrRecompilerCatalog.SystemId.N64_MIPS) {
                     val label = NgrRecompilerCatalog.systems.first { it.id == targetSystem }.label
@@ -260,6 +261,11 @@ class NgrRecompilerPickerActivity : Activity() {
                     val message = "Nintendo 64 ROM обнаружен: ${roms.joinToString { it.second }}. Заголовок и порядок байтов распознаны. Но N64Recomp не принимает retail .z64 напрямую: ему нужен MIPS ELF и конфигурация проекта декомпиляции (symbols/functions). ROM не был добавлен как запускаемая игра."
                     status.text = message
                     NgrLogger.warn("recompiler.detect", "N64 ROM detected; current N64Recomp backend requires decompilation ELF")
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                } else if (xbox360.isNotEmpty()) {
+                    val message = "Обнаружен контент Xbox 360: ${xbox360.joinToString { it.second }}. Файл распознан (XEX2/STFS), но для сборки необходимы поддерживаемый профиль игры, title runtime и ARM64 toolchain. Пока ни один профиль не прошёл проверку запуска в NGR; ярлык готовой игры не создаётся."
+                    status.text = message
+                    NgrLogger.info("recompiler.detect", "Xbox 360 source detected; profile/runtime build is not yet enabled")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 } else {
                     val message = "Не найден поддерживаемый входной файл. Проверено: ${detected.size}."
@@ -288,6 +294,23 @@ class NgrRecompilerPickerActivity : Activity() {
                     magic == listOf(0x37, 0x80, 0x40, 0x12) ||
                     magic == listOf(0x40, 0x12, 0x37, 0x80)
                 if (isN64Rom) return@use NgrRecompilerCatalog.SystemId.N64_ROM
+            }
+            if (offset >= 4) {
+                val magicText = String(header, 0, 4, Charsets.US_ASCII)
+                if (magicText == "XEX2" || magicText == "CON " ||
+                    magicText == "LIVE" || magicText == "PIRS") {
+                    return@use NgrRecompilerCatalog.SystemId.XBOX_360
+                }
+            }
+            if (extension in setOf("xex", "con", "live", "pirs")) {
+                NgrLogger.info("recompiler.detect", "Xbox 360 extension accepted for header validation: $name")
+                if (offset >= 4) {
+                    val magicText = String(header, 0, 4, Charsets.US_ASCII)
+                    if (magicText == "XEX2" || magicText == "CON " ||
+                        magicText == "LIVE" || magicText == "PIRS") {
+                        return@use NgrRecompilerCatalog.SystemId.XBOX_360
+                    }
+                }
             }
             if (offset < 20 || header[0] != 0x7f.toByte() ||
                 header[1] != 'E'.code.toByte() || header[2] != 'L'.code.toByte() ||
