@@ -159,20 +159,22 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
         addSection(root, "DEVICE", "Hardware & graphics")
         val hardwareCard = createCard()
-        val gpuHeader = TextView(this).apply {
+        hardwareCard.addView(TextView(this).apply {
             text = "VULKAN DEVICE"
             textSize = 10f
             letterSpacing = 0.14f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.rgb(105, 166, 255))
-        }
-        hardwareCard.addView(gpuHeader)
+        })
         NgrLogger.info("vulkan", "Starting Vulkan physical-device enumeration")
         val vulkanReport = nativeVulkanProbe()
         NgrLogger.info("vulkan", "Vulkan probe completed; reportChars=${vulkanReport.length}")
         hardwareCard.addView(readoutText(vulkanReport))
         val divider = View(this).apply { setBackgroundColor(Color.rgb(48, 57, 72)) }
-        hardwareCard.addView(divider, LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(12); bottomMargin = dp(12) })
+        hardwareCard.addView(divider, LinearLayout.LayoutParams(-1, dp(1)).apply {
+            topMargin = dp(12)
+            bottomMargin = dp(12)
+        })
         hardwareCard.addView(TextView(this).apply {
             text = "RUNTIME CAPABILITIES"
             textSize = 10f
@@ -201,8 +203,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             setTextColor(Color.rgb(163, 174, 191))
         })
         val diagnosticActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        diagnosticActions.addView(secondaryButton("View log") { showLogs() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(6) })
-        diagnosticActions.addView(secondaryButton("Export log") { saveLogs() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(6) })
+        diagnosticActions.addView(
+            secondaryButton("View log") { showLogs() },
+            LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(6) }
+        )
+        diagnosticActions.addView(
+            secondaryButton("Export log") { saveLogs() },
+            LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(6) }
+        )
         diagnostics.addView(diagnosticActions)
         root.addView(diagnostics, sectionParams())
 
@@ -222,7 +230,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         }
     }
 
-    private fun sectionParams() = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) }
+    private fun sectionParams() = LinearLayout.LayoutParams(-1, -2).apply {
+        bottomMargin = dp(14)
+    }
 
     private fun addSection(root: LinearLayout, eyebrow: String, heading: String) {
         val label = LinearLayout(this).apply {
@@ -299,7 +309,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     override fun onPause() {
         inputManager.unregisterInputDeviceListener(this)
-        super.onPause()    }
+        super.onPause()
+    }
 
     override fun onDestroy() {
         NgrLogger.info("app", "MainActivity.onDestroy")
@@ -319,6 +330,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         devices.text = if (found.isEmpty()) "No gamepad detected" else found.joinToString("\n")
         NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
     }
+
     private fun showCreateEnvironmentProfileDialog() {
         val nameInput = EditText(this).apply {
             hint = "Profile name"
@@ -448,7 +460,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val fex = field("FEXCore component ID", profile.fexCoreComponentId)
         val fexUnix = field("FEX UnixLibs component ID", profile.fexUnixLibsComponentId)
         val wow = field("WOWBox64 component ID", profile.wowBox64ComponentId)
-        val dxvk = field("DXVK component ID", profile.dxvkComponentId)        val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
+        val dxvk = field("DXVK component ID", profile.dxvkComponentId)
+        val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
         val turnip = field("Turnip component ID", profile.turnipComponentId)
         val componentVersions = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -467,7 +480,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val wayland = RadioButton(this).apply { id = View.generateViewId(); text = "Wayland"; isChecked = profile.displayBackend == NgrEnvironmentProfile.DisplayBackend.WAYLAND }
         displayGroup.addView(x11); displayGroup.addView(wayland)
         form.addView(TextView(this).apply { text = "Display backend"; textSize = 12f })
-        form.addView(displayGroup)        val graphicsGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        form.addView(displayGroup)
+        val graphicsGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         val systemVk = RadioButton(this).apply { id = View.generateViewId(); text = "System Vulkan"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.SYSTEM_VULKAN }
         val turnipVk = RadioButton(this).apply { id = View.generateViewId(); text = "Turnip"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.TURNIP }
         graphicsGroup.addView(systemVk); graphicsGroup.addView(turnipVk)
@@ -597,7 +611,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 "application/zip",
                 "application/x-zip-compressed",
                 "application/octet-stream"
-            ))        }
+            ))
+        }
         NgrLogger.info("package.import", logMessage)
         startActivityForResult(intent, requestCode)
     }
@@ -615,7 +630,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val destination = data?.data ?: return
                 runCatching {
                     val bytes = NgrLogger.recentText(2_500_000).toByteArray(Charsets.UTF_8)
-                    contentResolver.openOutputStream(destination)?.use { it.write(bytes) }                        ?: throw IllegalStateException("Unable to open destination")
+                    contentResolver.openOutputStream(destination)?.use { it.write(bytes) }
+                        ?: throw IllegalStateException("Unable to open destination")
                     Toast.makeText(this, "Log saved (${bytes.size} bytes)", Toast.LENGTH_SHORT).show()
                     NgrLogger.info("diagnostics", "Exported runtime log; bytes=${bytes.size}")
                 }.onFailure {
@@ -746,7 +762,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val budget = FolderImportBudget()
                 copyDocumentDirectory(root, copied, "", budget)
                 if (budget.files == 0) throw IOException("Selected folder contains no files")
-                val displayName = root.name ?: "Imported game"                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
+                val displayName = root.name ?: "Imported game"
+                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
                 generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
                 val builder = NgrGamePackageBuilder()
                 val built = builder.buildFromFolder(copied, generated, displayName)
@@ -763,7 +780,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             } catch (e: Exception) {
                 NgrLogger.error("package.import", "Game folder import failed", e)
                 runOnUiThread {
-                    packageStatus.text = "Game folder import failed\n${e.message}"                    Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
+                    packageStatus.text = "Game folder import failed\n${e.message}"
+                    Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 if (!ownershipTransferred) {
@@ -896,3 +914,140 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         input.use { source ->
             FileOutputStream(destination).use { output ->
                 val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val count = source.read(buffer)
+                    if (count < 0) break
+                    copied += count
+                    if (copied > maxBytes) throw IllegalArgumentException("Selected archive exceeds size limit")
+                    output.write(buffer, 0, count)
+                }
+            }
+        }
+        if (copied == 0L) throw IllegalArgumentException("Selected archive is empty")
+        NgrLogger.info("package.import", "SAF stream copied; bytes=$copied")
+    }
+
+    private fun refreshPackages() {
+        packageWorker.execute {
+            NgrLogger.info("package.inventory", "Scanning installed packages")
+            val inventory = packageManager.listInstalled()
+            NgrLogger.info("package.inventory", "Inventory valid=${inventory.packages.size}; invalid=${inventory.invalidPackageIds.size}; errors=${inventory.errors.size}")
+            runOnUiThread {
+                packageList.removeAllViews()
+                if (inventory.packages.isEmpty()) {
+                    packageList.addView(TextView(this).apply { text = "No installed packages" })
+                }
+                inventory.packages.forEach { pkg ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 8, 0, 8)
+                    }
+                    val description = TextView(this).apply {
+                        text = "${pkg.displayName}\n${pkg.packageId} · v${pkg.version}\n${pkg.backendId} ${pkg.backendVersion}"
+                        textSize = 13f
+                    }
+                    row.addView(description, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    row.addView(Button(this).apply {
+                        text = "Details"
+                        setOnClickListener { showPackageDetails(pkg) }
+                    })
+                    row.addView(Button(this).apply {
+                        text = "Remove"
+                        setOnClickListener { confirmPackageRemoval(pkg.packageId) }
+                    })
+                    packageList.addView(row)
+                }
+                inventory.invalidPackageIds.forEach { packageId ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, 8, 0, 8)
+                    }
+                    row.addView(TextView(this).apply {
+                        text = "Invalid package\n$packageId"
+                        textSize = 13f
+                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    row.addView(Button(this).apply {
+                        text = "Remove"
+                        setOnClickListener { confirmPackageRemoval(packageId) }
+                    })
+                    packageList.addView(row)
+                }
+                if (inventory.errors.isNotEmpty()) {
+                    packageStatus.text = inventory.errors.joinToString("\n")
+                }
+            }
+        }
+    }
+
+    private fun showPackageDetails(pkg: NgrPackPackageManager.InstalledPackage) {
+        val source = listOfNotNull(pkg.sourcePlatform, pkg.sourceArchitecture).joinToString(" · ")
+            .ifBlank { "Unknown / not declared" }
+        val message = """
+            Game: ${pkg.displayName}
+            Package ID: ${pkg.packageId}
+            Version: ${pkg.version}
+
+            Entry point:
+            ${pkg.entryPoint}
+
+            Source: $source
+
+            Backend: ${pkg.backendId} ${pkg.backendVersion}
+
+            Package path:
+            ${pkg.directory.absolutePath}
+
+            Status: imported package data only. A compatible execution backend is not yet configured.
+        """.trimIndent()
+        AlertDialog.Builder(this)
+            .setTitle("Game package details")
+            .setMessage(message)
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun confirmPackageRemoval(packageId: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Remove package")
+            .setMessage("Remove $packageId from this device?")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Remove") { _, _ ->
+                packageStatus.text = "Removing $packageId…"
+                packageWorker.execute {
+                    NgrLogger.info("package.remove", "Removing packageId=$packageId")
+                    val result = packageManager.remove(packageId)
+                    NgrLogger.info("package.remove", "Removal success=${result.success}; message=${result.message}")
+                    runOnUiThread {
+                        packageStatus.text = result.message
+                        refreshPackages()
+                    }
+                }
+            }
+            .show()
+    }
+
+
+    private fun showLogs() {
+        NgrLogger.info("diagnostics", "Opened log viewer")
+        AlertDialog.Builder(this)
+            .setTitle("NGR runtime log")
+            .setMessage(NgrLogger.recentText())
+            .setPositiveButton("Close", null)
+            .setNeutralButton("Save…") { _, _ -> saveLogs() }
+            .show()
+    }
+
+    private fun saveLogs() {
+        NgrLogger.info("diagnostics", "Requested log export")
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "ngr-runtime-log.txt")
+        }
+        startActivityForResult(intent, REQUEST_EXPORT_LOG)
+    }
+
+    override fun onInputDeviceAdded(deviceId: Int) { NgrLogger.info("input", "Device added id=$deviceId"); refresh() }
+    override fun onInputDeviceRemoved(deviceId: Int) { NgrLogger.info("input", "Device removed id=$deviceId"); refresh() }
+    override fun onInputDeviceChanged(deviceId: Int) { NgrLogger.info("input", "Device changed id=$deviceId"); refresh() }
+}
