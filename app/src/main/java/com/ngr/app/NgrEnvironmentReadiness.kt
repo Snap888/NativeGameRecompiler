@@ -13,6 +13,7 @@ class NgrEnvironmentReadiness(
         val prefixState: NgrWinePrefixManager.State?,
         val installedComponents: Set<String>,
         val missingComponents: Set<String>,
+        val pendingInstallComponents: Set<String>,
         val errors: List<String>
     )
 
@@ -55,11 +56,14 @@ class NgrEnvironmentReadiness(
             installedVersions = versions
         )
         errors += resolution.errors
+        val pending = resolution.installOrder.map { it.id }.toSet()
+        if (pending.isNotEmpty()) errors += "Runtime dependencies still need installation: ${pending.sorted().joinToString()}"
         return Report(
-            ready = errors.isEmpty() && resolution.valid && missing.isEmpty() && prefixState == NgrWinePrefixManager.State.READY,
+            ready = errors.isEmpty() && resolution.valid && missing.isEmpty() && pending.isEmpty() && prefixState == NgrWinePrefixManager.State.READY,
             prefixState = prefixState,
             installedComponents = installed,
             missingComponents = missing,
+            pendingInstallComponents = pending,
             errors = errors.distinct()
         )
     }
