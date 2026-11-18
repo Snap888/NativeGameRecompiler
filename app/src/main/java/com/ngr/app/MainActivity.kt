@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
 import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
@@ -39,6 +40,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var shortcutStore: NgrGameShortcutStore
     private lateinit var shortcutStatus: TextView
     private lateinit var shortcutList: LinearLayout
+    private lateinit var catalogStore: NgrComponentCatalogStore
+    private lateinit var componentStore: NgrComponentStore
+    private lateinit var componentStatus: TextView
+    private lateinit var componentList: LinearLayout
     private lateinit var profileStore: NgrEnvironmentProfileStore
     private lateinit var prefixManager: NgrWinePrefixManager
     private lateinit var prefixStatus: TextView
@@ -48,12 +53,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var packageStatus: TextView
     private lateinit var packageList: LinearLayout
     private val packageWorker = Executors.newSingleThreadExecutor()
+    private val componentWorker = Executors.newSingleThreadExecutor()
 
     companion object {
         private const val REQUEST_NGRPACK = 4102
         private const val REQUEST_EXPORT_LOG = 4103
         private const val REQUEST_GAME_ZIP = 4104
         private const val REQUEST_GAME_FOLDER = 4105
+        private const val REQUEST_COMPONENT_CATALOG = 4106
         init { System.loadLibrary("ngr_runtime") }
     }
 
@@ -68,6 +75,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
         shortcutStore = NgrGameShortcutStore(File(filesDir, "ngr-runtime"))
+        catalogStore = NgrComponentCatalogStore(File(filesDir, "ngr-runtime"))
+        componentStore = NgrComponentStore(File(filesDir, "ngr-runtime"))
         profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
         prefixManager = NgrWinePrefixManager(File(filesDir, "ngr-runtime"))
 
@@ -178,6 +187,20 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         runtimeCard.addView(profileList)
         root.addView(runtimeCard, sectionParams())
+
+        addSection(root, "COMPONENTS & DRIVERS", "Runtime component manager")
+        val componentCard = createCard()
+        componentCard.addView(TextView(this).apply {
+            text = "Import a validated component catalog, then download verified archives with SHA-256 checks and atomic version installation. Catalogs are untrusted metadata; installed components are not loaded or executed by this manager."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        componentCard.addView(primaryButton("＋  Import component catalog JSON") { chooseComponentCatalog() })
+        componentStatus = mutedText()
+        componentCard.addView(componentStatus)
+        componentList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        componentCard.addView(componentList)
+        root.addView(componentCard, sectionParams())
 
         addSection(root, "WINE PREFIXES", "Prefix storage & lifecycle")
         val prefixCard = createCard()
@@ -343,6 +366,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         refreshProfiles()
         refreshPrefixes()
         refreshShortcuts()
+        refreshComponents()
     }
 
     override fun onPause() {
@@ -353,6 +377,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     override fun onDestroy() {
         NgrLogger.info("app", "MainActivity.onDestroy")
         packageWorker.shutdownNow()
+        componentWorker.shutdownNow()
         super.onDestroy()
     }
 
@@ -369,6 +394,184 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
     }
 
+
+
+    private fun chooseComponentCatalog() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/json", "text/plain"))
+        }
+        startActivityForResult(intent, REQUEST_COMPONENT_CATALOG)
+    }
+
+    private fun importComponentCatalog(uri: Uri) {
+        componentStatus.text = "Reading and validating component catalog…"
+        componentWorker.execute {
+            val result = try {
+                val input = contentResolver.openInputStream(uri)
+                    ?: throw IOException("Unable to open selected catalog")
+                val output = ByteArrayOutputStream()
+                input.use { stream ->
+                    val buffer = ByteArray(16 * 1024)
+                    var total = 0
+                    while (true) {
+                        val count = stream.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        require(total <= NgrComponentCatalogParser.MAX_CATALOG_BYTES) {
+                            "Catalog exceeds the 4 MiB import limit"
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                }
+                val json = output.toByteArray().toString(Charsets.UTF_8)
+                catalogStore.save(json)
+            } catch (e: Exception) {
+                NgrComponentCatalogStore.Result(false, error = e.message ?: "Catalog import failed")
+            }
+            runOnUiThread {
+                componentStatus.text = if (result.success) {
+                    "Catalog ${result.entry!!.catalog.catalogId} · revision ${result.entry.catalog.revision} imported"
+                } else {
+                    "Catalog import failed: ${result.error}"
+                }
+                if (!result.success) NgrLogger.error("component.catalog", result.error ?: "Catalog import failed")
+                refreshComponents()
+            }
+        }
+    }
+
+    private fun refreshComponents() {
+        if (!::catalogStore.isInitialized || !::componentList.isInitialized) return
+        val loaded = catalogStore.loadAll()
+        componentStatus.text = buildString {
+            append("${loaded.entries.size} catalog(s)")
+            if (loaded.errors.isNotEmpty()) append(" · ${loaded.errors.size} invalid catalog file(s)")
+            append(" · payloads remain inert until a verified runtime backend is implemented")
+        }
+        loaded.errors.forEach { NgrLogger.warn("component.catalog", it) }
+        componentList.removeAllViews()
+        if (loaded.entries.isEmpty()) {
+            componentList.addView(TextView(this).apply {
+                text = "No component catalog imported"
+                textSize = 12f
+                setTextColor(Color.rgb(143, 155, 174))
+                setPadding(0, dp(8), 0, dp(8))
+            })
+        }
+        loaded.entries.forEach { entry ->
+            val catalog = entry.catalog
+            componentList.addView(TextView(this).apply {
+                text = "${catalog.catalogId} · ${catalog.revision} · ${catalog.components.size} component(s)"
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.rgb(196, 207, 222))
+                setPadding(0, dp(12), 0, dp(6))
+            })
+            catalog.components.sortedWith(compareBy({ it.type.name }, { it.id })).forEach { component ->
+                val installedVersion = componentStore.activeVersionDirectory(component.id)?.name
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(0, dp(7), 0, dp(7))
+                }
+                row.addView(TextView(this).apply {
+                    text = "${component.type} · ${component.id} · v${component.version}\n" +
+                        "License: ${component.licenseSpdx} · ABI: ${component.targetAbis.joinToString()}\n" +
+                        if (installedVersion == component.version) "Stored version: installed" else
+                            "Stored version: ${installedVersion ?: "not installed"}"
+                    textSize = 12f
+                    setTextColor(Color.rgb(177, 190, 208))
+                })
+                val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                val canInstall = component.archiveFormat == NgrComponentCatalog.ArchiveFormat.ZIP
+                val installButton = secondaryButton(
+                    if (installedVersion == component.version) "Installed" else if (installedVersion == null) "Install" else "Update"
+                ) { installCatalogComponent(catalog, component) }
+                installButton.isEnabled = canInstall && installedVersion != component.version
+                if (!canInstall) installButton.text = "Unsupported archive"
+                actions.addView(installButton, LinearLayout.LayoutParams(0, dp(42), 1f))
+                actions.addView(secondaryButton("Source") {
+                    runCatching {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(component.sourceRepository)))
+                    }.onFailure {
+                        Toast.makeText(this@MainActivity, "Unable to open source repository", Toast.LENGTH_SHORT).show()
+                    }
+                }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { leftMargin = dp(6) })
+                row.addView(actions)
+                componentList.addView(row)
+            }
+            componentList.addView(secondaryButton("Remove catalog") {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Remove catalog metadata?")
+                    .setMessage("Installed component payloads will not be removed.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Remove") { _, _ ->
+                        val result = catalogStore.delete(catalog.catalogId)
+                        if (!result.success) Toast.makeText(this@MainActivity, result.error, Toast.LENGTH_LONG).show()
+                        refreshComponents()
+                    }.show()
+            })
+        }
+    }
+
+    private fun installCatalogComponent(
+        catalog: NgrComponentCatalog,
+        selected: NgrComponentCatalog.Component
+    ) {
+        val installedIds = catalog.components.filter { component ->
+            componentStore.activeVersionDirectory(component.id)?.name == component.version
+        }.map { it.id }.toSet()
+        val plan = NgrComponentInstallPlanner.resolve(catalog, setOf(selected.id), installedIds)
+        if (!plan.valid) {
+            AlertDialog.Builder(this)
+                .setTitle("Component dependency plan rejected")
+                .setMessage(plan.errors.joinToString("\n") { "• $it" })
+                .setPositiveButton("Close", null)
+                .show()
+            return
+        }
+        val unsupported = plan.installOrder.filter { it.archiveFormat != NgrComponentCatalog.ArchiveFormat.ZIP }
+        if (unsupported.isNotEmpty()) {
+            Toast.makeText(this, "Unsupported archive format: ${unsupported.joinToString { it.id }}", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (plan.installOrder.isEmpty()) {
+            Toast.makeText(this, "All required component versions are already installed", Toast.LENGTH_SHORT).show()
+            return
+        }
+        componentStatus.text = "Installing ${selected.id} and ${plan.installOrder.size - 1} dependency component(s)…"
+        componentWorker.execute {
+            val pipeline = NgrComponentInstallPipeline(componentStore)
+            val installed = mutableListOf<String>()
+            var failure: String? = null
+            for (component in plan.installOrder) {
+                NgrLogger.info("component.install", "Downloading and installing ${component.id} v${component.version}")
+                val result = pipeline.downloadAndInstall(component)
+                if (!result.success) {
+                    failure = "${component.id}: ${result.error ?: "install failed"}"
+                    NgrLogger.error("component.install", failure)
+                    break
+                }
+                installed += component.id
+            }
+            runOnUiThread {
+                componentStatus.text = if (failure == null) {
+                    "Installed: ${installed.joinToString()}"
+                } else {
+                    "Partial installation: ${installed.joinToString().ifEmpty { "none" }} · Failed: $failure"
+                }
+                if (failure != null) {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Component installation incomplete")
+                        .setMessage("Installed before failure: ${installed.joinToString().ifEmpty { "none" }}\n$failure\nPreviously installed components remain available; review the component list before retrying.")
+                        .setPositiveButton("Close", null)
+                        .show()
+                }
+                refreshComponents()
+            }
+        }
+    }
 
     private fun showCreatePrefixDialog() {
         val name = EditText(this).apply { hint = "Prefix name"; setSingleLine(true) }
@@ -783,6 +986,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     Toast.makeText(this, "Log export failed: ${it.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            return
+        }
+        if (requestCode == REQUEST_COMPONENT_CATALOG) {
+            if (resultCode == RESULT_OK) data?.data?.let { importComponentCatalog(it) }
             return
         }
         if (requestCode == REQUEST_GAME_FOLDER) {
