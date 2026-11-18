@@ -231,64 +231,64 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
         ++compiledFunctions;
     }
 
-    // Second pass: resolve static functions discovered by N64Recomp while translating calls.
-    for (size_t sectionIndex = 0; sectionIndex < context.sections.size(); ++sectionIndex) {
-        auto& section = context.sections[sectionIndex];
-        std::set<uint32_t> pending(staticFunctions[sectionIndex].begin(), staticFunctions[sectionIndex].end());
-        std::unordered_set<uint32_t> processed;
-        while (!pending.empty()) {
-            const uint32_t address = *pending.begin();
-            pending.erase(pending.begin());
-            if (!processed.insert(address).second) continue;
-            if (section.rom_addr == UINT32_MAX || address < section.ram_addr ||
-                static_cast<uint64_t>(address) >= static_cast<uint64_t>(section.ram_addr) + section.size)
-                return fail("N64Recomp discovered a static function outside a file-backed section");
+    // Second pass: resolve static functions. Iterate to a fixed point because a function
+    // in a later section can discover a static target in a section already visited.
+    std::vector<std::unordered_set<uint32_t>> processedStatics(context.sections.size());
+    bool foundMoreStatics = true;
+    while (foundMoreStatics) {
+        foundMoreStatics = false;
+        for (size_t sectionIndex = 0; sectionIndex < context.sections.size(); ++sectionIndex) {
+            auto& section = context.sections[sectionIndex];
+            std::set<uint32_t> pending(staticFunctions[sectionIndex].begin(), staticFunctions[sectionIndex].end());
+            for (uint32_t address : pending) {
+                if (processedStatics[sectionIndex].contains(address)) continue;
+                if (context.find_function_by_vram_section(address, sectionIndex) != static_cast<size_t>(-1)) {
+                    processedStatics[sectionIndex].insert(address);
+                    continue;
+                }
+                processedStatics[sectionIndex].insert(address);
+                foundMoreStatics = true;
 
-            uint32_t endAddress = section.ram_addr + section.size;
-            for (const auto functionIndex : context.section_functions[sectionIndex]) {
-                const uint32_t knownAddress = context.functions[functionIndex].vram;
-                if (knownAddress > address && knownAddress < endAddress) endAddress = knownAddress;
-            }
-            for (uint32_t other : processed) {
-                if (other > address && other < endAddress) endAddress = other;
-            }
-            for (uint32_t other : pending) {
-                if (other > address && other < endAddress) endAddress = other;
-            }
-            if (endAddress <= address || ((endAddress - address) & 3u) != 0)
-                return fail("Invalid bounds for a discovered static function");
+                if (section.rom_addr == UINT32_MAX || address < section.ram_addr ||
+                    static_cast<uint64_t>(address) >= static_cast<uint64_t>(section.ram_addr) + section.size)
+                    return fail("N64Recomp discovered a static function outside a file-backed section");
 
-            const uint64_t romOffset = static_cast<uint64_t>(section.rom_addr) + (address - section.ram_addr);
-            const size_t wordCount = (endAddress - address) / 4;
-            if (romOffset + static_cast<uint64_t>(wordCount) * 4 > context.rom.size())
-                return fail("Static function bytes exceed the ELF image bounds");
+                uint32_t endAddress = section.ram_addr + section.size;
+                for (const auto functionIndex : context.section_functions[sectionIndex]) {
+                    const uint32_t knownAddress = context.functions[functionIndex].vram;
+                    if (knownAddress > address && knownAddress < endAddress) endAddress = knownAddress;
+                }
+                for (uint32_t other : staticFunctions[sectionIndex]) {
+                    if (other > address && other < endAddress) endAddress = other;
+                }
+                if (endAddress <= address || ((endAddress - address) & 3u) != 0)
+                    return fail("Invalid bounds for a discovered static function");
 
-            std::vector<uint32_t> words(wordCount);
-            std::memcpy(words.data(), context.rom.data() + romOffset, wordCount * sizeof(uint32_t));
-            const std::string functionName = "static_" + std::to_string(sectionIndex) + "_" + [&]() {
-                std::ostringstream value;
-                value << std::hex << std::uppercase << address;
-                return value.str();
-            }();
+                const uint64_t romOffset = static_cast<uint64_t>(section.rom_addr) + (address - section.ram_addr);
+                const size_t wordCount = (endAddress - address) / 4;
+                if (romOffset + static_cast<uint64_t>(wordCount) * 4 > context.rom.size())
+                    return fail("Static function bytes exceed the ELF image bounds");
 
-            const size_t functionIndex = context.functions.size();
-            context.functions.emplace_back(address, static_cast<uint32_t>(romOffset), std::move(words),
-                functionName, static_cast<uint16_t>(sectionIndex), false);
-            context.section_functions[sectionIndex].push_back(functionIndex);
-            section.function_addrs.push_back(address);
-            context.functions_by_vram[address].push_back(functionIndex);
+                std::vector<uint32_t> words(wordCount);
+                std::memcpy(words.data(), context.rom.data() + romOffset, wordCount * sizeof(uint32_t));
+                std::ostringstream addressText;
+                addressText << std::hex << std::uppercase << address;
+                const std::string functionName = unique_identifier(
+                    "static_" + std::to_string(sectionIndex) + "_" + addressText.str(), usedNames);
 
-            const size_t previousStaticCount = staticFunctions[sectionIndex].size();
-            std::string error;
-            const std::string fileName = functionName + ".c";
-            if (!write_recompiled_function(context, functionIndex, staging / fileName, staticFunctions, error))
-                return fail(error);
-            generatedNames.push_back(fileName);
-            ++compiledFunctions;
+                const size_t functionIndex = context.functions.size();
+                context.functions.emplace_back(address, static_cast<uint32_t>(romOffset), std::move(words),
+                    functionName, static_cast<uint16_t>(sectionIndex), false);
+                context.section_functions[sectionIndex].push_back(functionIndex);
+                section.function_addrs.push_back(address);
+                context.functions_by_vram[address].push_back(functionIndex);
 
-            for (size_t i = previousStaticCount; i < staticFunctions[sectionIndex].size(); ++i) {
-                if (!processed.contains(staticFunctions[sectionIndex][i]))
-                    pending.insert(staticFunctions[sectionIndex][i]);
+                std::string error;
+                const std::string fileName = functionName + ".c";
+                if (!write_recompiled_function(context, functionIndex, staging / fileName, staticFunctions, error))
+                    return fail(error);
+                generatedNames.push_back(fileName);
+                ++compiledFunctions;
             }
         }
     }
