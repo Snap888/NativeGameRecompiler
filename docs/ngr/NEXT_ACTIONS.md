@@ -375,6 +375,10 @@ Mark complete only when evidence exists.
 
 
 ## Xbox 360 / XDroid360 integration
+- [x] Diagnose and fix the Kotlin Byte-vs-Int ELF magic comparison from run #44399528476.
+- [x] Preserve the XDroid360 submodule mapping through WinNative donor imports and add CI source-pin checks.
+- [ ] Check runs #44401088392, #44401119729 and #44401136332; repair any recursive submodule or Android build failures.
+
 - [x] Audit `Snap888/XDroid360` fork and upstream architecture; record supported-title limits and license provenance.
 - [x] Pin XDroid360 source at `f388d11fc207502cd5975899c8adc06600cfe34f` under `native/recompilers/XDroid360`; nested DAORecomp submodule requires recursive checkout.
 - [ ] Verify recursive checkout and inspect nested submodule commit/license state in CI.
