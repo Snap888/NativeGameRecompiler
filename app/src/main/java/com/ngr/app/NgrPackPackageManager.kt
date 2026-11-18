@@ -144,6 +144,84 @@ class NgrPackPackageManager(
         }
     }
 
+    /**
+     * Creates a private staging directory for a SAF folder import. The payload is copied
+     * directly here, avoiding cache copies and an intermediate NGRPACK archive.
+     */
+    @Synchronized
+    fun createFolderImportStaging(): File {
+        val errors = mutableListOf<String>()
+        val root = prepareRoot(errors)
+        if (errors.isNotEmpty()) throw IOException(errors.joinToString("; "))
+        val parent = root.resolve(".folder-staging")
+        if (Files.exists(parent, LinkOption.NOFOLLOW_LINKS)) {
+            if (Files.isSymbolicLink(parent) || !Files.isDirectory(parent, LinkOption.NOFOLLOW_LINKS))
+                throw IOException("Folder import staging root is unsafe")
+        } else Files.createDirectory(parent)
+        val staging = Files.createDirectory(parent.resolve(UUID.randomUUID().toString()))
+        NgrLogger.info("package.manager", "Created direct folder staging directory")
+        return staging.toFile()
+    }
+
+    /**
+     * Validates and atomically promotes a prepared folder-import directory.
+     * The caller must have created it through createFolderImportStaging().
+     */
+    @Synchronized
+    fun installPreparedFolder(stagingDirectory: File): OperationResult {
+        val errors = mutableListOf<String>()
+        val root = try { prepareRoot(errors) }
+        catch (e: Exception) {
+            return OperationResult(false, "Package storage is unavailable", errors = listOf(e.message ?: "storage error"))
+        }
+        if (errors.isNotEmpty()) return OperationResult(false, "Package storage recovery requires attention", errors = errors)
+        val staging = stagingDirectory.toPath().toAbsolutePath().normalize()
+        val stagingParent = root.resolve(".folder-staging").toAbsolutePath().normalize()
+        if (staging.parent != stagingParent || Files.isSymbolicLink(staging) ||
+            !Files.isDirectory(staging, LinkOption.NOFOLLOW_LINKS))
+            return OperationResult(false, "Folder import staging path is invalid", errors = listOf("Staging must be a real direct child of the private folder-staging directory"))
+
+        try {
+            val info = readPackageInfo(staging.toFile(), verifyHashes = true)
+                ?: throw IOException("Prepared game folder failed manifest and SHA-256 validation")
+            if (!packageIdPattern.matches(info.packageId)) throw IOException("Prepared package ID is unsafe")
+            val destination = root.resolve(info.packageId)
+            val backup = root.resolve(".backup-${info.packageId}-${UUID.randomUUID()}")
+            var oldMoved = false
+            try {
+                if (Files.exists(destination, LinkOption.NOFOLLOW_LINKS)) {
+                    if (Files.isSymbolicLink(destination) || !Files.isDirectory(destination, LinkOption.NOFOLLOW_LINKS))
+                        throw IOException("Existing package destination is not a real directory")
+                    val existing = readPackageInfo(destination.toFile(), verifyHashes = true)
+                        ?: throw IOException("Existing package is invalid; refusing to overwrite it")
+                    if (existing.packageId != info.packageId) throw IOException("Existing package identity mismatch")
+                    atomicMove(destination, backup)
+                    oldMoved = true
+                }
+                atomicMove(staging, destination)
+                if (oldMoved) try { deleteTree(backup) } catch (_: Exception) { }
+            } catch (e: Exception) {
+                if (oldMoved && !Files.exists(destination, LinkOption.NOFOLLOW_LINKS) &&
+                    Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
+                    try { atomicMove(backup, destination) }
+                    catch (restore: Exception) { throw IOException("Folder import failed and rollback failed: ${restore.message}", e) }
+                }
+                throw e
+            }
+            val installed = readPackageInfo(destination.toFile(), verifyHashes = false)
+                ?: throw IOException("Installed package could not be reopened after promotion")
+            NgrLogger.info("package.manager", "Direct folder import committed; packageId=${installed.packageId}")
+            return OperationResult(true, "Game folder installed", installed)
+        } catch (e: Exception) {
+            NgrLogger.error("package.manager", "Direct folder import failed", e)
+            return OperationResult(false, "Game folder installation failed", errors = listOf(e.message ?: e.javaClass.simpleName))
+        } finally {
+            if (Files.exists(staging, LinkOption.NOFOLLOW_LINKS)) {
+                try { deleteTree(staging) } catch (_: Exception) { }
+            }
+        }
+    }
+
     @Synchronized
     fun listInstalled(): InventoryResult {
         NgrLogger.info("package.manager", "Inventory scan started")
