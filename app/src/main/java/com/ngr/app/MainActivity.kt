@@ -1797,6 +1797,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             appendLine("Working directory: ${config.workingDirectory ?: "(package default)"}")
             appendLine("Arguments: ${config.arguments.joinToString(" ").ifEmpty { "(none)" }}")
             appendLine("Wine/Proton: ${config.wineLayerId ?: "not required"}")
+            appendLine("Box64 preset: ${config.box64Preset}")
+            appendLine("FEX preset: ${config.fexPreset} (stored intent; not yet translated into runtime flags)")
             appendLine("DXVK: ${config.dxvkComponentId ?: "not selected"}")
             appendLine("VKD3D-Proton: ${config.vkd3dComponentId ?: "not selected"}")
             appendLine("Graphics: ${config.graphicsProvider} · Turnip: ${config.turnipComponentId ?: "system/default"}")
