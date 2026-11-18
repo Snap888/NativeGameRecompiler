@@ -281,3 +281,10 @@ The compatibility/game-management layer is a required milestone before static re
 - The component manager resolves transitive dependencies, rejects catalog conflicts/forbidden components, downloads only HTTPS URLs, verifies the archive SHA-256, extracts bounded ZIP files and atomically promotes the selected version.
 - Only ZIP archive components are enabled. Other declared formats remain disabled until dedicated safe extractors and tests exist.
 - Installed component payloads are inert files. This manager does not activate Vulkan ICDs, inject DLLs, load native libraries or execute translator binaries.
+
+
+### Component version lifecycle guarantees
+- The install planner compares the requested catalog version with the currently stored version. A mismatch is an update, not a successful match.
+- Previously stored versions may be reactivated only after validating the complete stored tree and the declared payload directory; the active-version pointer changes atomically.
+- Rollback and uninstall are available from the component manager. Uninstall is blocked when an environment profile, package override or installed dependent component references the component.
+- Component store activation means selecting an inert payload version in private storage. It does not mean loading the library or activating it in a game session.
