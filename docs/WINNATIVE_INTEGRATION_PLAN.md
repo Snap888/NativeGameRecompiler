@@ -274,3 +274,10 @@ The compatibility/game-management layer is a required milestone before static re
 - `NgrEnvironmentVariablePolicy` owns host/runtime control variables: PATH/HOME/PREFIX, LD_*, NGR_*, Vulkan ICD/driver/layer variables, ADRENOTOOLS_*, Wine prefix/loader controls and FEX rootfs/config controls. User values cannot override them.
 - Wine compatibility mode requires the selected Wine/Proton and architecture-specific CPU translator components. Static-recompiled and native ARM64 modes do not inherit a Wine requirement.
 - The resolved preview is diagnostic only. Before launch it must be augmented with catalog provenance, installed component/version verification, prefix READY validation and backend capability checks.
+
+
+## Component catalog and installation UI
+- Catalog JSON is imported from SAF, strictly parsed, bounded to 4 MiB and atomically stored under app-private storage. Catalog metadata is untrusted; the current design has no signature trust root yet.
+- The component manager resolves transitive dependencies, rejects catalog conflicts/forbidden components, downloads only HTTPS URLs, verifies the archive SHA-256, extracts bounded ZIP files and atomically promotes the selected version.
+- Only ZIP archive components are enabled. Other declared formats remain disabled until dedicated safe extractors and tests exist.
+- Installed component payloads are inert files. This manager does not activate Vulkan ICDs, inject DLLs, load native libraries or execute translator binaries.
