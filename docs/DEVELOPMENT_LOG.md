@@ -761,3 +761,13 @@ This is the durable project memory. Update it in every development session.
 - Source commits: 47d9afc9 archive limits, 8264e01c manifest limits, 6efde3cb folder diagnostics, 04c61cb5 tests, 76019797 streaming-loop allocation cleanup.
 - Android CI must pass JVM tests, ARM64 APK build and artifact upload before this larger-import change is considered validated.
 - The larger limits increase possible temporary storage use. They do not bypass Android free-space constraints; import still needs room for its private staging copies and final package installation.
+
+ 
+### Large-import CI verification — Actions #282
+- Run #282: https://github.com/Snap888/NativeGameRecompiler/actions/runs/44241032020
+- Source/test commit: 76019797eefc79d67fbd3489b38aac03dec1cc14.
+- Confirmed JVM unit tests, ARM64-v8a debug APK build and artifact upload all passed.
+- Artifact ID: 14399851332 (NGR-arm64-debug). Downloaded and inspected ZIP; it contains app-debug.apk (2,374,661 bytes) and lib/arm64-v8a/libngr_runtime.so.
+- Extracted APK SHA-256: 9859793a9fa1068fa6d03cf325b932eba27353667975c9d3aafe0ff22cedf5e0.
+- Commits after this source/test commit only update development/next-action documentation. The APK therefore contains all large-import source changes and the new limits consistency test.
+- Physical-device retest of the same folder is still required; CI does not prove available storage or SAF-provider behavior on the user's phone.
