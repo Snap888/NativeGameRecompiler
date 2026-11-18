@@ -1145,3 +1145,11 @@ This is the durable project memory. Update it in every development session.
 3. Add N64Recomp TOML config import, including entrypoint, relocatable sections, manual function sizes, ignored/stubbed functions and MIPS3 float mode.
 4. Provision a verified Android ARM64 Clang toolchain as a managed component; compile generated C only when the required runtime headers are available.
 5. Select a compatible N64 title runtime (e.g. an independently licensed runtime with its own notices) and implement its platform services before claiming playability.
+
+
+### WinNative navigation and runtime audit
+- Added “N64 Game Recompiler” to the existing WinNative drawer and wired it to the bilingual NGR N64 recompiler activity; the import workflow now preserves the two patched hub/drawer files when re-importing the pinned donor.
+- Hardened static-function generation with cross-section fixed-point discovery, unique C identifiers, section/ROM bounds checks and aggregate function/instruction limits.
+- Added a dedicated Android build workflow that builds the current integrated branch directly, avoiding the long donor re-import path for ordinary code changes.
+- Audited N64ModernRuntime at `e4342ae030a9d94aa97a81aafd3368ed7daa74df` (GPL-3.0). Its `ultramodern::input` callback API is a clear adapter point for WinNative controls, and its renderer callback accepts SDL_Window on Android/Linux. It still requires a game-specific runtime header, a display-list renderer, game registration/metadata and ROM data. Details: `docs/ngr/N64_RUNTIME_INTEGRATION_AUDIT.md`.
+- Current codegen/UI changes are awaiting a fresh green direct Android CI run. No generated C has yet been tested against a real legal game ELF, no ARM64 game library has been built, and no game has launched.
