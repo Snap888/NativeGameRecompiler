@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.vulkan.level" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
-    <application android:allowBackup="false" android:label="Native Game Recompiler" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <application android:allowBackup="false" android:label="Native Game Recompiler" android:theme="@android:style/Theme.Material.NoActionBar">
         <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
