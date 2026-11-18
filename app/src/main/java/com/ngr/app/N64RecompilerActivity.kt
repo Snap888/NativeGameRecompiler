@@ -21,6 +21,7 @@ class N64RecompilerActivity : Activity() {
 
     companion object {
         private const val REQUEST_ELF = 6201
+        const val EXTRA_INPUT_URI = "com.ngr.app.extra.INPUT_URI"
         private const val MAX_ELF_BYTES = 512L * 1024L * 1024L
         init { System.loadLibrary("ngr_runtime") }
     }
@@ -33,6 +34,9 @@ class N64RecompilerActivity : Activity() {
         super.onCreate(savedInstanceState)
         language = getPreferences(MODE_PRIVATE).getString("language", "en") ?: "en"
         render()
+        intent.getStringExtra(EXTRA_INPUT_URI)?.let { raw ->
+            runCatching { android.net.Uri.parse(raw) }.getOrNull()?.let(::importElfUri)
+        }
     }
 
     private fun render() {
@@ -169,12 +173,15 @@ class N64RecompilerActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQUEST_ELF || resultCode != RESULT_OK || data?.data == null) return
+        importElfUri(data.data!!)
+    }
+
+    private fun importElfUri(uri: android.net.Uri) {
         status.text = if (ru()) "Копирование ELF в приватное хранилище…" else "Copying ELF into private storage…"
-        val uri = data.data!!
         Thread {
             try {
                 val dir = File(filesDir, "n64recomp/incoming").apply { mkdirs() }
-                val target = File(dir, "input.elf")
+                val target = File(dir, "input-" + System.currentTimeMillis() + ".elf")
                 var total = 0L
                 contentResolver.openInputStream(uri).use { input ->
                     val source = requireNotNull(input) { "Unable to open selected document" }
@@ -206,4 +213,4 @@ class N64RecompilerActivity : Activity() {
             }
         }.start()
     }
-}
+
