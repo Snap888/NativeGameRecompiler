@@ -145,6 +145,47 @@ class NgrPackPackageManager(
     }
 
     /**
+     * Removes abandoned direct-folder import staging directories older than the retention
+     * window. Only UUID-named real directories under the private staging root are eligible.
+     */
+    @Synchronized
+    fun cleanupAbandonedFolderStaging(olderThanMillis: Long = 30L * 24 * 60 * 60 * 1000): Int {
+        require(olderThanMillis > 0) { "Staging retention must be positive" }
+        val errors = mutableListOf<String>()
+        val root = try { prepareRoot(errors) }
+        catch (e: Exception) {
+            NgrLogger.warn("package.manager", "Unable to inspect abandoned folder staging: ${e.message}")
+            return 0
+        }
+        if (errors.isNotEmpty()) return 0
+        val parent = root.resolve(".folder-staging")
+        if (!Files.exists(parent, LinkOption.NOFOLLOW_LINKS)) return 0
+        if (Files.isSymbolicLink(parent) || !Files.isDirectory(parent, LinkOption.NOFOLLOW_LINKS)) {
+            NgrLogger.warn("package.manager", "Folder staging root is unsafe; abandoned staging cleanup skipped")
+            return 0
+        }
+        val cutoff = System.currentTimeMillis() - olderThanMillis
+        var removed = 0
+        Files.newDirectoryStream(parent).use { entries ->
+            for (entry in entries) {
+                if (!entry.fileName.toString().matches(Regex("^[0-9a-fA-F-]{36}$")) ||
+                    Files.isSymbolicLink(entry) || !Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) continue
+                val modified = runCatching { Files.getLastModifiedTime(entry, LinkOption.NOFOLLOW_LINKS).toMillis() }
+                    .getOrNull() ?: continue
+                if (modified >= cutoff) continue
+                try {
+                    deleteTree(entry)
+                    removed++
+                } catch (e: Exception) {
+                    NgrLogger.warn("package.manager", "Unable to remove abandoned staging directory: ${e.message}")
+                }
+            }
+        }
+        if (removed > 0) NgrLogger.info("package.manager", "Removed $removed abandoned folder staging director(y/ies)")
+        return removed
+    }
+
+    /**
      * Creates a private staging directory for a SAF folder import. The payload is copied
      * directly here, avoiding cache copies and an intermediate NGRPACK archive.
      */
