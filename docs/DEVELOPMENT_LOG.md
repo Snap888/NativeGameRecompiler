@@ -1050,3 +1050,10 @@ This is the durable project memory. Update it in every development session.
 - The first controller UI CI attempt then found that `InputManager.inputDeviceIds` is an `IntArray`, which does not expose the used `mapNotNull` extension directly.
 - Fixed enumeration by converting IDs to a sequence before `mapNotNull`, sorting and materializing the device list in commit `4f1a1db84ba1dc50565653eb8375e027fccccce1`.
 - Latest verification is run #395 (`44285983485`); controller model/store/UI and the component result typing fix remain unverified until this run completes.
+
+
+### CI failure diagnosis and planner compatibility fix — 2026-11-18
+- Actions run #397 (`44286020694`) at `43bd06c936770aab71967c29eac96a4d22d2af01` completed with failure: 126 JVM tests ran, one failed; native ABI conformance and backend registry tests passed. APK build/upload were skipped.
+- Failing test: `NgrComponentInstallPlannerTest.skipsAlreadyInstalledDependencies` at line 49. Root cause: version-aware planning treated an installed component with no version metadata as an update, breaking callers using the legacy installed-ID-only contract.
+- Fixed planner compatibility: an installed ID is treated as installed when version metadata is absent; when an explicit installed version exists, it is skipped only if it exactly matches the catalog version. The mismatched-version update test remains authoritative.
+- Fix commit: `255a4684614b69319b5328787b9ad4db725c01aa`. New CI verification is required; no APK is available from #397.
