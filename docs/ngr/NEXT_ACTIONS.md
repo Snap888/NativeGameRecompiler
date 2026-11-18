@@ -337,7 +337,10 @@ Mark complete only when evidence exists.
 - [x] Follow N64Recomp-discovered static functions across sections and bound generated function/instruction counts and ROM offsets.
 - [x] Add direct branch Android CI workflow: `.github/workflows/ngr-android-build.yml`.
 - [x] Audit N64ModernRuntime input/renderer callback seams and GPL-3.0 provenance in `docs/ngr/N64_RUNTIME_INTEGRATION_AUDIT.md`.
-- [ ] Confirm current direct CI run green for C++ code generation bridge, Compose navigation, JVM tests and ARM64 APK.
+- [ ] Confirm latest direct CI run green after fixing the missing std::filesystem::path declarations and adding shared shortcut registration.
+- [x] Register successfully generated N64 projects in the shared GAME SHORTCUTS list with editable launch settings.
+- [x] Show a disabled Launch control and an explicit runtime-pending state; do not attempt to launch C source files.
+- [ ] Enable launch only after ARM64 library build, title runtime integration, package validation and device verification.
 - [ ] Add synthetic MIPS ELF fixture and execute the actual NGR JNI/codegen path in a host test harness.
 - [ ] Add N64Recomp metadata/configuration import (entrypoint, relocatable sections, manual sizes, references, ignored/stubbed symbols).
 - [ ] Integrate N64ModernRuntime `librecomp` / `ultramodern` for Android without duplicate N64Recomp targets.
