@@ -130,8 +130,9 @@ data class NgrEnvironmentProfile(
                 errors += "Invalid Wine layer in override for $gameId"
             }
             if (override.displayBackend == DisplayBackend.WAYLAND &&
-                (!waylandWineSupported || !waylandTurnipSupported || graphicsProvider != GraphicsProvider.TURNIP)) {
-                errors += "Wayland override for $gameId requires a compatible Wine and Turnip profile"
+                (!waylandWineSupported || !waylandTurnipSupported ||
+                    (graphicsProvider != GraphicsProvider.TURNIP && override.turnipComponentId.isNullOrBlank()))) {
+                errors += "Wayland override for $gameId requires compatible Wine support and a Turnip component"
             }
             listOf(override.dxvkComponentId, override.vkd3dComponentId, override.turnipComponentId)
                 .filterNotNull().filterNot { it.matches(ID_PATTERN) }
