@@ -796,3 +796,25 @@ This is the durable project memory. Update it in every development session.
 - Source and tests committed to `main`; CI result is pending inspection.
 - No APK is claimed for this stage until JVM tests, ARM64 build and artifact upload are confirmed.
 - Device-side lifecycle testing remains outstanding.
+
+
+## Session 2026-11-18 — Environment / prefix / component binding
+
+### Implemented
+- Migrated environment profile schema from v1 to v2 with optional `winePrefixId`.
+- Added backward-compatible decoding: v1 profiles load as v2 with no prefix assigned; existing component and display settings are retained.
+- Added strict prefix ID validation and codec round-trip/migration tests.
+- Profile editor now allows assigning a managed Wine prefix ID; profile cards show the binding and report missing, unsafe or PREPARED prefixes as draft prerequisites.
+- Prefix deletion is blocked while one or more profiles reference it, preventing silent dangling references.
+- Added `NgrEnvironmentReadiness`, which combines profile launch validation, actual prefix state, installed component active-version state, version pins, catalog compatibility and Vulkan/Wayland capability checks.
+- Readiness is an inspection report only. It does not activate components, load libraries, initialize Wine or launch games.
+
+### Current constraints
+- Component catalog source is not yet connected to the main UI, so readiness evaluator is available to the runtime layer but not yet exposed as a complete user-facing validation action.
+- Environment profiles still store component IDs and settings; runtime activation and Wine process launch are not implemented.
+- Prefixes remain PREPARED until a compatible Wine runtime and controlled wineboot integration are added.
+- Profile prefix binding is currently entered as an ID in the editor; a picker is a follow-up UI improvement.
+
+### Validation
+- CI is triggered by the main-branch commits and must be inspected before distributing an APK.
+- Physical device validation is outstanding.
