@@ -1169,3 +1169,12 @@ This is the durable project memory. Update it in every development session.
 - [x] Show recompiled N64 entries in GAME SHORTCUTS with per-game settings and an explicit disabled launch control while the ARM64 binary/title runtime are unavailable.
 - [ ] Verify Kotlin/C++ compilation and inspect the next APK artifact; test generated shortcut persistence and editing on device.
 - [ ] Build generated C into an ARM64 shared library and integrate a compatible N64 title runtime before enabling launch.
+
+## Session 2026-11-18 — Unified recompiler intake
+- [x] Replaced the library add-game modal with a three-action menu that preserves the existing executable/ROM import flow and Steam client action, and adds **Рекомпилятор**.
+- [x] Added a central static-recompiler catalog with explicit availability flags. N64/MIPS is the only enabled backend; PS1, PS2, PSP, GameCube/Wii and Dreamcast are visible as future backends and cannot be selected as if implemented.
+- [x] Added a unified intake Activity with file selection, multi-file selection, folder selection, recursive bounded scan, automatic ELF/MIPS machine detection, and manual target-system selection.
+- [x] Connected detected MIPS ELF documents to the existing N64Recomp Activity using SAF URI input; the file is copied into private storage with the existing 512 MiB limit before native inspection.
+- [x] Documented an important format boundary: current N64Recomp consumes MIPS ELF with symbols, not ordinary N64 ROM images (.z64/.n64/.v64).
+- [ ] Verify latest Android CI run [44394341711](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44394341711), fix any Kotlin/manifest errors, then test file/folder intake on device.
+- [ ] Extract format detection into a tested registry API and add backend-specific validators as each recompiler is integrated.
