@@ -17,12 +17,12 @@ import java.util.zip.ZipFile
  */
 object NgrPackArchiveInspector {
     data class Limits(
-        val maxArchiveBytes: Long = 1024L * 1024 * 1024,
+        val maxArchiveBytes: Long = 3L * 1024 * 1024 * 1024,
         val maxEntries: Int = 4096,
         val maxPathChars: Int = 1024,
         val maxManifestBytes: Long = 1024L * 1024,
-        val maxFileBytes: Long = 512L * 1024 * 1024,
-        val maxTotalBytes: Long = 2L * 1024 * 1024 * 1024,
+        val maxFileBytes: Long = 2L * 1024 * 1024 * 1024,
+        val maxTotalBytes: Long = 8L * 1024 * 1024 * 1024,
         val maxCompressionRatio: Long = 200
     )
 
