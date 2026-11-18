@@ -1119,3 +1119,16 @@ This is the durable project memory. Update it in every development session.
 - Actions run #429 (44316501792), commit `03f369e5fed7bf657bca68c76674cdfe466030cd`, passed Native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
 - Artifact ID `14433695246` downloaded and inspected. ZIP contains `app-debug.apk` (2,486,165 bytes), including `lib/arm64-v8a/libngr_runtime.so`. APK SHA-256: `5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44`.
 - Physical Android installation and multi-GB SAF import remain unverified; no device test is claimed.
+
+
+## N64Recomp integration started — 2026-11-18
+
+- WinNative host import completed in Actions run #7 (`44330871001`): recursive source checkout, NGR native ABI conformance, backend registry, JVM tests, Android ARM64 host build and APK artifact upload all passed.
+- Imported host branch: `integration/winnative-runtime-base`; WinNative upstream pinned at `99c3305d163780de5ca39b493aefcde436acad5c`.
+- Audited the NGR tree after import: NGR ABI/registry and package/environment code are retained, but no N64Recomp source or executable compiler pipeline was present.
+- Added N64Recomp as a pinned git submodule at `native/recompilers/N64Recomp`, upstream commit `598ce2080004a5672d604dceadbda436045307b7` (MIT). Its nested dependency submodules are retained and initialized recursively.
+- Updated integration CI to build upstream `N64RecompCLI` and `RSPRecomp` host tools from the pinned source before Android packaging. This is a source/build reproducibility gate; it does not yet mean the compiler is embedded in the APK.
+- Added `docs/ngr/RECOMPILER_INTEGRATION.md` describing inspect → plan → recompile → ARM64 compile → title runtime link → package → trusted backend launch.
+- N64Recomp expects an N64/MIPS binary and ELF/symbol metadata and emits C; generated code requires a title runtime. No ROM/game assets are added to the repository.
+- Commits: pin submodule `b24dbe1eb427355a1462887f4f17c56b7f71c710`; CI host-tool build `85cf5e9c60ed3754a6d80de04cfba113a68d3486`; deterministic build check `c614330a33671ce5ed6ab22b983eff1d9e686bdd`; integration guide `73063385150b345791d93b1679363f8543956243`.
+- CI for the compiler submodule/build is pending. Do not claim Android JNI integration, ARM64 generated-code compilation, an N64 title runtime, or playable N64 support yet.
