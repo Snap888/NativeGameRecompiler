@@ -1132,3 +1132,12 @@ This is the durable project memory. Update it in every development session.
 - N64Recomp expects an N64/MIPS binary and ELF/symbol metadata and emits C; generated code requires a title runtime. No ROM/game assets are added to the repository.
 - Commits: pin submodule `b24dbe1eb427355a1462887f4f17c56b7f71c710`; CI host-tool build `85cf5e9c60ed3754a6d80de04cfba113a68d3486`; deterministic build check `c614330a33671ce5ed6ab22b983eff1d9e686bdd`; integration guide `73063385150b345791d93b1679363f8543956243`.
 - CI for the compiler submodule/build is pending. Do not claim Android JNI integration, ARM64 generated-code compilation, an N64 title runtime, or playable N64 support yet.
+
+
+## N64Recomp Android core and bilingual UI — 2026-11-18
+
+- Connected pinned N64Recomp core targets to the Android native build; upstream CLI executables remain excluded from the APK target.
+- Added JNI ELF parsing via the upstream Context API and bounded app-private input import (maximum 512 MiB).
+- Added a first N64Recomp screen in English and Russian, accessible from the NGR library screen.
+- CI exposed a donor-import regression: WinNative's `.gitmodules` overwrote the N64Recomp pin. Import workflow now restores that submodule entry with `git config`, and explicitly registers the new activity.
+- Latest validation run is pending; no APK is claimed until Android build and tests pass.
