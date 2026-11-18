@@ -328,3 +328,20 @@ Mark complete only when evidence exists.
 - [ ] Connect WinNative touch and gamepad input to the N64 runtime's controller API.
 - [ ] Package generated ARM64 library + runtime assets as an installable NGR game package.
 - [ ] Launch and validate a legally supplied test title on device. Do not mark launch complete before this test.
+
+
+## N64Recomp implementation checkpoint — 2026-11-18
+- [x] Add the recompiler screen to the WinNative drawer.
+- [x] Add Android JNI code generation from supported N64 ELF to per-function C sources.
+- [x] Follow N64Recomp-discovered static functions across sections and bound generated function/instruction counts and ROM offsets.
+- [x] Add direct branch Android CI workflow: `.github/workflows/ngr-android-build.yml`.
+- [x] Audit N64ModernRuntime input/renderer callback seams and GPL-3.0 provenance in `docs/ngr/N64_RUNTIME_INTEGRATION_AUDIT.md`.
+- [ ] Confirm current direct CI run green for C++ code generation bridge, Compose navigation, JVM tests and ARM64 APK.
+- [ ] Add synthetic MIPS ELF fixture and execute the actual NGR JNI/codegen path in a host test harness.
+- [ ] Add N64Recomp metadata/configuration import (entrypoint, relocatable sections, manual sizes, references, ignored/stubbed symbols).
+- [ ] Integrate N64ModernRuntime `librecomp` / `ultramodern` for Android without duplicate N64Recomp targets.
+- [ ] Select and integrate a compatible N64 display-list renderer.
+- [ ] Connect SDL/Vulkan surface lifecycle, WinNative controller/touch callbacks and audio callbacks.
+- [ ] Compile generated C to ARM64 using a verified managed Clang toolchain and link the title runtime.
+- [ ] Package title-specific runtime, generated library and legally supplied ROM/data.
+- [ ] Device-test a legally supplied title; only then mark “launchable”.
