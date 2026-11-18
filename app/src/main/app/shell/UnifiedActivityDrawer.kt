@@ -361,6 +361,7 @@ internal fun UnifiedActivity.DrawerContent(
     onImmersiveBlurChanged: (Boolean) -> Unit,
     onForceLandscapeChanged: (Boolean) -> Unit,
     onExportAll: () -> Unit,
+    onOpenN64Recompiler: () -> Unit,
     onExitApp: () -> Unit,
 ) {
     val drawerBridge = (context as? UnifiedActivity)?.drawerNavBridge
@@ -463,6 +464,12 @@ internal fun UnifiedActivity.DrawerContent(
                 icon = Icons.Outlined.IosShare,
                 label = stringResource(R.string.shortcuts_export_to_frontend),
                 onClick = onExportAll,
+            )
+            Spacer(Modifier.height(8.dp))
+            DrawerActionCard(
+                icon = Icons.Outlined.Memory,
+                label = "N64 Game Recompiler",
+                onClick = onOpenN64Recompiler,
             )
 
             Spacer(Modifier.height(16.dp))
