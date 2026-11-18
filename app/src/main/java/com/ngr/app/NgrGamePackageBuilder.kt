@@ -168,6 +168,33 @@ class NgrGamePackageBuilder(
     }
 
     private fun createPackage(payload: Path, outputArchive: File, requestedName: String, selectedEntryPoint: String?): Result {
+        val prepared = prepareFolderInPlace(payload.toFile(), requestedName, selectedEntryPoint)
+        if (!prepared.success) throw IOException(prepared.errors.joinToString("; ").ifBlank { prepared.message })
+        writePackageZip(payload, outputArchive)
+        return prepared.copy(message = "Game scanned and NGRPACK generated", archive = outputArchive)
+    }
+
+    /**
+     * Scans an already-private payload directory, writes its manifest in place and returns
+     * executable candidates without creating an intermediate archive.
+     */
+    fun prepareFolderInPlace(
+        payloadDirectory: File,
+        requestedName: String,
+        selectedEntryPoint: String? = null,
+        replaceGeneratedManifest: Boolean = false
+    ): Result {
+        val payload = payloadDirectory.toPath().toAbsolutePath().normalize()
+        if (Files.isSymbolicLink(payload) || !Files.isDirectory(payload, LinkOption.NOFOLLOW_LINKS))
+            return Result(false, "Folder import staging directory is unsafe", errors = listOf("Payload must be a real directory"))
+        try {
+            val manifestPath = payload.resolve("ngr-manifest.json")
+            if (Files.exists(manifestPath, LinkOption.NOFOLLOW_LINKS)) {
+                if (!replaceGeneratedManifest || Files.isSymbolicLink(manifestPath) ||
+                    !Files.isRegularFile(manifestPath, LinkOption.NOFOLLOW_LINKS))
+                    throw IOException("Source folder already contains ngr-manifest.json; use NGRPACK import for prepared packages")
+                Files.delete(manifestPath)
+            }
         val files = mutableListOf<Path>()
         var total = 0L
         Files.walkFileTree(payload, object : SimpleFileVisitor<Path>() {
@@ -262,17 +289,20 @@ class NgrGamePackageBuilder(
             .put("provenance", "local-import")
             .put("files", fileArray)
         Files.write(payload.resolve("ngr-manifest.json"), manifest.toString(2).toByteArray(Charsets.UTF_8))
-        writePackageZip(payload, outputArchive)
         return Result(
             success = true,
-            message = "Game scanned and NGRPACK generated",
-            archive = outputArchive,
+            message = "Game scanned and manifest generated in staging",
+            archive = null,
             displayName = display,
             entryPoint = selected.first,
             platform = platform,
             architecture = architecture,
             candidates = rankedCandidates.map { ExecutableCandidate(it.first, it.second!!, it.third ?: "unknown") }
         )
+        } catch (e: Exception) {
+            NgrLogger.error("package.builder", "In-place folder preparation failed", e)
+            Result(false, "Game folder preparation failed", errors = listOf(e.message ?: e.javaClass.simpleName))
+        }
     }
 
     private fun writePackageZip(payload: Path, output: File) {
