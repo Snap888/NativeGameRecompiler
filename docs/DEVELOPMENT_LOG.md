@@ -897,6 +897,9 @@ This is the durable project memory. Update it in every development session.
 - Earlier ABI implementation files were added in commits leading to `e4498083b0f7074ae80e24c20162c0dcc9d22f6d`.
 - CI run #327 (`44270340309`) was in progress at journal update time; native tests, JVM tests, ARM64 APK and artifact upload are not yet confirmed.
 
+
+- Follow-up hardening: host API now rejects a host minor version newer than the runtime; conformance tests now cover host major/minor/struct-size failures and backend minor-version mismatch. Commits: `fa94ec1f3ae9ac2aa775392a017e86613cbc4d80`, `7f9276034ff2dccbe97c18c027cfb231b44bb09b`.
+
 ### Next
 - Verify run #327 end-to-end. If native conformance fails, inspect compiler/test output before proceeding.
 - Only after green CI, mark ABI validation complete; then add a trusted built-in test backend fixture and lifecycle state machine. Do not implement dynamic loading of arbitrary package content.
