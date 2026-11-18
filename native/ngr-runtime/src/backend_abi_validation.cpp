@@ -41,6 +41,8 @@ bool validate_host_api_v1(const NgrHostApiV1& api, std::string* error) {
         return fail(error, "host API struct is smaller than ABI v1.0");
     if (api.abi_major != NGR_BACKEND_ABI_V1_MAJOR)
         return fail(error, "host API major version mismatch");
+    if (api.abi_minor > NGR_BACKEND_ABI_V1_MINOR)
+        return fail(error, "host API minor version is newer than this runtime");
     if (api.log_utf8 == nullptr || api.open_package_file == nullptr ||
         api.read_file == nullptr || api.close_file == nullptr ||
         api.monotonic_time_ns == nullptr)
