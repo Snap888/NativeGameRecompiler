@@ -333,7 +333,7 @@ android {
     sourceSets {
         main {
             java.srcDirs = [
-//                    'src/main/java',  // Needed for Android Studio
+                    'src/main/java',  // NGR Kotlin sources and shared Java compatibility helpers
                     'src/main/app',
                     'src/main/feature',
                     'src/main/sharedmemory',
