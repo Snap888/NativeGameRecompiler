@@ -100,10 +100,11 @@ class N64RecompilerActivity : Activity() {
                 output.parentFile?.mkdirs()
                 val report = nativeGenerateN64C(input, output.absolutePath)
                 val shortcutMessage = if (report.startsWith("OK")) createRecompiledGameShortcut(output) else null
+                val shortcutCreated = shortcutMessage?.startsWith("OK:") == true
                 runOnUiThread {
                     status.text = if (shortcutMessage != null) "$report\n\n$shortcutMessage" else report
                     generateButton.isEnabled = true
-                    Toast.makeText(this, if (shortcutMessage != null) {
+                    Toast.makeText(this, if (shortcutCreated) {
                         if (ru()) "Игра добавлена в ярлыки" else "Game added to shortcuts"
                     } else if (report.startsWith("OK")) {
                         if (ru()) "Исходники C созданы, но ярлык не сохранён" else "C sources generated, shortcut was not saved"
@@ -154,13 +155,13 @@ class N64RecompilerActivity : Activity() {
             val saved = NgrGameShortcutStore(runtimeRoot).save(shortcut)
             require(saved.success) { saved.error ?: "Unable to save game shortcut" }
             if (ru()) {
-                "Ярлык создан: ${shortcut.title}. Настройки доступны в GAME SHORTCUTS. Запуск появится после сборки ARM64 и подключения N64 runtime."
+                "OK: Ярлык создан: ${shortcut.title}. Настройки доступны в GAME SHORTCUTS. Запуск появится после сборки ARM64 и подключения N64 runtime."
             } else {
-                "Shortcut created: ${shortcut.title}. Configure it in GAME SHORTCUTS. Launch will be enabled after ARM64 compilation and N64 runtime integration."
+                "OK: Shortcut created: ${shortcut.title}. Configure it in GAME SHORTCUTS. Launch will be enabled after ARM64 compilation and N64 runtime integration."
             }
         } catch (failure: Exception) {
             NgrLogger.error("recompiler.n64", "Unable to register generated game shortcut", failure)
-            (if (ru()) "Не удалось создать ярлык: " else "Could not create shortcut: ") +
+            "ERROR: " + (if (ru()) "Не удалось создать ярлык: " else "Could not create shortcut: ") +
                 (failure.message ?: "unknown error")
         }
     }
