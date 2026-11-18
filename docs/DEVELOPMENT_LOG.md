@@ -1057,3 +1057,22 @@ This is the durable project memory. Update it in every development session.
 - Failing test: `NgrComponentInstallPlannerTest.skipsAlreadyInstalledDependencies` at line 49. Root cause: version-aware planning treated an installed component with no version metadata as an update, breaking callers using the legacy installed-ID-only contract.
 - Fixed planner compatibility: an installed ID is treated as installed when version metadata is absent; when an explicit installed version exists, it is skipped only if it exactly matches the catalog version. The mismatched-version update test remains authoritative.
 - Fix commit: `255a4684614b69319b5328787b9ad4db725c01aa`. New CI verification is required; no APK is available from #397.
+
+## Verified CI and direct SAF folder import — 2026-11-18
+
+### CI and APK
+- Actions run #400 (44287692239) for commit dcc1719592b1cd71e66bdb5614d764c8623a10a0 passed: native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
+- Artifact: NGR-arm64-debug, artifact ID 14419548847; downloaded and inspected ZIP. It contains app-debug.apk (2,486,165 bytes). APK SHA-256: 1f897b4f19b708936a1f90903a41e53c3191d4392997d6a400720a3515b4f55b.
+- CI run #398 for planner compatibility fix and #399 for development log update also passed all steps.
+- Physical-device install/runtime test remains outstanding.
+
+### P0 direct SAF folder import
+- Replaced the old folder path (SAF -> cache copy -> generated NGRPACK -> package-manager incoming copy -> extraction) with a direct path: SAF -> private managed folder staging -> streamed file/path/size validation -> in-place executable scan + SHA-256 manifest -> validated atomic promotion.
+- Multiple executable selection now rewrites only the generated manifest; game payload files are not copied or re-archived again.
+- Added NgrPackPackageManager.createFolderImportStaging() and installPreparedFolder() with private-parent/UUID/path checks, manifest/hash validation, atomic replacement and backup rollback.
+- Added NgrGamePackageBuilder.prepareFolderInPlace(); existing NGRPACK and ordinary ZIP import flows remain supported.
+- Added JVM tests for in-place preparation, direct install, hash validation, atomic staging move and rejection of an outside staging path.
+- MainActivity direct folder import commits: dadab2ee6a9460ede7ae56838ddbdd0704e70984, 0489f3ebc6db48575d4c7b68c1c23efcfe28fd5f, df0b8601ed53ecaf953ddc9c30cf80543b54cb80, 25ebfd80991891f3eedfc7ddb5a177817241c88b, 0c1cf8cee15a9b1e74c179065339c90d9efe0e5b.
+- Expected storage behavior: only one full payload copy in managed package storage; no cache copy, generated multi-GB archive, second incoming archive copy or second extraction. Actual device storage behavior still needs validation with a large SAF folder.
+- New direct-import commits require CI verification.
+
