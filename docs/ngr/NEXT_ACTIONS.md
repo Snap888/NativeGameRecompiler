@@ -312,3 +312,19 @@ Mark complete only when evidence exists.
 - [x] JVM unit tests passed, including FEX schema migration and stale folder staging cleanup.
 - [x] ARM64 Debug APK built and uploaded; artifact ID 14433695246 downloaded and inspected.
 - [ ] Install APK and test SAF import of a multi-GB game folder on physical Snapdragon/Adreno hardware.
+
+
+## P4 — N64 static recompiler (active)
+- [x] Pin N64Recomp upstream commit `598ce2080004a5672d604dceadbda436045307b7`.
+- [x] Build pinned N64Recomp and RSPRecomp host tools in CI.
+- [x] Link the N64Recomp core into the Android ARM64 JNI runtime; verified by Actions run [44343916041](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44343916041).
+- [x] Add JNI pipeline to parse supported N64 ELF and emit per-function C source, static-function discoveries, `funcs.h` and a machine-readable generation manifest.
+- [x] Add Android “Recompile to C” action.
+- [ ] Verify C-generation commits `4f0f90a` and `ab200f1` with a fresh Android CI build.
+- [ ] Add synthetic, redistributable MIPS ELF fixture tests for actual generated C and error paths.
+- [ ] Add N64Recomp TOML configuration import and preserve required metadata/entrypoint.
+- [ ] Provision Android ARM64 Clang and compile generated C against a real title runtime.
+- [ ] Integrate a compatible N64 title runtime, including CPU/memory, RSP, graphics, audio, save data and platform services.
+- [ ] Connect WinNative touch and gamepad input to the N64 runtime's controller API.
+- [ ] Package generated ARM64 library + runtime assets as an installable NGR game package.
+- [ ] Launch and validate a legally supplied test title on device. Do not mark launch complete before this test.
