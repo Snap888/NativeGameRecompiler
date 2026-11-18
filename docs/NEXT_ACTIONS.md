@@ -208,8 +208,9 @@ Mark complete only when evidence exists.
 ## P0 — Game shortcut and launch configuration foundation (2026-11-18)
 - [x] Add validated per-game shortcut metadata with package/profile identity, guest executable/working directory, argument vector, launch mode, per-game environment overrides, icon asset reference and launch timestamps.
 - [x] Add bounded atomic app-private shortcut store; reject symlinks, unsafe IDs/paths, protected environment variables, unknown schema fields and corrupt metadata.
-- [ ] Verify shortcut store JVM tests and ARM64 APK in Actions run #344 (44280634973).
-- [ ] Integrate shortcut CRUD and executable/icon selection into the game library UI.
+- [ ] Verify shortcut store JVM tests and ARM64 APK in latest Actions run #351 (44280992531); #344 failed because the test compared records with independently generated timestamps, corrected in d3dc6110.
+- [x] Integrate basic shortcut CRUD into the game library UI: create from installed package/profile, edit title/executable/working directory/arguments/profile/mode/environment, delete and remove orphan records.
+- [ ] Add custom icon/cover import and Android pinned-shortcut publication.
 - [ ] Add Android pinned-shortcut adapter with immutable launch identity and no host-path leakage.
 - [ ] Add per-game launch settings editor and deterministic profile/container override resolution.
 - [ ] Add launcher/session API; do not claim launch capability until process start/stop and exit reporting work.
