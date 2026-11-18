@@ -137,3 +137,16 @@ Mark complete only when evidence exists.
 - [ ] Verify latest UI commit in Android CI: JVM tests, arm64-v8a APK build and artifact upload.
 - [ ] Install the UI build on the target phone and review contrast, scrolling, dialog styling and compact-screen layout.
 - [ ] Follow up with polished game/profile list cards and navigation only after device feedback.
+
+
+## Wine prefix lifecycle — 2026-11-18
+- [x] Add private prefix storage with PREPARED / READY / INVALID status and Wine marker validation.
+- [x] Add bounded tree traversal, symlink/special-file rejection and path-scoped deletion.
+- [x] Add atomic clone, private SHA-256-verified backup snapshots and restore.
+- [x] Add reset and duplicate-ID protections.
+- [x] Add JVM regression tests and basic Android prefix-management UI.
+- [ ] Verify latest JVM tests and ARM64 APK CI.
+- [ ] Device-test prepare/list/reset/remove with a test prefix.
+- [ ] Connect prefix IDs to environment profiles after profile schema migration.
+- [ ] Add Wine runtime + wineboot before allowing prefix initialization or game launch.
+- [ ] Design portable backup export/import separately; current snapshots remain app-private.
