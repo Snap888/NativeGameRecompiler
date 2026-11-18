@@ -291,7 +291,7 @@ class NgrRecompilerPickerActivity : Activity() {
             }
             if (offset < 20 || header[0] != 0x7f.toByte() ||
                 header[1] != 'E'.code.toByte() || header[2] != 'L'.code.toByte() ||
-                header[3] != 'F'.code) {
+                header[3] != 'F'.code.toByte()) {
                 if (extension in setOf("z64", "n64", "v64")) {
                     NgrLogger.warn("recompiler.detect", "N64 extension but invalid ROM magic: name=$name")
                 }
