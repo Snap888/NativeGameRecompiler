@@ -1,0 +1,87 @@
+name: NGR Android Build
+
+on:
+  push:
+    branches:
+      - integration/winnative-runtime-base
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ngr-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integrated NGR + WinNative source
+        uses: actions/checkout@v4
+        with:
+          ref: integration/winnative-runtime-base
+          lfs: true
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android build dependencies
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.3.13750724" "cmake;3.22.1"
+
+      - name: Install Rust Android target
+        run: |
+          rustup target add aarch64-linux-android
+          rustc --version
+          cargo --version
+
+      - name: Verify pinned N64Recomp source
+        run: |
+          test -f native/recompilers/N64Recomp/include/recompiler/context.h
+          test -f native/recompilers/N64Recomp/CMakeLists.txt
+          git -C native/recompilers/N64Recomp rev-parse HEAD
+          git lfs pull
+
+      - name: Build N64Recomp and RSPRecomp host tools
+        run: |
+          cmake -S native/recompilers/N64Recomp -B /tmp/n64recomp-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/n64recomp-build --target N64RecompCLI RSPRecomp --parallel 2
+          test -x /tmp/n64recomp-build/N64Recomp
+          test -x /tmp/n64recomp-build/RSPRecomp
+
+      - name: Run NGR native ABI conformance tests
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I native/ngr-runtime/include native/ngr-runtime/src/backend_abi_validation.cpp native/ngr-runtime/tests/backend_abi_validation_test.cpp -o /tmp/ngr-abi
+          /tmp/ngr-abi
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -I native/ngr-runtime/include native/ngr-runtime/src/backend_abi_validation.cpp native/ngr-runtime/src/backend_registry.cpp native/ngr-runtime/tests/backend_registry_test.cpp -o /tmp/ngr-registry
+          /tmp/ngr-registry
+
+      - name: Verify N64Recomp generation JNI wiring
+        run: |
+          grep -q "Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C" native/ngr-runtime/src/n64recomp_bridge.cpp
+          grep -q "nativeGenerateN64C" app/src/main/java/com/ngr/app/N64RecompilerActivity.kt
+          grep -q "fixed point" native/ngr-runtime/src/n64recomp_bridge.cpp
+
+      - name: Run NGR JVM tests
+        run: ./gradlew --no-daemon :app:testStandardDebugUnitTest
+
+      - name: Build Android ARM64 APK
+        run: ./gradlew --no-daemon assembleStandardDebug
+
+      - name: Upload NGR WinNative ARM64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGR-WinNative-arm64-debug
+          path: app/build/outputs/apk/standard/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
