@@ -1409,9 +1409,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val root = DocumentFile.fromTreeUri(this, treeUri)
                     ?: throw IOException("Unable to open selected folder")
                 if (!root.isDirectory) throw IOException("Selected item is not a directory")
-                staging = packageManager.createFolderImportStaging()
+                val folderStaging = packageManager.createFolderImportStaging()
+                staging = folderStaging
                 val budget = FolderImportBudget()
-                copyDocumentDirectory(root, staging, "", budget)
+                copyDocumentDirectory(root, folderStaging, "", budget)
                 if (budget.files == 0) throw IOException("Selected folder contains no files")
                 val displayName = root.name ?: "Imported game"
                 NgrLogger.info(
@@ -1419,14 +1420,14 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     "Folder copied directly into package staging; files=${budget.files}; bytes=${budget.bytes}"
                 )
                 val builder = NgrGamePackageBuilder()
-                val prepared = builder.prepareFolderInPlace(staging, displayName)
+                val prepared = builder.prepareFolderInPlace(folderStaging, displayName)
                 if (!prepared.success) throw IOException(prepared.errors.joinToString("; ").ifBlank { prepared.message })
                 NgrLogger.info(
                     "package.builder",
                     "Direct folder prepared; displayName=${prepared.displayName}; platform=${prepared.platform}; " +
                         "architecture=${prepared.architecture}; entryPoint=${prepared.entryPoint}; candidates=${prepared.candidates.size}"
                 )
-                val stagingDirectory = staging
+                val stagingDirectory = folderStaging
                 completeBuiltFolderImport(stagingDirectory, prepared, { selected ->
                     builder.prepareFolderInPlace(
                         stagingDirectory,
