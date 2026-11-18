@@ -297,11 +297,18 @@ Mark complete only when evidence exists.
 - [x] Migrate v1/v2 profiles by defaulting missing FEX preset to Balanced.
 - [x] Add Box64 and FEX preset controls to profile editor and details; mark as saved configuration only.
 - [x] Include translator presets in resolved launch configuration and preview.
-- [ ] Verify schema migration, codec, resolver, native tests and APK in latest CI; download and inspect artifact.
+- [x] Verify profile schema migration, codec, resolver, native tests and ARM64 APK in CI run #429; downloaded and inspected artifact ID 14433695246.
 - [ ] Implement verified runtime-specific option mapping only after pinning and auditing Box64/FEX versions; do not claim presets are active until a launch adapter consumes them.
 
 ## P0 — Direct folder import follow-up
 - [x] CI run #409 passed direct-import JVM tests and ARM64 APK build.
 - [x] CI run #411 passed full workflow and its APK artifact was downloaded and inspected.
 - [ ] Test a multi-GB SAF folder on physical Android, including low-storage failure, user cancellation, process death and rollback.
-- [ ] Add cleanup/recovery policy for abandoned private .folder-staging directories.
+- [x] Add startup cleanup for abandoned UUID staging directories older than 30 days; verify retention behavior in JVM test and CI run #429.
+
+
+### Latest verified integrated build — CI #429
+- [x] Native ABI conformance and backend registry tests passed.
+- [x] JVM unit tests passed, including FEX schema migration and stale folder staging cleanup.
+- [x] ARM64 Debug APK built and uploaded; artifact ID 14433695246 downloaded and inspected.
+- [ ] Install APK and test SAF import of a multi-GB game folder on physical Snapdragon/Adreno hardware.
