@@ -716,3 +716,26 @@ This is the durable project memory. Update it in every development session.
 - Added `docs/LICENSING_AND_PROVENANCE.md` after confirming NGR root license is MIT and WinNative is GPL-3.0.
 - Preliminary upstream root licenses inspected: Box64 MIT, FEX MIT, DXVK zlib/libpng, VKD3D-Proton LGPL-2.1, Wine LGPL-2.1-or-later and vkBasalt zlib/libpng. Mesa/Turnip and ReShade licensing remain unverified in this pass.
 - No WinNative code or binaries have been copied. The MIT/GPL boundary requires an explicit licensing decision before donor source reuse.
+
+
+## Session 2026-11-18 — WinNative-inspired dashboard refresh
+
+### User feedback
+- User requested a more polished interface inspired by WinNative after confirming game ZIP import, executable detection, NGRPACK install/inventory and removal on device.
+
+### UI changes
+- Replaced the plain white, vertically stacked screen with a dark graphite dashboard and restrained electric-blue accents.
+- Added NGR wordmark/header, introductory game-library hero panel, prominent folder import action and secondary ZIP/NGRPACK actions.
+- Grouped installed games, runtime profiles, hardware/Vulkan/controller information and diagnostics into visually separated sections/cards.
+- Added rounded surfaces, consistent spacing, typography hierarchy, readable muted metadata and high-contrast primary actions.
+- Switched the Android Material base theme to dark so system dialogs/editors align with the dashboard.
+- Kept all existing import, package manager, profile, Vulkan, controller and diagnostic callbacks intact; no runtime/backend behavior was changed.
+
+### Device feedback recorded
+- User-provided log confirms Lethal Company ZIP import selected Lethal Company.exe as Windows x86_64, generated and validated the manifest/hash inventory, installed successfully, survived app restart inventory scan, and was removed successfully.
+- This confirms the package-management flow on the user's device; it does not demonstrate game execution, as no compatible execution backend is integrated yet.
+
+### Validation
+- UI source and Android manifest committed to main.
+- Android CI was triggered for the UI commits; do not share a new APK until the latest run passes JVM tests, ARM64 APK packaging and artifact upload.
+- No visual inspection on a physical device has yet been performed. User should verify spacing and contrast on the target phone after installing the CI artifact.
