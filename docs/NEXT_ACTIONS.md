@@ -256,3 +256,12 @@ Mark complete only when evidence exists.
 - [x] Reactivate a previously stored version without re-downloading its archive; validate the stored tree and payload path before atomically changing the version pointer.
 - [x] Add rollback and uninstall actions in the component manager; block uninstall while a profile/game override or installed dependent component references the component.
 - [ ] Verify stored-version activation and manager maintenance actions in latest CI run #380.
+
+
+## P1 — Controller mapping profiles
+- [x] Add persisted controller profiles bound to Android device descriptors, with game-specific optional assignment.
+- [x] Add validated key/axis/hat bindings, duplicate physical-input rejection, dead zones, per-stick sensitivity, inversion, stick curves, trigger threshold, vibration and touch layout tuning.
+- [x] Add controller profile create/edit/delete UI and current connected-device status.
+- [ ] Verify controller profile JVM tests and Android build in latest CI.
+- [ ] Add event-capture/remap wizard and per-game profile selection.
+- [ ] Connect profiles to the native session input bridge; no mapping affects game input until this integration exists.
