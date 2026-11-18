@@ -99,11 +99,14 @@ class N64RecompilerActivity : Activity() {
             try {
                 output.parentFile?.mkdirs()
                 val report = nativeGenerateN64C(input, output.absolutePath)
+                val shortcutMessage = if (report.startsWith("OK")) createRecompiledGameShortcut(output) else null
                 runOnUiThread {
-                    status.text = report
+                    status.text = if (shortcutMessage != null) "$report\n\n$shortcutMessage" else report
                     generateButton.isEnabled = true
-                    Toast.makeText(this, if (report.startsWith("OK")) {
-                        if (ru()) "Исходники C созданы" else "C sources generated"
+                    Toast.makeText(this, if (shortcutMessage != null) {
+                        if (ru()) "Игра добавлена в ярлыки" else "Game added to shortcuts"
+                    } else if (report.startsWith("OK")) {
+                        if (ru()) "Исходники C созданы, но ярлык не сохранён" else "C sources generated, shortcut was not saved"
                     } else report, Toast.LENGTH_LONG).show()
                 }
             } catch (failure: Exception) {
@@ -116,6 +119,51 @@ class N64RecompilerActivity : Activity() {
         }.start()
     }
 
+    /**
+     * Register generated N64 projects in the shared game-shortcut library.
+     * The shortcut is deliberately non-launchable until an ARM64 binary and title runtime exist.
+     */
+    private fun createRecompiledGameShortcut(output: File): String {
+        return try {
+            val runtimeRoot = File(filesDir, "ngr-runtime")
+            val profileStore = NgrEnvironmentProfileStore(runtimeRoot)
+            var profile = profileStore.loadAll().profiles.firstOrNull()
+            if (profile == null) {
+                profile = NgrEnvironmentProfile(
+                    profileId = "n64-native-default",
+                    displayName = "N64 Native (runtime pending)",
+                    containerMode = NgrEnvironmentProfile.ContainerMode.STANDARD_X86_64,
+                    cpuTranslator = NgrEnvironmentProfile.CpuTranslator.BOX64
+                )
+                val savedProfile = profileStore.save(profile)
+                require(savedProfile.success) { savedProfile.error ?: "Unable to create the default N64 profile" }
+            }
+
+            val suffix = output.name.removePrefix("run-").take(32).ifBlank { System.currentTimeMillis().toString() }
+            val gameTitle = File(selectedElfPath ?: "N64 Game").nameWithoutExtension.take(90).ifBlank { "N64 Game" }
+            val shortcut = NgrGameShortcut(
+                shortcutId = "n64-$suffix",
+                title = gameTitle,
+                packageId = "n64-$suffix",
+                executablePath = "native/run-$suffix/game.so",
+                workingDirectory = "native/run-$suffix",
+                environmentProfileId = profile.profileId,
+                launchMode = NgrGameShortcut.LaunchMode.NATIVE_ARM64,
+                enabled = true
+            )
+            val saved = NgrGameShortcutStore(runtimeRoot).save(shortcut)
+            require(saved.success) { saved.error ?: "Unable to save game shortcut" }
+            if (ru()) {
+                "Ярлык создан: ${shortcut.title}. Настройки доступны в GAME SHORTCUTS. Запуск появится после сборки ARM64 и подключения N64 runtime."
+            } else {
+                "Shortcut created: ${shortcut.title}. Configure it in GAME SHORTCUTS. Launch will be enabled after ARM64 compilation and N64 runtime integration."
+            }
+        } catch (failure: Exception) {
+            NgrLogger.error("recompiler.n64", "Unable to register generated game shortcut", failure)
+            (if (ru()) "Не удалось создать ярлык: " else "Could not create shortcut: ") +
+                (failure.message ?: "unknown error")
+        }
+    }
     @Deprecated("Legacy callback retained for compatibility with the host Activity API")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
