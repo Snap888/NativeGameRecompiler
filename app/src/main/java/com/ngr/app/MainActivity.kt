@@ -416,6 +416,13 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             actions.addView(Button(this).apply {
                 text = "Delete"
                 setOnClickListener {
+                    val linkedProfiles = profileStore.loadAll().profiles.filter { it.winePrefixId == prefix.id }
+                    if (linkedProfiles.isNotEmpty()) {
+                        Toast.makeText(this@MainActivity,
+                            "Prefix is assigned to: ${linkedProfiles.joinToString { it.displayName }}. Unassign it from profiles first.",
+                            Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
                     AlertDialog.Builder(this@MainActivity).setTitle("Delete prefix?")
                         .setMessage(prefix.displayName).setNegativeButton("Cancel", null)
                         .setPositiveButton("Delete") { _, _ ->
