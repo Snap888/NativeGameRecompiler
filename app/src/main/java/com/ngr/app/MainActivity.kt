@@ -149,7 +149,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             text = "Configure Wine / Proton layers, CPU translation and graphics providers in reusable profiles."
             textSize = 13f
             setTextColor(Color.rgb(163, 174, 191))
-        })        runtimeCard.addView(primaryButton("＋  Create environment profile") { showCreateEnvironmentProfileDialog() })
+        })
+        runtimeCard.addView(primaryButton("＋  Create environment profile") { showCreateEnvironmentProfileDialog() })
         profileStatus = mutedText()
         runtimeCard.addView(profileStatus)
         profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
