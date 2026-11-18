@@ -285,6 +285,6 @@
         </receiver>
 
             <activity android:name="com.ngr.app.MainActivity" android:exported="false" />
-        <activity android:name="com.ngr.app.N64RecompilerActivity" android:exported="false" />
+            <activity android:name="com.ngr.app.N64RecompilerActivity" android:exported="false" />
     </application>
 </manifest>
