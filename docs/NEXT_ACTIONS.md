@@ -150,3 +150,16 @@ Mark complete only when evidence exists.
 - [ ] Connect prefix IDs to environment profiles after profile schema migration.
 - [ ] Add Wine runtime + wineboot before allowing prefix initialization or game launch.
 - [ ] Design portable backup export/import separately; current snapshots remain app-private.
+
+
+## Environment / prefix / component binding — 2026-11-18
+- [x] Migrate profile schema v1 to v2 with optional managed Wine prefix ID and backward-compatible v1 decoding.
+- [x] Add strict prefix ID validation and codec round-trip/migration tests.
+- [x] Expose prefix ID assignment in the profile editor and show prefix state in profile cards.
+- [x] Prevent deleting a prefix referenced by a saved environment profile.
+- [x] Add integrated readiness evaluator for profile validation, prefix structure, installed component versions, version pins and runtime capabilities.
+- [ ] Add a prefix picker instead of manual ID entry.
+- [ ] Connect a trusted catalog source to the UI and expose full readiness report.
+- [ ] Add tests for readiness across PREPARED/READY/missing prefix and installed/missing component combinations.
+- [ ] Implement component activation and Wine runtime initialization only after binary provenance and license checks.
+- [ ] Run CI and verify JVM tests, ARM64 APK build and artifact upload.
