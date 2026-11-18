@@ -1044,3 +1044,9 @@ This is the durable project memory. Update it in every development session.
 - This was a compile-time type mismatch; native ABI and backend registry tests had passed. The failed runs did not produce an APK.
 - Added controller hotplug refresh for connected/disconnected profile status in commit `4ba9f812ea9bea4cb991064be68d40aea55f0812`.
 - Latest CI after these corrections is pending; do not distribute an APK from the failed runs.
+
+
+### Controller compile correction — 2026-11-18
+- The first controller UI CI attempt then found that `InputManager.inputDeviceIds` is an `IntArray`, which does not expose the used `mapNotNull` extension directly.
+- Fixed enumeration by converting IDs to a sequence before `mapNotNull`, sorting and materializing the device list in commit `4f1a1db84ba1dc50565653eb8375e027fccccce1`.
+- Latest verification is run #395 (`44285983485`); controller model/store/UI and the component result typing fix remain unverified until this run completes.
