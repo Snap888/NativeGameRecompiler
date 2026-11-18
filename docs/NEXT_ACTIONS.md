@@ -160,6 +160,7 @@ Mark complete only when evidence exists.
 - [x] Add integrated readiness evaluator for profile validation, prefix structure, installed component versions, version pins and runtime capabilities.
 - [x] Add a prefix picker instead of manual ID entry.
 - [ ] Connect a trusted catalog source to the UI and expose full readiness report.
-- [ ] Add tests for readiness across PREPARED/READY/missing prefix and installed/missing component combinations.
+- [x] Add readiness tests for PREPARED prefix, missing prefix and missing runtime components.
+- [ ] Add READY-prefix plus fully installed-component success-path test.
 - [ ] Implement component activation and Wine runtime initialization only after binary provenance and license checks.
 - [ ] Run CI and verify JVM tests, ARM64 APK build and artifact upload.
