@@ -528,7 +528,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val invertRightX = CheckBox(this).apply { text = "Invert right X"; isChecked = profile.invertRightX }
         val invertRightY = CheckBox(this).apply { text = "Invert right Y"; isChecked = profile.invertRightY }
         val vibration = CheckBox(this).apply { text = "Enable vibration"; isChecked = profile.vibrationEnabled }
-        listOf(invertLeftX, invertLeftY, invertRightX, invertRightY, vibration).forEach(form::addView)
+        listOf(invertLeftX, invertLeftY, invertRightX, invertRightY, vibration).forEach { form.addView(it) }
 
         val curve = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         val curveButtons = NgrControllerProfile.StickCurve.values().associateWith { value ->
