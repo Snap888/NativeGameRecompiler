@@ -194,6 +194,7 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
         instructionCount += function.words.size();
         if (instructionCount > kMaxInstructions) return fail("ELF instruction count exceeds the safety limit");
     }
+    uint64_t generatedInstructionCount = instructionCount;
 
     // Normalize ELF symbol names to unique C identifiers before code generation.
     std::unordered_set<std::string> usedNames;
@@ -242,11 +243,13 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
                 processedStatics[sectionIndex].insert(address);
                 foundMoreStatics = true;
 
-                if (section.rom_addr == UINT32_MAX || address < section.ram_addr ||
-                    static_cast<uint64_t>(address) >= static_cast<uint64_t>(section.ram_addr) + section.size)
-                    return fail("N64Recomp discovered a static function outside a file-backed section");
+                const uint64_t sectionEnd64 = static_cast<uint64_t>(section.ram_addr) + section.size;
+                if (section.rom_addr == UINT32_MAX || (address & 3u) != 0 ||
+                    address < section.ram_addr || static_cast<uint64_t>(address) >= sectionEnd64 ||
+                    sectionEnd64 > UINT32_MAX)
+                    return fail("N64Recomp discovered a static function outside a bounded file-backed section");
 
-                uint32_t endAddress = section.ram_addr + section.size;
+                uint32_t endAddress = static_cast<uint32_t>(sectionEnd64);
                 for (const auto functionIndex : context.section_functions[sectionIndex]) {
                     const uint32_t knownAddress = context.functions[functionIndex].vram;
                     if (knownAddress > address && knownAddress < endAddress) endAddress = knownAddress;
@@ -259,9 +262,14 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
 
                 const uint64_t romOffset = static_cast<uint64_t>(section.rom_addr) + (address - section.ram_addr);
                 const size_t wordCount = (endAddress - address) / 4;
+                if (wordCount > kMaxInstructions - generatedInstructionCount)
+                    return fail("Generated static-function instruction count exceeds the safety limit");
+                if (compiledFunctions >= kMaxFunctions)
+                    return fail("Generated function count exceeds the safety limit");
                 if (romOffset + static_cast<uint64_t>(wordCount) * 4 > context.rom.size())
                     return fail("Static function bytes exceed the ELF image bounds");
 
+                generatedInstructionCount += wordCount;
                 std::vector<uint32_t> words(wordCount);
                 std::memcpy(words.data(), context.rom.data() + romOffset, wordCount * sizeof(uint32_t));
                 std::ostringstream addressText;
