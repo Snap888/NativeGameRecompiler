@@ -12,8 +12,6 @@ data class NgrEnvironmentProfile(
     val displayName: String,
     val containerMode: ContainerMode,
     val wineLayerId: String? = null,
-    /** Managed Wine prefix ID; null means no prefix has been assigned. */
-    val winePrefixId: String? = null,
     val box64ComponentId: String? = null,
     val box86ComponentId: String? = null,
     val cpuTranslator: CpuTranslator,
@@ -36,7 +34,9 @@ data class NgrEnvironmentProfile(
     val environmentVariables: Map<String, String> = emptyMap(),
     val gameOverrides: Map<String, NgrGameEnvironmentOverride> = emptyMap(),
     /** Exact component versions pinned by ID for reproducible environments. */
-    val componentVersions: Map<String, String> = emptyMap()
+    val componentVersions: Map<String, String> = emptyMap(),
+    /** Managed Wine prefix ID; null means no prefix has been assigned. */
+    val winePrefixId: String? = null
 ) {
     enum class ContainerMode { STANDARD_X86_64, ARM64EC }
     enum class CpuTranslator { BOX64, FEXCORE }
