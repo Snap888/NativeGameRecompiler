@@ -183,6 +183,11 @@ jobs:
           git submodule update --init --recursive
           test -f native/recompilers/N64Recomp/include/recompiler/context.h
           git -C native/recompilers/N64Recomp rev-parse HEAD
+          test -f native/recompilers/XDroid360/android/runtime/CMakeLists.txt
+          test -f native/recompilers/XDroid360/android/app/src/main/java/com/udarmolota/xdroid360/BuildService.java
+          test -d native/recompilers/XDroid360/recomp
+          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "f388d11fc207502cd5975899c8adc06600cfe34f"
+          git -C native/recompilers/XDroid360 submodule status --recursive
 
       - name: Install Rust Android target for WinNative Steam native client
         run: |
