@@ -51,6 +51,25 @@ class NgrComponentStoreTest {
         }
     }
 
+
+    @Test fun reactivatesPreviouslyStoredVersionWithoutReinstalling() {
+        val root = Files.createTempDirectory("ngr-component-store-").toFile()
+        val store = NgrComponentStore(root)
+        try {
+            assertTrue(store.installAndActivate(component("1.0.0"), staged(store, "one")).success)
+            assertTrue(store.installAndActivate(component("2.0.0"), staged(store, "two")).success)
+            assertTrue(store.rollback("box64").success)
+            assertEquals("1.0.0", store.activeVersionDirectory("box64")?.name)
+
+            val reactivated = store.activateStoredVersion(component("2.0.0"))
+            assertTrue(reactivated.error ?: "stored version activation failed", reactivated.success)
+            assertEquals("2.0.0", store.activeVersionDirectory("box64")?.name)
+            assertEquals("two", store.activeComponentPath(component("2.0.0"))?.resolve("payload.txt")?.readText())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     @Test fun refusesToRemoveCurrentOrRollbackVersions() {
         val root = Files.createTempDirectory("ngr-component-store-").toFile()
         val store = NgrComponentStore(root)
