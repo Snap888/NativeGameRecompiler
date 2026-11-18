@@ -86,7 +86,7 @@ class NgrEnvironmentProfileCodecTest {
     @Test fun migratesSchemaV2ProfilesWithDefaultFexPreset() {
         val legacy = NgrEnvironmentProfileCodec.encode(profile())
             .replace("\"schemaVersion\": 3", "\"schemaVersion\": 2")
-            .replace("\"fexPreset\": \"BALANCED\",\\n", "")
+            .replace("\"fexPreset\": \"BALANCED\",\n", "")
         val migrated = NgrEnvironmentProfileCodec.decode(legacy)
         assertEquals(NgrEnvironmentProfile.FexPreset.BALANCED, migrated.fexPreset)
         assertEquals(NgrEnvironmentProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion)
