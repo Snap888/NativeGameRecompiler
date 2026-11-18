@@ -32,6 +32,7 @@ class N64RecompilerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NgrLogger.info("recompiler.n64", "N64RecompilerActivity opened; intentData=${intent.data}")
         language = getPreferences(MODE_PRIVATE).getString("language", "en") ?: "en"
         render()
         (intent.getStringExtra(EXTRA_INPUT_URI)?.let { raw -> runCatching { android.net.Uri.parse(raw) }.getOrNull() }
@@ -83,6 +84,10 @@ class N64RecompilerActivity : Activity() {
             setOnClickListener { generateC() }
         }
         root.addView(generateButton)
+        root.addView(Button(this).apply {
+            text = if (ru()) "Показать журнал рекомпилятора" else "Show recompiler log"
+            setOnClickListener { showRecompilerLog() }
+        })
         status = TextView(this).apply {
             text = if (ru()) "Ожидание ELF-файла…" else "Waiting for an ELF file…"
             textSize = 13f
@@ -93,15 +98,39 @@ class N64RecompilerActivity : Activity() {
         setContentView(scroll)
     }
 
+    private fun showRecompilerLog() {
+        val view = TextView(this).apply {
+            text = "Log: ${NgrLogger.filePath()}\\n\\n${NgrLogger.recentText(120_000)}"
+            textSize = 11f
+            setTextIsSelectable(true)
+            setPadding(20, 16, 20, 16)
+        }
+        val scroll = ScrollView(this).apply { addView(view) }
+        android.app.AlertDialog.Builder(this)
+            .setTitle(if (ru()) "Журнал рекомпилятора" else "Recompiler log")
+            .setView(scroll)
+            .setPositiveButton(if (ru()) "Закрыть" else "Close", null)
+            .setNeutralButton(if (ru()) "Поделиться" else "Share") { _, _ ->
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, NgrLogger.recentText(120_000))
+                }
+                startActivity(Intent.createChooser(send, if (ru()) "Отправить журнал" else "Share log"))
+            }
+            .show()
+    }
+
     private fun generateC() {
         val input = selectedElfPath ?: return
         generateButton.isEnabled = false
+        NgrLogger.info("recompiler.n64", "Generation started; input=$input")
         status.text = if (ru()) "Рекомпиляция MIPS → C… Не закрывайте приложение." else "Recompiling MIPS → C… Keep the app open."
         Thread {
             val output = File(filesDir, "n64recomp/generated/run-${System.currentTimeMillis()}")
             try {
                 output.parentFile?.mkdirs()
                 val report = nativeGenerateN64C(input, output.absolutePath)
+                NgrLogger.info("recompiler.n64", "Native generation finished; output=$output; report=${report.take(2000)}")
                 val shortcutMessage = if (report.startsWith("OK")) createRecompiledGameShortcut(output) else null
                 val shortcutCreated = shortcutMessage?.startsWith("OK:") == true
                 runOnUiThread {
@@ -114,6 +143,7 @@ class N64RecompilerActivity : Activity() {
                     } else report, Toast.LENGTH_LONG).show()
                 }
             } catch (failure: Exception) {
+                NgrLogger.error("recompiler.n64", "Generation failed; input=$input", failure)
                 runOnUiThread {
                     status.text = (if (ru()) "Ошибка рекомпиляции: " else "Recompiler error: ") +
                         (failure.message ?: "unknown")
@@ -128,6 +158,7 @@ class N64RecompilerActivity : Activity() {
      * The shortcut is deliberately non-launchable until an ARM64 binary and title runtime exist.
      */
     private fun createRecompiledGameShortcut(output: File): String {
+        NgrLogger.info("recompiler.n64", "Registering generated game shortcut for $output")
         return try {
             val runtimeRoot = File(filesDir, "ngr-runtime")
             val profileStore = NgrEnvironmentProfileStore(runtimeRoot)
@@ -157,6 +188,7 @@ class N64RecompilerActivity : Activity() {
             )
             val saved = NgrGameShortcutStore(runtimeRoot).save(shortcut)
             require(saved.success) { saved.error ?: "Unable to save game shortcut" }
+            NgrLogger.info("recompiler.n64", "Game shortcut saved; id=${shortcut.shortcutId}; title=${shortcut.title}")
             if (ru()) {
                 "OK: Ярлык создан: ${shortcut.title}. Настройки доступны в GAME SHORTCUTS. Запуск появится после сборки ARM64 и подключения N64 runtime."
             } else {
@@ -172,10 +204,12 @@ class N64RecompilerActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQUEST_ELF || resultCode != RESULT_OK || data?.data == null) return
+        NgrLogger.info("recompiler.n64", "SAF ELF file selected; uri=${data.data}")
         importElfUri(data.data!!)
     }
 
     private fun importElfUri(uri: android.net.Uri) {
+        NgrLogger.info("recompiler.n64", "Import started; uri=$uri")
         status.text = if (ru()) "Копирование ELF в приватное хранилище…" else "Copying ELF into private storage…"
         Thread {
             try {
@@ -197,12 +231,14 @@ class N64RecompilerActivity : Activity() {
                 }
                 require(total >= 64) { "Selected file is too small to be an ELF" }
                 val report = nativeInspectN64Elf(target.absolutePath)
+                NgrLogger.info("recompiler.n64", "ELF inspection finished; bytes=$total; path=$target; report=${report.take(2000)}")
                 runOnUiThread {
                     selectedElfPath = target.absolutePath
                     status.text = report
                     generateButton.isEnabled = report.startsWith("OK")
                 }
             } catch (failure: Exception) {
+                NgrLogger.error("recompiler.n64", "ELF import/inspection failed; uri=$uri", failure)
                 runOnUiThread {
                     status.text = (if (ru()) "Ошибка импорта ELF: " else "ELF import failed: ") +
                         (failure.message ?: "unknown")
