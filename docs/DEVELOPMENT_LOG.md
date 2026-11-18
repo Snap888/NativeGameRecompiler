@@ -819,3 +819,24 @@ This is the durable project memory. Update it in every development session.
 ### Validation
 - CI is triggered by the main-branch commits and must be inspected before distributing an APK.
 - Physical device validation is outstanding.
+
+
+## Session 2026-11-18 — P0 Wine Prefix Manager CI repair
+
+### Repository and CI audit
+- Audited live `main` at `aed35c2d0804f5bb0fd43774a978ea0a8a22de34` and read README, development log, next actions, technical specification, technical audit and continuation prompt.
+- Latest ten Android CI runs (#303–#312) were failures. For current HEAD run #312 (44247661958), Android SDK, NDK/CMake and Gradle setup succeeded; failure occurred during Kotlin compilation before unit tests ran, APK build and artifact upload were skipped.
+- Full job log identified one Kotlin compile error in `NgrWinePrefixManager.kt:280`: `files += file` resolves as reassignment/type mismatch because `Path` is iterable-like in Kotlin.
+
+### Fix
+- Commit `18b02fcb8454b2f43b44106b968ca58c9c7d0e49` — `Fix Wine prefix backup digest compilation`.
+- Replaced the ambiguous collection plus-assignment with explicit `files.add(file)` in the backup tree-digest traversal. No other behavior changed.
+- Existing prefix lifecycle tests cover prepared-vs-ready markers, clone/backup/restore, duplicate IDs, traversal, reset/remove and symlink rejection. Existing readiness tests cover missing and prepared prefixes.
+
+### Validation
+- CI run #313: [44249549118](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44249549118), source-fix commit above. At journal update time it was still in progress; no passing tests, APK or artifact claimed.
+- No physical-device test performed.
+
+### Next
+- Wait for run #313; inspect full logs if it fails. If green, verify ARM64 APK and artifact.
+- Then continue first incomplete P2 task: host-side backend ABI negotiation/validation, keeping untrusted NGRPACK payloads out of the loader.
