@@ -277,7 +277,7 @@ class NgrWinePrefixManager(private val privateRoot: File) {
             }
             override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
                 require(attrs.isRegularFile && !attrs.isSymbolicLink && !Files.isSymbolicLink(file)) { "Invalid backup file" }
-                if (file.fileName.toString() != excludedName) files += file
+                if (file.fileName.toString() != excludedName) files.add(file)
                 return FileVisitResult.CONTINUE
             }
         })
