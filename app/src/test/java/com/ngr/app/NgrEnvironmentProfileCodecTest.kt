@@ -83,6 +83,28 @@ class NgrEnvironmentProfileCodecTest {
         val invalid = profile().copy(environmentVariables = mapOf("PATH" to "/tmp"))
         assertFalse(runCatching { NgrEnvironmentProfileCodec.encode(invalid) }.isSuccess)
     }
+    @Test fun migratesSchemaV2ProfilesWithDefaultFexPreset() {
+        val legacy = NgrEnvironmentProfileCodec.encode(profile())
+            .replace("\"schemaVersion\": 3", "\"schemaVersion\": 2")
+            .replace("\"fexPreset\": \"BALANCED\",\\n", "")
+        val migrated = NgrEnvironmentProfileCodec.decode(legacy)
+        assertEquals(NgrEnvironmentProfile.FexPreset.BALANCED, migrated.fexPreset)
+        assertEquals(NgrEnvironmentProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion)
+    }
+
+    @Test fun roundTripsExplicitFexPreset() {
+        val arm64ec = NgrEnvironmentProfile(
+            profileId = "arm64ec",
+            displayName = "ARM64EC",
+            containerMode = NgrEnvironmentProfile.ContainerMode.ARM64EC,
+            cpuTranslator = NgrEnvironmentProfile.CpuTranslator.FEXCORE,
+            fexCoreComponentId = "fexcore",
+            fexUnixLibsComponentId = "fex-unixlibs",
+            fexPreset = NgrEnvironmentProfile.FexPreset.PERFORMANCE
+        )
+        assertEquals(arm64ec, NgrEnvironmentProfileCodec.decode(NgrEnvironmentProfileCodec.encode(arm64ec)))
+    }
+
     @Test fun roundTripsArm64EcFexCoreAndUnixLibraries() {
         val arm64ec = NgrEnvironmentProfile(
             profileId = "arm64ec",
