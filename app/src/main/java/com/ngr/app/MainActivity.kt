@@ -506,7 +506,13 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 orientation = LinearLayout.VERTICAL
                 setPadding(0, 12, 0, 12)
             }
-            val readiness = profile.validateLaunchReady()
+            val readiness = profile.validateLaunchReady().toMutableList()
+            val linkedPrefix = profile.winePrefixId?.let(prefixManager::inspect)
+            when {
+                profile.winePrefixId.isNullOrBlank() -> readiness += "Wine prefix is not assigned"
+                linkedPrefix == null -> readiness += "Assigned Wine prefix is missing or unsafe"
+                linkedPrefix.state != NgrWinePrefixManager.State.READY -> readiness += "Wine prefix is ${linkedPrefix.state}"
+            }
             item.addView(TextView(this).apply {
                 text = "${profile.displayName}\n${profile.containerMode} · ${profile.cpuTranslator}\n" +
                     "Wine prefix: ${profile.winePrefixId ?: "not assigned"}\n" +
