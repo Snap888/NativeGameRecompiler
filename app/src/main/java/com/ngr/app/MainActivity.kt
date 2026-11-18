@@ -125,6 +125,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             textSize = 13f
             setTextColor(Color.rgb(163, 174, 191))
         })
+        status = readoutText("Checking runtime status…")
+        hero.addView(status)
         val importActions = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, dp(14), 0, 0)
@@ -147,8 +149,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             text = "Configure Wine / Proton layers, CPU translation and graphics providers in reusable profiles."
             textSize = 13f
             setTextColor(Color.rgb(163, 174, 191))
-        })
-        runtimeCard.addView(primaryButton("＋  Create environment profile") { showCreateEnvironmentProfileDialog() })
+        })        runtimeCard.addView(primaryButton("＋  Create environment profile") { showCreateEnvironmentProfileDialog() })
         profileStatus = mutedText()
         runtimeCard.addView(profileStatus)
         profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -297,8 +298,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     override fun onPause() {
         inputManager.unregisterInputDeviceListener(this)
-        super.onPause()
-    }
+        super.onPause()    }
 
     override fun onDestroy() {
         NgrLogger.info("app", "MainActivity.onDestroy")
@@ -447,8 +447,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val fex = field("FEXCore component ID", profile.fexCoreComponentId)
         val fexUnix = field("FEX UnixLibs component ID", profile.fexUnixLibsComponentId)
         val wow = field("WOWBox64 component ID", profile.wowBox64ComponentId)
-        val dxvk = field("DXVK component ID", profile.dxvkComponentId)
-        val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
+        val dxvk = field("DXVK component ID", profile.dxvkComponentId)        val vkd3d = field("VKD3D-Proton component ID", profile.vkd3dComponentId)
         val turnip = field("Turnip component ID", profile.turnipComponentId)
         val componentVersions = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -597,8 +596,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 "application/zip",
                 "application/x-zip-compressed",
                 "application/octet-stream"
-            ))
-        }
+            ))        }
         NgrLogger.info("package.import", logMessage)
         startActivityForResult(intent, requestCode)
     }
@@ -747,8 +745,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val budget = FolderImportBudget()
                 copyDocumentDirectory(root, copied, "", budget)
                 if (budget.files == 0) throw IOException("Selected folder contains no files")
-                val displayName = root.name ?: "Imported game"
-                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
+                val displayName = root.name ?: "Imported game"                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
                 generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
                 val builder = NgrGamePackageBuilder()
                 val built = builder.buildFromFolder(copied, generated, displayName)
@@ -898,139 +895,3 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         input.use { source ->
             FileOutputStream(destination).use { output ->
                 val buffer = ByteArray(64 * 1024)
-                while (true) {
-                    val count = source.read(buffer)
-                    if (count < 0) break
-                    copied += count
-                    if (copied > maxBytes) throw IllegalArgumentException("Selected archive exceeds size limit")
-                    output.write(buffer, 0, count)
-                }
-            }
-        }
-        if (copied == 0L) throw IllegalArgumentException("Selected archive is empty")
-        NgrLogger.info("package.import", "SAF stream copied; bytes=$copied")
-    }
-
-    private fun refreshPackages() {
-        packageWorker.execute {
-            NgrLogger.info("package.inventory", "Scanning installed packages")
-            val inventory = packageManager.listInstalled()            NgrLogger.info("package.inventory", "Inventory valid=${inventory.packages.size}; invalid=${inventory.invalidPackageIds.size}; errors=${inventory.errors.size}")
-            runOnUiThread {
-                packageList.removeAllViews()
-                if (inventory.packages.isEmpty()) {
-                    packageList.addView(TextView(this).apply { text = "No installed packages" })
-                }
-                inventory.packages.forEach { pkg ->
-                    val row = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        setPadding(0, 8, 0, 8)
-                    }
-                    val description = TextView(this).apply {
-                        text = "${pkg.displayName}\n${pkg.packageId} · v${pkg.version}\n${pkg.backendId} ${pkg.backendVersion}"
-                        textSize = 13f
-                    }
-                    row.addView(description, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                    row.addView(Button(this).apply {
-                        text = "Details"
-                        setOnClickListener { showPackageDetails(pkg) }
-                    })
-                    row.addView(Button(this).apply {
-                        text = "Remove"
-                        setOnClickListener { confirmPackageRemoval(pkg.packageId) }
-                    })
-                    packageList.addView(row)
-                }
-                inventory.invalidPackageIds.forEach { packageId ->
-                    val row = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        setPadding(0, 8, 0, 8)
-                    }
-                    row.addView(TextView(this).apply {
-                        text = "Invalid package\n$packageId"
-                        textSize = 13f
-                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                    row.addView(Button(this).apply {
-                        text = "Remove"
-                        setOnClickListener { confirmPackageRemoval(packageId) }
-                    })
-                    packageList.addView(row)
-                }
-                if (inventory.errors.isNotEmpty()) {
-                    packageStatus.text = inventory.errors.joinToString("\n")
-                }
-            }
-        }
-    }
-
-    private fun showPackageDetails(pkg: NgrPackPackageManager.InstalledPackage) {
-        val source = listOfNotNull(pkg.sourcePlatform, pkg.sourceArchitecture).joinToString(" · ")
-            .ifBlank { "Unknown / not declared" }
-        val message = """
-            Game: ${pkg.displayName}
-            Package ID: ${pkg.packageId}
-            Version: ${pkg.version}
-
-            Entry point:
-            ${pkg.entryPoint}
-
-            Source: $source
-
-            Backend: ${pkg.backendId} ${pkg.backendVersion}
-
-            Package path:
-            ${pkg.directory.absolutePath}
-
-            Status: imported package data only. A compatible execution backend is not yet configured.
-        """.trimIndent()
-        AlertDialog.Builder(this)
-            .setTitle("Game package details")
-            .setMessage(message)
-            .setPositiveButton("Close", null)
-            .show()
-    }
-
-    private fun confirmPackageRemoval(packageId: String) {
-        AlertDialog.Builder(this)
-            .setTitle("Remove package")
-            .setMessage("Remove $packageId from this device?")
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Remove") { _, _ ->
-                packageStatus.text = "Removing $packageId…"
-                packageWorker.execute {
-                    NgrLogger.info("package.remove", "Removing packageId=$packageId")
-                    val result = packageManager.remove(packageId)
-                    NgrLogger.info("package.remove", "Removal success=${result.success}; message=${result.message}")
-                    runOnUiThread {
-                        packageStatus.text = result.message
-                        refreshPackages()
-                    }
-                }
-            }
-            .show()
-    }
-
-
-    private fun showLogs() {
-        NgrLogger.info("diagnostics", "Opened log viewer")
-        AlertDialog.Builder(this)
-            .setTitle("NGR runtime log")
-            .setMessage(NgrLogger.recentText())
-            .setPositiveButton("Close", null)
-            .setNeutralButton("Save…") { _, _ -> saveLogs() }
-            .show()
-    }
-
-    private fun saveLogs() {
-        NgrLogger.info("diagnostics", "Requested log export")
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, "ngr-runtime-log.txt")
-        }
-        startActivityForResult(intent, REQUEST_EXPORT_LOG)
-    }
-
-    override fun onInputDeviceAdded(deviceId: Int) { NgrLogger.info("input", "Device added id=$deviceId"); refresh() }
-    override fun onInputDeviceRemoved(deviceId: Int) { NgrLogger.info("input", "Device removed id=$deviceId"); refresh() }
-    override fun onInputDeviceChanged(deviceId: Int) { NgrLogger.info("input", "Device changed id=$deviceId"); refresh() }
-}
