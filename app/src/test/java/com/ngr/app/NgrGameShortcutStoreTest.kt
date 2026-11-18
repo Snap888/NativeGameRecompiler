@@ -21,9 +21,10 @@ class NgrGameShortcutStoreTest {
         val root = Files.createTempDirectory("ngr-shortcuts-").toFile()
         try {
             val store = NgrGameShortcutStore(root)
-            assertTrue(store.save(shortcut()).success)
-            assertEquals(shortcut(), store.get("game"))
-            assertTrue(store.save(shortcut().copy(title = "Updated Game")).success)
+            val original = shortcut()
+            assertTrue(store.save(original).success)
+            assertEquals(original, store.get("game"))
+            assertTrue(store.save(original.copy(title = "Updated Game")).success)
             assertEquals("Updated Game", store.get("game")?.title)
             assertEquals(1, store.loadAll().shortcuts.size)
             assertTrue(store.loadAll().errors.isEmpty())
