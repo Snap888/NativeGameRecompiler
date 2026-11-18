@@ -1076,3 +1076,11 @@ This is the durable project memory. Update it in every development session.
 - Expected storage behavior: only one full payload copy in managed package storage; no cache copy, generated multi-GB archive, second incoming archive copy or second extraction. Actual device storage behavior still needs validation with a large SAF folder.
 - New direct-import commits require CI verification.
 
+
+### Direct folder import CI verification — 2026-11-18
+- Actions run #409 (44292851873), commit f415398974c9aa509701c68bf428fbd6fbd6f170, passed native ABI conformance, backend registry, full JVM unit tests, ARM64 APK build and artifact upload.
+- New direct folder import tests passed in the JVM suite.
+- Artifact ID 14422691411 (NGR-arm64-debug) downloaded and inspected. APK contains lib/arm64-v8a/libngr_runtime.so and is 2,486,165 bytes.
+- Verified APK SHA-256: 61723fa6be929d32aec02785610f7691c39ac4264615157002a15c8a56936a45.
+- Earlier intermediate direct-import commits #401–#407 exposed a missing return statement in the new in-place builder; fixed in commit 47e2aa4fe32af0e47e7b1759a276dcdad9e19290. The final run #409 passed after the follow-up MainActivity staging-reference correction.
+- This verifies CI and package contents, not a physical Android installation or a multi-GB SAF import on device.
