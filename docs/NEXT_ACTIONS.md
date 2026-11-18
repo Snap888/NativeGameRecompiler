@@ -290,3 +290,18 @@ Mark complete only when evidence exists.
 - [x] Actions run #409 passed native ABI, backend registry, JVM tests, ARM64 APK and artifact upload.
 - [x] Downloaded and inspected NGR-arm64-debug; verified lib/arm64-v8a/libngr_runtime.so.
 - [ ] Physical-device test of direct SAF import with a multi-GB game folder.
+
+
+## P1 — Translator preset management
+- [x] Add FEX Compatibility/Balanced/Performance preference to profile model and advance schema to v3.
+- [x] Migrate v1/v2 profiles by defaulting missing FEX preset to Balanced.
+- [x] Add Box64 and FEX preset controls to profile editor and details; mark as saved configuration only.
+- [x] Include translator presets in resolved launch configuration and preview.
+- [ ] Verify schema migration, codec, resolver, native tests and APK in latest CI; download and inspect artifact.
+- [ ] Implement verified runtime-specific option mapping only after pinning and auditing Box64/FEX versions; do not claim presets are active until a launch adapter consumes them.
+
+## P0 — Direct folder import follow-up
+- [x] CI run #409 passed direct-import JVM tests and ARM64 APK build.
+- [x] CI run #411 passed full workflow and its APK artifact was downloaded and inspected.
+- [ ] Test a multi-GB SAF folder on physical Android, including low-storage failure, user cancellation, process death and rollback.
+- [ ] Add cleanup/recovery policy for abandoned private .folder-staging directories.
