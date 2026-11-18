@@ -609,8 +609,13 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             val installed = mutableListOf<String>()
             var failure: String? = null
             for (component in plan.installOrder) {
-                NgrLogger.info("component.install", "Downloading and installing ${component.id} v${component.version}")
-                val result = pipeline.downloadAndInstall(component)
+                NgrLogger.info("component.install", "Activating or installing ${component.id} v${component.version}")
+                val stored = componentStore.storedVersionDirectory(component.id, component.version)
+                val result = if (stored != null) {
+                    componentStore.activateStoredVersion(component)
+                } else {
+                    pipeline.downloadAndInstall(component)
+                }
                 if (!result.success) {
                     failure = "${component.id}: ${result.error ?: "install failed"}"
                     NgrLogger.error("component.install", failure)
