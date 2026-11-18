@@ -88,6 +88,25 @@ class NgrLaunchConfigurationResolverTest {
         assertTrue(result.errors.any { it.contains("Wayland override requires") })
     }
 
+
+    @Test fun acceptsPerGameWaylandWhenOverrideSuppliesTurnipComponent() {
+        val waylandProfile = profile().copy(
+            waylandWineSupported = true,
+            waylandTurnipSupported = true,
+            gameOverrides = mapOf(
+                "test-game" to NgrEnvironmentProfile.NgrGameEnvironmentOverride(
+                    displayBackend = NgrEnvironmentProfile.DisplayBackend.WAYLAND,
+                    turnipComponentId = "turnip-wayland"
+                )
+            )
+        )
+        val result = NgrLaunchConfigurationResolver.resolve(shortcut(), waylandProfile)
+        assertTrue(result.errors.toString(), result.valid)
+        assertEquals(NgrEnvironmentProfile.DisplayBackend.WAYLAND, result.configuration!!.displayBackend)
+        assertEquals(NgrEnvironmentProfile.GraphicsProvider.TURNIP, result.configuration.graphicsProvider)
+        assertEquals("turnip-wayland", result.configuration.turnipComponentId)
+    }
+
     @Test fun blocksVulkanDriverAndLoaderEnvironmentHijacking() {
         val forbidden = listOf(
             "VK_ICD_FILENAMES", "VK_DRIVER_FILES", "VK_LAYER_PATH",
