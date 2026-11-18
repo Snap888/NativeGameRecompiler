@@ -840,3 +840,38 @@ This is the durable project memory. Update it in every development session.
 ### Next
 - Wait for run #313; inspect full logs if it fails. If green, verify ARM64 APK and artifact.
 - Then continue first incomplete P2 task: host-side backend ABI negotiation/validation, keeping untrusted NGRPACK payloads out of the loader.
+
+
+## 2026-11-18 — CI recovery and ABI v1 validation foundation
+
+### CI recovery (P0)
+- Rechecked live `main` and GitHub Actions after the Wine Prefix Manager compile fix.
+- Run #315 (`44249623666`) at commit `489384e384ef386dcde70b9e14622251d9201943` passed every job step: Android SDK, NDK/CMake, Gradle setup, JVM unit tests, ARM64 debug APK build and artifact upload.
+- Downloaded artifact `NGR-arm64-debug` (ID `14402883613`), verified ZIP contains `app-debug.apk` and verified APK contains `lib/arm64-v8a/libngr_runtime.so`.
+- APK SHA-256: `10327bc566746291a1f403b025b62b36774eca321ebca55675e463c23c5af8be`.
+
+### ABI v1 audit and implementation
+- Audited `backend_abi_v1.h`, ADR 0003, capability registry and Android native CMake configuration.
+- Existing work was only the C-compatible ABI declaration and a C-header compile check; there was no host-side table validator or conformance test.
+- Added `backend_abi_validation.hpp/.cpp`: validates host API size/major/callbacks and backend API size, ABI major/minor, execution kind, bounded backend ID/version strings and all required lifecycle callbacks.
+- Added native conformance tests for valid tables, missing host/backend callbacks, invalid backend ID, truncated API struct and ABI major mismatch.
+- Added native conformance test execution to Android CI before JVM tests; compiled validator into `libngr_runtime.so`.
+- Capability is now `partial`, not available: dynamic loading, trusted-library enforcement and lifecycle orchestration are explicitly not implemented.
+- Updated ADR 0003 validation requirements.
+
+### Commits
+- `45a4f8fe` — add ABI validation header.
+- `d82bc95c` — implement host/backend table validation.
+- `aa61149e` — add native conformance tests.
+- `e3b6c3a3` — compile validator into runtime.
+- `c09e1a84` — execute native ABI tests in CI.
+
+### Validation
+- The successful APK is from commit `489384e3`; it predates the ABI validator changes.
+- CI for the ABI validator commits has not yet completed; no new APK is claimed for these changes.
+- No physical-device tests performed.
+
+### Next
+- Run CI and fix any native C++ or Kotlin failures.
+- After green CI, implement a trusted in-process backend registry/lifecycle only for app-bundled or verified components; never dlopen NGRPACK game payloads.
+- Keep untrusted plugins disabled until signature/provenance policy exists; this ABI is not a sandbox.
