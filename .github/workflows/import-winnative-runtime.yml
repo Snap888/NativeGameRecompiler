@@ -6,6 +6,7 @@ on:
       - integration/winnative-runtime-base
     paths:
       - .github/workflows/import-winnative-runtime.yml
+      - app/build.gradle
   workflow_dispatch:
 
 permissions:
@@ -99,6 +100,13 @@ jobs:
 
           gradle = Path("app/build.gradle")
           source = gradle.read_text()
+          # The donor deliberately excludes src/main/java from its custom source roots.
+          # NGR activities and managers are kept there; compile that source root explicitly.
+          commented = "//                    'src/main/java',  // Needed for Android Studio"
+          if commented in source:
+              source = source.replace(commented, "                    'src/main/java',  // NGR app sources and compatibility helpers")
+          elif "'src/main/java'," not in source:
+              source = source.replace("            java.srcDirs = [", "            java.srcDirs = [\\n                    'src/main/java',  // NGR app sources and compatibility helpers", 1)
           dependencies = "dependencies {"
           if "androidx.documentfile:documentfile" not in source:
               source = source.replace(dependencies, dependencies + "\n    implementation 'androidx.documentfile:documentfile:1.1.0'")
