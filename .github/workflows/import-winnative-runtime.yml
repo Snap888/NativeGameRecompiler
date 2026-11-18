@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ngr-winnative-import-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   import-and-build:
     runs-on: ubuntu-latest
@@ -234,7 +238,9 @@ jobs:
           rm -rf donor
           git add -A
           git commit -m "Import WinNative runtime as NGR compatibility host" || echo "No source changes to commit"
-          git push origin integration/winnative-runtime-base
+          git fetch origin integration/winnative-runtime-base
+          git rebase origin/integration/winnative-runtime-base
+          git push origin HEAD:integration/winnative-runtime-base
 
       - name: Upload combined APK
         uses: actions/upload-artifact@v4
