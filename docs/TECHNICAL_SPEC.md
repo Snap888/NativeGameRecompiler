@@ -83,3 +83,7 @@ The Kotlin package manager currently performs bounded extraction, hash validatio
 The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h` and is ABI 1.0. It is for trusted execution backends only. The exported entry point is `ngr_backend_get_api_v1`; versioned structs use `struct_size`, API tables carry major/minor versions, and strings use explicit UTF-8 pointer/length views. The host API exposes bounded logging, package-handle-relative file access and monotonic time. The lifecycle table defines probe/create/load/start/request_stop/destroy.
 
 N64Recomp is a build-time compiler, not a runtime plugin. Graphics-provider and compiler APIs require separate contracts. The header is compiled as C and C++, but host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation.
+
+
+## Translator preset preferences
+Environment profile schema v3 stores Box64 and FEX preset choices (Compatibility/Balanced/Performance). v1/v2 documents migrate to FEX Balanced when the field is absent. These fields represent user intent only; a runtime adapter must map them to version-specific Box64/FEX settings after the exact upstream version and supported configuration keys are audited. A saved preset is not proof that a translator is installed, configured or active.
