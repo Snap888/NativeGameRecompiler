@@ -158,7 +158,7 @@ Mark complete only when evidence exists.
 - [x] Expose prefix ID assignment in the profile editor and show prefix state in profile cards.
 - [x] Prevent deleting a prefix referenced by a saved environment profile.
 - [x] Add integrated readiness evaluator for profile validation, prefix structure, installed component versions, version pins and runtime capabilities.
-- [ ] Add a prefix picker instead of manual ID entry.
+- [x] Add a prefix picker instead of manual ID entry.
 - [ ] Connect a trusted catalog source to the UI and expose full readiness report.
 - [ ] Add tests for readiness across PREPARED/READY/missing prefix and installed/missing component combinations.
 - [ ] Implement component activation and Wine runtime initialization only after binary provenance and license checks.
