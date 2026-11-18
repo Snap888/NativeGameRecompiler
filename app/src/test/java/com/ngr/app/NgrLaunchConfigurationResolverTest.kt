@@ -102,9 +102,10 @@ class NgrLaunchConfigurationResolverTest {
         )
         val result = NgrLaunchConfigurationResolver.resolve(shortcut(), waylandProfile)
         assertTrue(result.errors.toString(), result.valid)
-        assertEquals(NgrEnvironmentProfile.DisplayBackend.WAYLAND, result.configuration!!.displayBackend)
-        assertEquals(NgrEnvironmentProfile.GraphicsProvider.TURNIP, result.configuration.graphicsProvider)
-        assertEquals("turnip-wayland", result.configuration.turnipComponentId)
+        val config = result.configuration!!
+        assertEquals(NgrEnvironmentProfile.DisplayBackend.WAYLAND, config.displayBackend)
+        assertEquals(NgrEnvironmentProfile.GraphicsProvider.TURNIP, config.graphicsProvider)
+        assertEquals("turnip-wayland", config.turnipComponentId)
     }
 
     @Test fun blocksVulkanDriverAndLoaderEnvironmentHijacking() {
