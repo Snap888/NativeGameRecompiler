@@ -166,6 +166,18 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Build pinned N64Recomp and RSPRecomp host tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f native/recompilers/N64Recomp/CMakeLists.txt
+          cmake -S native/recompilers/N64Recomp -B /tmp/n64recomp-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/n64recomp-build --target N64RecompCLI RSPRecomp --parallel 2
+          test -x /tmp/n64recomp-build/N64Recomp
+          test -x /tmp/n64recomp-build/RSPRecomp
+          /tmp/n64recomp-build/N64Recomp 2>&1 | head -n 30 || test "${PIPESTATUS[0]}" -eq 1
+          printf 'N64Recomp host toolchain built from pinned upstream commit.\\n'
+
       - name: Run NGR native ABI conformance tests
         run: |
           c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I native/ngr-runtime/include native/ngr-runtime/src/backend_abi_validation.cpp native/ngr-runtime/tests/backend_abi_validation_test.cpp -o /tmp/ngr-abi
