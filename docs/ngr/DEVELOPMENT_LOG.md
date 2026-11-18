@@ -1191,6 +1191,11 @@ This is the durable project memory. Update it in every development session.
 
 
 ## Session 2026-11-19 — Xbox 360 XDroid360 backend audit and source pin
+- [x] Inspected failed Android CI run [44399528476](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44399528476): Kotlin compilation failed at N64 ROM/ELF magic validation because a Byte was compared with an Int.
+- [x] Fixed the ELF magic byte comparison (`'F'.code.toByte()`) in `NgrRecompilerPickerActivity.kt`.
+- [x] Updated both Android workflows to validate the pinned XDroid360 source; updated the WinNative import workflow to restore the XDroid360 .gitmodules entry after donor import.
+- [ ] Verify Android CI and recursive XDroid360/DAORecomp submodule initialization; no APK is claimed until the workflow passes.
+
 - [x] Audited `Snap888/XDroid360` and its upstream parent `udarmolota/XDroid360`; confirmed it is a static PowerPC Xenon → C++ → ARM64 pipeline, not a universal Xbox 360 ROM-to-native converter.
 - [x] Identified XenonRecomp, XenonUtils/XEX, Clang/LLD toolchain, per-title DAORecomp/SoDRecomp runtimes, Xenia Vulkan GPU, native Vulkan renderer, XenosRecomp/DXC shader pipeline, XMA/FFmpeg audio and Android SDL front end.
 - [x] Confirmed the current README supports Dragon Age: Origins and State of Decay only; each title requires a matching profile/runtime and version/hash validation.
