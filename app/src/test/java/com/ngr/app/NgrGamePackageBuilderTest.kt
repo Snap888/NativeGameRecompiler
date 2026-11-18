@@ -57,6 +57,48 @@ class NgrGamePackageBuilderTest {
         } finally { base.deleteRecursively() }
     }
 
+    @Test fun preparesFolderInPlaceAndInstallsWithoutIntermediateArchive() {
+        val base = createTempDir(prefix = "ngr-direct-folder-")
+        val manager = NgrPackPackageManager(File(base, "packages"))
+        var staging: File? = null
+        try {
+            staging = manager.createFolderImportStaging()
+            val game = File(staging, "DirectGame.exe")
+            game.writeBytes(peX64())
+            val data = File(staging, "Data/large.dat")
+            assertTrue(data.parentFile!!.mkdirs())
+            data.writeBytes(ByteArray(1024 * 1024) { (it % 251).toByte() })
+
+            val prepared = NgrGamePackageBuilder().prepareFolderInPlace(staging, "DirectGame")
+            assertTrue(prepared.errors.joinToString(), prepared.success)
+            assertEquals("DirectGame.exe", prepared.entryPoint)
+            assertFalse("In-place preparation must not create an archive", prepared.archive != null)
+            assertTrue(File(staging, "ngr-manifest.json").isFile)
+
+            val installed = manager.installPreparedFolder(staging)
+            assertTrue(installed.errors.joinToString(), installed.success)
+            assertEquals("DirectGame.exe", installed.packageInfo?.entryPoint)
+            assertTrue(File(installed.packageInfo!!.directory, "Data/large.dat").isFile)
+            assertTrue(NgrManifestValidator.validate(
+                File(installed.packageInfo.directory, "ngr-manifest.json").readText(),
+                installed.packageInfo.directory
+            ).valid)
+            assertFalse("Staging directory must be atomically moved", staging.exists())
+        } finally {
+            staging?.deleteRecursively()
+            base.deleteRecursively()
+        }
+    }
+
+    @Test fun rejectsPreparedFolderOutsideManagedStagingRoot() {
+        val base = createTempDir(prefix = "ngr-direct-folder-reject-")
+        try {
+            val manager = NgrPackPackageManager(File(base, "packages"))
+            val outside = File(base, "outside").apply { mkdirs() }
+            assertFalse(manager.installPreparedFolder(outside).success)
+        } finally { base.deleteRecursively() }
+    }
+
     @Test fun buildsPackageFromOrdinaryZipWithSingleWrapperFolder() {
         val base = createTempDir(prefix = "ngr-builder-zip-")
         val source = File(base, "Lethal Company.zip")
