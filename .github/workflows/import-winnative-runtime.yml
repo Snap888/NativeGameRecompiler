@@ -1,0 +1,166 @@
+name: Import WinNative Runtime Base into NGR
+
+on:
+  push:
+    branches:
+      - integration/winnative-runtime-base
+    paths:
+      - .github/workflows/import-winnative-runtime.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NGR integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/winnative-runtime-base
+          lfs: true
+          fetch-depth: 0
+
+      - name: Checkout pinned WinNative source
+        uses: actions/checkout@v4
+        with:
+          repository: Snap888/WinNative
+          ref: 99c3305d163780de5ca39b493aefcde436acad5c
+          path: /tmp/winnative
+          lfs: true
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Preserve NGR runtime and project records
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ngr-preserve
+          cp -a app/src/main/java/com/ngr /tmp/ngr-preserve/ngr-java
+          cp -a app/src/test/java/com/ngr /tmp/ngr-preserve/ngr-tests
+          cp -a native/ngr-runtime /tmp/ngr-preserve/ngr-runtime
+          cp -a docs /tmp/ngr-preserve/docs
+          cp -a schemas /tmp/ngr-preserve/schemas
+          cp .github/workflows/android-ci.yml /tmp/ngr-preserve/ngr-android-ci.yml
+
+      - name: Import WinNative application, runtime, assets and modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          rsync -a --exclude='.git' /tmp/winnative/ ./
+          rm -f settings.gradle.kts build.gradle.kts app/build.gradle.kts
+          mkdir -p app/src/main/java app/src/test/java app/src/main/cpp
+          cp -a /tmp/ngr-preserve/ngr-java app/src/main/java/
+          cp -a /tmp/ngr-preserve/ngr-tests app/src/test/java/
+          cp -a /tmp/ngr-preserve/ngr-runtime native/ngr-runtime
+          mkdir -p docs/ngr
+          cp -a /tmp/ngr-preserve/docs/. docs/ngr/
+          mkdir -p schemas/ngr
+          cp -a /tmp/ngr-preserve/schemas/. schemas/ngr/
+          mkdir -p .github/workflows
+          cp /tmp/ngr-preserve/ngr-android-ci.yml .github/workflows/ngr-runtime-ci.yml
+
+      - name: Wire NGR native runtime and Android activity into WinNative host
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          cmake = Path("app/src/main/cpp/CMakeLists.txt")
+          source = cmake.read_text()
+          line = "add_subdirectory(../../../../native/ngr-runtime ngr-runtime-build)"
+          if line not in source:
+              source += "\n# Native Game Recompiler runtime is an independent execution backend.\n" + line + "\n"
+          cmake.write_text(source)
+
+          manifest = Path("app/src/main/AndroidManifest.xml")
+          source = manifest.read_text()
+          activity = '<activity android:name="com.ngr.app.MainActivity" android:exported="false" />'
+          if activity not in source:
+              source = source.replace("</application>", f"        {activity}\n    </application>")
+          manifest.write_text(source)
+
+          gradle = Path("app/build.gradle")
+          source = gradle.read_text()
+          dependencies = "dependencies {"
+          if "androidx.documentfile:documentfile" not in source:
+              source = source.replace(dependencies, dependencies + "\n    implementation 'androidx.documentfile:documentfile:1.1.0'")
+          if "org.json:json" not in source:
+              source = source.replace(dependencies, dependencies + "\n    testImplementation 'org.json:json:20240303'")
+          gradle.write_text(source)
+          PY
+
+      - name: Preserve NGR documentation and identify combined project
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >> README.md <<'EOF'
+
+          ## Native Game Recompiler integration
+
+          This repository now uses the WinNative Android application/runtime as its compatibility
+          environment. The NGR-specific package manager, environment records, diagnostics, ABI
+          contract and C++20 runtime are retained under app/src/main/java/com/ngr/app,
+          native/ngr-runtime and docs/ngr. The NGR Android activity is registered as an
+          internal activity; navigation into it is the next integration task. Existing WinNative
+          component catalogs, Wine/Proton runtime, Box64/FEX, graphics drivers, effects, frame
+          generation, controllers, X11/Wayland and shortcut systems remain the primary host
+          implementations rather than being re-created in NGR.
+
+          The combined distribution follows GPL-3.0. Third-party assets and bundled components
+          retain their individual licenses and notices; see CREDITS.md, EMULATOR_CREDITS.md
+          and docs/ngr/LICENSING_AND_PROVENANCE.md.
+          EOF
+
+          cat > WINNATIVE_UPSTREAM.lock <<'EOF'
+          WinNative repository: https://github.com/Snap888/WinNative
+          Imported source commit: 99c3305d163780de5ca39b493aefcde436acad5c
+          License: GPL-3.0
+          Import date: 2026-11-18
+          NGR integration branch: integration/winnative-runtime-base
+          NGR runtime remains separately identifiable under native/ngr-runtime and app/src/main/java/com/ngr/app.
+          EOF
+
+      - name: Set up JDK 17 and Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android build dependencies
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.3.13750724" "cmake;3.22.1"
+
+      - name: Initialize native submodules and LFS
+        run: |
+          git lfs pull
+          git submodule update --init --recursive
+
+      - name: Build imported WinNative host with NGR native runtime
+        run: ./gradlew --no-daemon assembleStandardDebug
+
+      - name: Run NGR JVM tests in imported host
+        run: ./gradlew --no-daemon :app:testStandardDebugUnitTest
+
+      - name: Commit imported source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import WinNative runtime as NGR compatibility host" || echo "No source changes to commit"
+          git push origin integration/winnative-runtime-base
+
+      - name: Upload combined APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGR-WinNative-arm64-debug
+          path: app/build/outputs/apk/standard/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
