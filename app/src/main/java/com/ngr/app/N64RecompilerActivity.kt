@@ -34,9 +34,8 @@ class N64RecompilerActivity : Activity() {
         super.onCreate(savedInstanceState)
         language = getPreferences(MODE_PRIVATE).getString("language", "en") ?: "en"
         render()
-        intent.getStringExtra(EXTRA_INPUT_URI)?.let { raw ->
-            runCatching { android.net.Uri.parse(raw) }.getOrNull()?.let(::importElfUri)
-        }
+        (intent.getStringExtra(EXTRA_INPUT_URI)?.let { raw -> runCatching { android.net.Uri.parse(raw) }.getOrNull() }
+            ?: intent.data)?.let(::importElfUri)
     }
 
     private fun render() {
