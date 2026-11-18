@@ -356,3 +356,13 @@ Mark complete only when evidence exists.
 - [x] Add the source root in Gradle and make the donor-import workflow restore it after every import.
 - [x] Bundle upstream N64Recomp ABI header and license in generated C output.
 - [ ] Verify latest CI, then add synthetic ELF code-generation regression tests.
+
+
+## Recompiler intake / backend expansion
+- [x] Add a dedicated Recompiler entry to the Library add-game dialog.
+- [x] Add file, multi-file and folder selection with bounded recursive scan.
+- [x] Add auto-detection for MIPS ELF and manual target-system selection.
+- [x] Keep only N64/MIPS selectable until another backend is actually integrated.
+- [ ] Verify CI and test SAF file/folder import on Android.
+- [ ] Add format probes and unit tests for each backend; distinguish raw ROM images from ELF/decompilation inputs.
+- [ ] Add backend interfaces for PS1, PS2, PSP, GameCube/Wii, Dreamcast only alongside actual recompiler implementations.
