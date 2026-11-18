@@ -72,9 +72,11 @@ Continue implementation from the live repository. Maintain the development journ
 
 
 ## Current continuation state — 2026-11-18
-- Latest verified CI/APK is run #411, commit 0d1f3c1332f455ffedcc58ef2c4c4546606d439d. It includes direct SAF folder import, but not the newer translator preset changes.
+- Latest verified integrated CI/APK is run #429, source commit 03f369e5fed7bf657bca68c76674cdfe466030cd. It includes direct SAF folder import, Box64/FEX preset schema/editor/preview, and stale staging cleanup.
 - Direct folder import now uses SAF -> private UUID staging -> in-place executable scan/SHA-256 manifest -> validated atomic promotion with rollback. NGRPACK/ZIP import paths remain separate and supported.
 - Translator profile schema is now v3 in current source: Box64 preset already existed; FEX Compatibility/Balanced/Performance was added with v1/v2 migration defaulting to Balanced. Editor and launch preview expose both values.
 - Translator presets are configuration intent only. They are not translated to Box64/FEX flags and do not affect a game process until a version-pinned runtime adapter exists.
 - Latest translator preset commits: 522768655b7cc8c7fafd00a7f4110c51db479200, b5eaa86ee0dfb624bc1fd1615f97b39bf52ad3e9, 06f8b0a8fe561f8ad325e65e37786d331500f988, 14a959a9436b4a50d9071a6e0a322242c1170864, 6cc85681e6250162fbb7ce4b509e4ec615d793d4, 749480364aaa8d1960e10ffd51d225c4d8f12458, 41409ac1f1812a265680efb2850c184298eff417, 1946f9da99ee1403e149cd431967325c62da219b.
-- Next: check the newest CI after these changes; fix failures; verify and inspect its APK. Then add abandoned staging cleanup and prepare a physical-device import test matrix. Do not start game execution/recompiler implementation before the Environment Manager completion gate in WINNATIVE_INTEGRATION_PLAN.md.
+- Latest APK artifact ID 14433695246 was downloaded and inspected; APK SHA-256 5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44. It includes lib/arm64-v8a/libngr_runtime.so.
+- Stale folder staging cleanup is implemented and tested: UUID-only real directories older than 30 days are removed at startup; recent directories are retained.
+- Next: prepare and execute a physical-device test matrix for multi-GB SAF import, low-storage failure, cancellation, process death and rollback. Then continue environment-management work; do not start game execution/recompiler implementation before the Environment Manager completion gate in WINNATIVE_INTEGRATION_PLAN.md.
