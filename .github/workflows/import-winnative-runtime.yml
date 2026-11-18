@@ -77,7 +77,7 @@ jobs:
           cmake = Path("app/src/main/cpp/CMakeLists.txt")
           source = cmake.read_text()
           # NGR runtime owns the N64Recomp subdirectory so target resolution and link order are deterministic.
-          source = "\\n".join(line for line in source.splitlines() if "native/recompilers/N64Recomp" not in line) + "\\n"
+          source = "\n".join(line for line in source.splitlines() if "native/recompilers/N64Recomp" not in line) + "\n"
           line = "add_subdirectory(../../../../native/ngr-runtime ngr-runtime-build)"
           if line not in source:
               source += "\n# Native Game Recompiler runtime is an independent execution backend.\n" + line + "\n"
