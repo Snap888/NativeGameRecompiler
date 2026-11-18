@@ -509,6 +509,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             val readiness = profile.validateLaunchReady()
             item.addView(TextView(this).apply {
                 text = "${profile.displayName}\n${profile.containerMode} · ${profile.cpuTranslator}\n" +
+                    "Wine prefix: ${profile.winePrefixId ?: "not assigned"}\n" +
                     if (readiness.isEmpty()) "Ready for component resolution" else "Draft — ${readiness.joinToString("; ")}"
                 textSize = 13f
             })
@@ -554,6 +555,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             return input
         }
         val wine = field("Wine / Proton layer ID", profile.wineLayerId)
+        val winePrefix = field("Managed Wine prefix ID", profile.winePrefixId)
         val box64 = field("Box64 component ID", profile.box64ComponentId)
         val box86 = field("Box86 component ID (optional)", profile.box86ComponentId)
         val fex = field("FEXCore component ID", profile.fexCoreComponentId)
@@ -634,6 +636,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     val updated = profile.copy(
                         componentVersions = parsedVersions,
                         wineLayerId = wine.text.toString().trim().ifEmpty { null },
+                        winePrefixId = winePrefix.text.toString().trim().ifEmpty { null },
                         box64ComponentId = if (standardMode) box64.text.toString().trim().ifEmpty { null } else null,
                         box86ComponentId = if (standardMode) box86.text.toString().trim().ifEmpty { null } else null,
                         fexCoreComponentId = if (standardMode) null else fex.text.toString().trim().ifEmpty { null },
