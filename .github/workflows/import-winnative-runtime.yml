@@ -106,7 +106,7 @@ jobs:
           if commented in source:
               source = source.replace(commented, "                    'src/main/java',  // NGR app sources and compatibility helpers")
           elif "'src/main/java'," not in source:
-              source = source.replace("            java.srcDirs = [", "            java.srcDirs = [\\n                    'src/main/java',  // NGR app sources and compatibility helpers", 1)
+              source = source.replace("            java.srcDirs = [", "            java.srcDirs = [\n                    'src/main/java',  // NGR app sources and compatibility helpers", 1)
           dependencies = "dependencies {"
           if "androidx.documentfile:documentfile" not in source:
               source = source.replace(dependencies, dependencies + "\n    implementation 'androidx.documentfile:documentfile:1.1.0'")
