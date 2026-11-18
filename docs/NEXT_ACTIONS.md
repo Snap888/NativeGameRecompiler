@@ -164,3 +164,11 @@ Mark complete only when evidence exists.
 - [ ] Add READY-prefix plus fully installed-component success-path test.
 - [ ] Implement component activation and Wine runtime initialization only after binary provenance and license checks.
 - [ ] Run CI and verify JVM tests, ARM64 APK build and artifact upload.
+
+
+## P0 CI repair — 2026-11-18
+- [x] Audit current HEAD and read the project source-of-truth docs.
+- [x] Diagnose current HEAD run #312: Kotlin compile error at `NgrWinePrefixManager.kt:280` (`files += file` collection reassignment/type mismatch); SDK/NDK/CMake/Gradle setup succeeded.
+- [x] Fix using explicit `files.add(file)` in commit `18b02fcb8454b2f43b44106b968ca58c9c7d0e49`.
+- [ ] Verify run #313 (`44249549118`): JVM unit tests, ARM64 APK build and artifact upload. Do not continue to ABI loader until green.
+- [ ] After green CI, download and verify `NGR-arm64-debug`; then implement ABI v1 host negotiation and validation.
