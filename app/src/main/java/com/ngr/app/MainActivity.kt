@@ -37,6 +37,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var inputManager: InputManager
     private lateinit var packageManager: NgrPackPackageManager
     private lateinit var profileStore: NgrEnvironmentProfileStore
+    private lateinit var prefixManager: NgrWinePrefixManager
+    private lateinit var prefixStatus: TextView
+    private lateinit var prefixList: LinearLayout
     private lateinit var profileStatus: TextView
     private lateinit var profileList: LinearLayout
     private lateinit var packageStatus: TextView
@@ -62,6 +65,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
         profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
+        prefixManager = NgrWinePrefixManager(File(filesDir, "ngr-runtime"))
 
         window.statusBarColor = Color.rgb(15, 18, 24)
         window.navigationBarColor = Color.rgb(15, 18, 24)
@@ -156,6 +160,20 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         runtimeCard.addView(profileList)
         root.addView(runtimeCard, sectionParams())
+
+        addSection(root, "WINE PREFIXES", "Prefix storage & lifecycle")
+        val prefixCard = createCard()
+        prefixCard.addView(TextView(this).apply {
+            text = "Create prepared prefixes, clone initialized ones, and make verified private snapshots. Wine initialization and game launch are not available yet."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        prefixCard.addView(primaryButton("＋  Prepare Wine prefix") { showCreatePrefixDialog() })
+        prefixStatus = mutedText()
+        prefixCard.addView(prefixStatus)
+        prefixList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        prefixCard.addView(prefixList)
+        root.addView(prefixCard, sectionParams())
 
         addSection(root, "DEVICE", "Hardware & graphics")
         val hardwareCard = createCard()
@@ -305,6 +323,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         refresh()
         refreshPackages()
         refreshProfiles()
+        refreshPrefixes()
     }
 
     override fun onPause() {
@@ -329,6 +348,86 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         }.toList()
         devices.text = if (found.isEmpty()) "No gamepad detected" else found.joinToString("\n")
         NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
+    }
+
+
+    private fun showCreatePrefixDialog() {
+        val name = EditText(this).apply { hint = "Prefix name"; setSingleLine(true) }
+        AlertDialog.Builder(this).setTitle("Prepare Wine prefix").setView(name)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Create") { _, _ ->
+                val displayName = name.text.toString().trim()
+                val id = "prefix-" + UUID.randomUUID().toString().take(8)
+                val result = prefixManager.create(id, displayName)
+                if (!result.success) Toast.makeText(this, result.error, Toast.LENGTH_LONG).show()
+                else Toast.makeText(this, "Prepared prefix created (not initialized by Wine)", Toast.LENGTH_LONG).show()
+                refreshPrefixes()
+            }.show()
+    }
+
+    private fun refreshPrefixes() {
+        if (!::prefixManager.isInitialized || !::prefixList.isInitialized) return
+        val prefixes = prefixManager.list()
+        prefixStatus.text = "${prefixes.size} prefix(es) · READY means Wine registry and drive markers were verified"
+        prefixList.removeAllViews()
+        prefixes.forEach { prefix ->
+            val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 12, 0, 12) }
+            item.addView(TextView(this).apply {
+                text = "${prefix.displayName}\n${prefix.state} · ${prefix.fileCount} files · ${prefix.totalBytes / (1024 * 1024)} MiB"
+                textSize = 13f
+                setTextColor(if (prefix.state == NgrWinePrefixManager.State.READY) Color.rgb(116, 210, 157) else Color.rgb(220, 185, 110))
+            })
+            val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            if (prefix.state == NgrWinePrefixManager.State.READY) {
+                actions.addView(Button(this).apply {
+                    text = "Clone"
+                    setOnClickListener {
+                        val name = EditText(this@MainActivity).apply { hint = "Clone name"; setSingleLine(true) }
+                        AlertDialog.Builder(this@MainActivity).setTitle("Clone ${prefix.displayName}").setView(name)
+                            .setNegativeButton("Cancel", null).setPositiveButton("Clone") { _, _ ->
+                                val id = "prefix-" + UUID.randomUUID().toString().take(8)
+                                val result = prefixManager.clone(prefix.id, id, name.text.toString().trim())
+                                Toast.makeText(this@MainActivity, result.error ?: "Prefix cloned", Toast.LENGTH_LONG).show()
+                                refreshPrefixes()
+                            }.show()
+                    }
+                })
+                actions.addView(Button(this).apply {
+                    text = "Backup"
+                    setOnClickListener {
+                        val id = "backup-" + UUID.randomUUID().toString().take(8)
+                        val result = prefixManager.backup(prefix.id, id)
+                        Toast.makeText(this@MainActivity, result.error ?: "Private backup created: $id", Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+            actions.addView(Button(this).apply {
+                text = "Reset"
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity).setTitle("Reset prefix?")
+                        .setMessage("All files in ${prefix.displayName} will be removed. This cannot be undone.")
+                        .setNegativeButton("Cancel", null).setPositiveButton("Reset") { _, _ ->
+                            val result = prefixManager.reset(prefix.id)
+                            Toast.makeText(this@MainActivity, result.error ?: "Prefix reset", Toast.LENGTH_LONG).show()
+                            refreshPrefixes()
+                        }.show()
+                }
+            })
+            actions.addView(Button(this).apply {
+                text = "Delete"
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity).setTitle("Delete prefix?")
+                        .setMessage(prefix.displayName).setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete") { _, _ ->
+                            val result = prefixManager.remove(prefix.id)
+                            Toast.makeText(this@MainActivity, result.error ?: "Prefix deleted", Toast.LENGTH_LONG).show()
+                            refreshPrefixes()
+                        }.show()
+                }
+            })
+            item.addView(actions)
+            prefixList.addView(item)
+        }
     }
 
     private fun showCreateEnvironmentProfileDialog() {
