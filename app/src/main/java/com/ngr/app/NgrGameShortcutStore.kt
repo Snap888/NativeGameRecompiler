@@ -41,8 +41,7 @@ data class NgrGameShortcut(
         if (!SAFE_ID.matches(environmentProfileId)) errors += "environmentProfileId is invalid"
         if (environmentOverrides.size > 128) errors += "too many per-game environment overrides"
         environmentOverrides.forEach { (key, value) ->
-            if (!ENV_KEY.matches(key) || key.startsWith("LD_") ||
-                key in setOf("PATH", "HOME", "PREFIX", "NGR_RUNTIME_ROOT")) {
+            if (!ENV_KEY.matches(key) || NgrEnvironmentVariablePolicy.isRuntimeManaged(key)) {
                 errors += "environment override contains a protected or invalid key: $key"
             }
             if (value.length > 4096 || value.contains('\u0000')) errors += "environment override value is invalid: $key"
