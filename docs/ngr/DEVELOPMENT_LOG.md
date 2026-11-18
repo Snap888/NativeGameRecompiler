@@ -1178,3 +1178,12 @@ This is the durable project memory. Update it in every development session.
 - [x] Documented an important format boundary: current N64Recomp consumes MIPS ELF with symbols, not ordinary N64 ROM images (.z64/.n64/.v64).
 - [ ] Verify latest Android CI run [44394341711](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44394341711), fix any Kotlin/manifest errors, then test file/folder intake on device.
 - [ ] Extract format detection into a tested registry API and add backend-specific validators as each recompiler is integrated.
+## Session 2026-11-19 — Recompiler intake diagnostics and platform catalog
+- [x] Expanded the target catalog: PS3, PS4, Nintendo Switch, Nintendo Switch 2, original Xbox, Xbox 360, Xbox One and Windows PC EXE; all are marked planned/unavailable until real backends are integrated.
+- [x] Added Nintendo 64 ROM magic detection for .z64/.n64/.v64 byte orders. Retail ROMs are now explicitly identified instead of silently discarded.
+- [x] Clarified the current N64Recomp input contract: the integrated backend accepts MIPS ELF plus decompilation-project metadata, not a retail .z64 ROM as a drop-in input. No fake playable shortcut is created for a ROM-only selection.
+- [x] Expanded folder scanning to include catalogued extensions, including N64 ROMs and future console/PC inputs.
+- [x] Added recompiler intake and N64 stage logging, plus in-app log viewers with share action. Log path is app-private files/logs/ngr-runtime.log.
+- [ ] Verify latest Android CI, run format/detector tests and validate N64 ROM magic detection on device.
+- [ ] Implement an N64 ROM/decompilation project workflow (ROM + matching source/config/symbol metadata) before enabling ROM-to-native game generation.
+- [ ] Implement console and PC recompilers only through dedicated, legally sourced backend integrations; catalog entries remain unavailable meanwhile.
