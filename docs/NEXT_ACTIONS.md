@@ -271,3 +271,7 @@ Mark complete only when evidence exists.
 - [x] Normalize component install/activation branch results to a common typed outcome after CI caught Kotlin's incompatible branch result types.
 - [x] Refresh controller profile connection status on InputManager hotplug events.
 - [ ] Verify latest CI run after the repair and controller additions.
+
+
+- [x] Fix controller enumeration to process Android's `IntArray` device IDs through a sequence.
+- [ ] Verify latest run #395 after controller enumeration correction.
