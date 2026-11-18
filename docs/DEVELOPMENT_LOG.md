@@ -930,3 +930,37 @@ This is the durable project memory. Update it in every development session.
 1. Verify native registry tests, JVM tests, ARM64 build and artifact upload in CI.
 2. Add lifecycle orchestration only after the registry stage is green. Define stop-completion ownership explicitly; do not destroy backend state while callbacks or worker threads may still be active.
 3. Keep arbitrary NGRPACK payloads permanently outside the dynamic-library loader boundary until a separate signature/provenance policy is implemented.
+
+
+## Session 2026-11-18 — Runtime management audit and shortcut foundation
+
+### Baseline audit
+- Re-verified main at 45cc39680f361de7a19bfff4f51e82a2878f1f6e and read README, development log, next actions, technical specification/audit, continuation prompt, WinNative integration plan and licensing/provenance inventory.
+- Inspected NGR Activity, environment profile/codec/store, Wine prefix manager, component catalog/store/readiness and JVM tests.
+- Inspected WinNative container/shortcut, Box64/FEX preset, ReShade, controller, Adrenotools/graphics-driver and Wine metadata source families.
+- NGR already has profile, component download/install/rollback and prefix-management foundations. It does not yet have game shortcut UI or Android pinned shortcuts, Wine launcher/session, real driver activation, effect injection, frame-generation backend or controller mapping editor.
+- WinNative donor is GPL-3.0; NGR remains MIT. This stage implements an independent NGR metadata layer and copies no GPL donor source.
+
+### CI baseline
+- Actions run #342 (44277416635) at 45cc39680f361de7a19bfff4f51e82a2878f1f6e passed native ABI conformance, native registry tests, JVM tests, ARM64 debug APK and artifact upload.
+- Artifact NGR-arm64-debug, ID 14414943540, digest sha256:48937e9a1dd29c74e358469aa1880247fd4fcb5bd1ff0bb3f8a8d607df9f387c.
+
+### Implementation started
+- Added NgrGameShortcut and NgrGameShortcutStore: guest executable/working-directory paths, launch mode, package/profile binding, arguments, per-game environment overrides, managed icon reference, enabled flag and launch timestamps.
+- Store uses bounded JSON schema v1, app-private atomic replacement, ID/path/environment validation, symlink rejection and corrupt/unknown-schema reporting.
+- Added JVM tests for save/load/update/delete, unsafe path/protected variable rejection, corrupt schema handling and execution-mode serialization.
+- Commits: be111ede2b481507d8b9f03c9e157b4df2c4b731 (shortcut metadata store); ab518ca0e26a685802ee24225634015dc6f3c3a5 (tests).
+- Expanded WINNATIVE_INTEGRATION_PLAN.md with the full pre-recompiler completion gate for shortcuts, launch configuration, runtime, drivers, effects, frame generation, controllers, audio and display.
+- Updated NEXT_ACTIONS.md with P0 shortcut work and the full runtime-management backlog.
+
+### Validation status
+- CI run #344 (44280634973) was still running at the time of the source audit; shortcut JVM tests, APK and artifact are not yet confirmed.
+- Shortcut metadata persistence is implemented only. No shortcut UI, Android home-screen pinning or process launch is claimed.
+- No physical-device test has been performed.
+
+### Next
+1. Verify run #344 and fix any compile/test failures.
+2. Integrate shortcut CRUD into the game library UI and add safe icon import.
+3. Implement launch settings/profile resolution and the session API.
+4. Continue with controller profiles, runtime presets, driver/effects management and real Wine/Box64/FEX launcher integration.
+5. Keep static recompilation blocked until the completion gate in WINNATIVE_INTEGRATION_PLAN.md is satisfied.
