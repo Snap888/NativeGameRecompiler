@@ -194,6 +194,11 @@ jobs:
           c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -I native/ngr-runtime/include native/ngr-runtime/src/backend_abi_validation.cpp native/ngr-runtime/src/backend_registry.cpp native/ngr-runtime/tests/backend_registry_test.cpp -o /tmp/ngr-registry
           /tmp/ngr-registry
 
+      - name: Verify N64Recomp C generation is wired into the Android host
+        run: |
+          grep -q "Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C" native/ngr-runtime/src/n64recomp_bridge.cpp
+          grep -q "nativeGenerateN64C" app/src/main/java/com/ngr/app/N64RecompilerActivity.kt
+
       - name: Build imported WinNative host with NGR native runtime
         run: ./gradlew --no-daemon assembleStandardDebug
 
