@@ -59,6 +59,8 @@ jobs:
           # The donor owns its own .gitmodules; restore the NGR recompiler pin after importing it.
           git config -f .gitmodules submodule."native/recompilers/N64Recomp".path native/recompilers/N64Recomp
           git config -f .gitmodules submodule."native/recompilers/N64Recomp".url https://github.com/N64Recomp/N64Recomp.git
+          git config -f .gitmodules submodule."native/recompilers/XDroid360".path native/recompilers/XDroid360
+          git config -f .gitmodules submodule."native/recompilers/XDroid360".url https://github.com/Snap888/XDroid360.git
           rm -f settings.gradle.kts build.gradle.kts app/build.gradle.kts
           mkdir -p app/src/main/java app/src/test/java app/src/main/cpp
           mkdir -p app/src/main/java/com app/src/test/java/com
