@@ -804,7 +804,7 @@ This is the durable project memory. Update it in every development session.
 - Migrated environment profile schema from v1 to v2 with optional `winePrefixId`.
 - Added backward-compatible decoding: v1 profiles load as v2 with no prefix assigned; existing component and display settings are retained.
 - Added strict prefix ID validation and codec round-trip/migration tests.
-- Profile editor now allows assigning a managed Wine prefix ID; profile cards show the binding and report missing, unsafe or PREPARED prefixes as draft prerequisites.
+- Profile editor now allows assigning a managed Wine prefix ID through a picker; profile cards show the binding and report missing, unsafe or PREPARED prefixes as draft prerequisites.
 - Prefix deletion is blocked while one or more profiles reference it, preventing silent dangling references.
 - Added `NgrEnvironmentReadiness`, which combines profile launch validation, actual prefix state, installed component active-version state, version pins, catalog compatibility and Vulkan/Wayland capability checks.
 - Readiness is an inspection report only. It does not activate components, load libraries, initialize Wine or launch games.
