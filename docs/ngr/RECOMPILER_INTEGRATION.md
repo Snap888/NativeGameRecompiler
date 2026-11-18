@@ -48,3 +48,12 @@ The host-tool CI build is a reproducibility gate only; it does not claim that th
 ## License and provenance
 
 N64Recomp is MIT-licensed. Its dependency submodules keep their own licenses and provenance. Do not flatten or remove their license files. NGR's combined distribution uses the WinNative GPL-3.0 host license while preserving the MIT N64Recomp notices and each dependency's license obligations.
+
+
+## Android integration — first implementation
+
+- Added the pinned N64Recomp source directory to the Android CMake graph with upstream CLI tools excluded from the APK build.
+- Linked the upstream `N64Recomp` and `N64RecompElf` core libraries into the app-private `ngr_runtime` JNI library.
+- Added a JNI ELF inspection entry point using `N64Recomp::Context::from_elf_file`. It enforces a 64-byte..512-MiB input bound and reports parsed sections, executable sections, functions and relocations.
+- Added an English/Russian N64 Recompiler screen with SAF import into app-private storage and a language toggle.
+- This is a real ELF-analysis stage. C source generation, NDK compilation, title runtime and launch are not yet complete.
