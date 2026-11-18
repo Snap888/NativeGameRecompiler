@@ -1751,8 +1751,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 orientation = LinearLayout.VERTICAL
                 setPadding(0, dp(10), 0, dp(10))
             }
+            val isRecompiledNative = shortcut.packageId.startsWith("n64-") ||
+                shortcut.launchMode == NgrGameShortcut.LaunchMode.NATIVE_ARM64
             item.addView(TextView(this).apply {
-                text = "${shortcut.title}\n${shortcut.executablePath}\nProfile: ${shortcut.environmentProfileId} · ${shortcut.launchMode}"
+                val state = if (isRecompiledNative) "ARM64 binary/runtime pending" else "launch backend not connected"
+                text = "${shortcut.title}\n${shortcut.executablePath}\nProfile: ${shortcut.environmentProfileId} · ${shortcut.launchMode}\n$state"
                 textSize = 13f
                 setTextColor(Color.rgb(196, 207, 222))
             })
@@ -1771,6 +1774,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     }.show()
             }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { leftMargin = dp(5) })
             item.addView(actions)
+            item.addView(secondaryButton(if (isRecompiledNative) "Launch · runtime pending" else "Launch · runtime unavailable") {
+                Toast.makeText(this@MainActivity,
+                    "Launch is disabled until a verified executable and compatible runtime are installed.",
+                    Toast.LENGTH_LONG).show()
+            }.apply { isEnabled = false })
             item.addView(secondaryButton("Preview resolved launch configuration") {
                 showLaunchConfigurationPreview(shortcut)
             })
