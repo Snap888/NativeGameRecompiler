@@ -51,7 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           git lfs install
-          rsync -a --exclude='.git' donor/ ./
+          rsync -a --exclude='.git' --exclude='.github/workflows/***' donor/ ./
           rm -f settings.gradle.kts build.gradle.kts app/build.gradle.kts
           mkdir -p app/src/main/java app/src/test/java app/src/main/cpp
           mkdir -p app/src/main/java/com app/src/test/java/com
@@ -64,7 +64,6 @@ jobs:
           cp /tmp/ngr-preserve/README.md docs/ngr/README.md
           mkdir -p schemas/ngr
           cp -a /tmp/ngr-preserve/schemas/. schemas/ngr/
-          mkdir -p .github/workflows
 
       - name: Wire NGR native runtime and Android activity into WinNative host
         shell: bash
@@ -100,7 +99,7 @@ jobs:
               source = license_doc.read_text()
               source = source.replace("| NativeGameRecompiler | MIT (root LICENSE) | Existing host/runtime source remains MIT. |",
                   "| NativeGameRecompiler | Originally MIT; combined distribution now GPL-3.0 | Original MIT notice is preserved in docs/ngr/LICENSE-MIT; NGR code is included in the combined GPL-3.0 work. |")
-              source += "\\n\\n## Combined-project license transition\\n\\nThe NGR source was originally published under MIT. The combined NativeGameRecompiler distribution now uses GPL-3.0 to permit direct integration of WinNative. The original MIT license text is retained at docs/ngr/LICENSE-MIT; WinNative and third-party notices remain in the repository. This is a source integration record, not legal advice.\\n"
+              source += "\n\n## Combined-project license transition\n\nThe NGR source was originally published under MIT. The combined NativeGameRecompiler distribution now uses GPL-3.0 to permit direct integration of WinNative. The original MIT license text is retained at docs/ngr/LICENSE-MIT; WinNative and third-party notices remain in the repository. This is a source integration record, not legal advice.\\n"
               license_doc.write_text(source)
 
           plan = Path("docs/ngr/WINNATIVE_INTEGRATION_PLAN.md")
@@ -108,7 +107,7 @@ jobs:
               source = plan.read_text()
               source = source.replace("NGR must not become a thin fork of WinNative. It owns game identity, package/library management, compiler pipelines, execution selection, diagnostics and per-game profiles. The compatibility runtime is an isolated subsystem behind NGR interfaces.",
                   "NGR adopts the WinNative Android host/runtime as its compatibility foundation. NGR-specific package identity, recompiler pipelines, execution selection, diagnostics and static-backend interfaces remain distinct modules integrated into that host.")
-              source += "\\n\\n## Source integration decision\\n\\nOn 2026-11-18 the project direction changed to direct integration of WinNative at pinned commit 99c3305d163780de5ca39b493aefcde436acad5c. The WinNative app is the Android host; NGR's Kotlin package manager, schemas, tests and C++20 runtime are retained as a distinct feature/backend. Existing WinNative component catalog, downloader, container settings, Wine/Proton launcher, Box64/FEX presets, driver manager, vkBasalt/ReShade-effect configuration, Frame Generation, input/controller pipeline, X11/Wayland compositor and shortcuts are reused as the source of truth. No parallel replacement managers should be developed.\\n"
+              source += "\n\n## Source integration decision\n\nOn 2026-11-18 the project direction changed to direct integration of WinNative at pinned commit 99c3305d163780de5ca39b493aefcde436acad5c. The WinNative app is the Android host; NGR's Kotlin package manager, schemas, tests and C++20 runtime are retained as a distinct feature/backend. Existing WinNative component catalog, downloader, container settings, Wine/Proton launcher, Box64/FEX presets, driver manager, vkBasalt/ReShade-effect configuration, Frame Generation, input/controller pipeline, X11/Wayland compositor and shortcuts are reused as the source of truth. No parallel replacement managers should be developed.\\n"
               plan.write_text(source)
           PY
 
@@ -180,15 +179,13 @@ jobs:
       - name: Run NGR JVM tests in imported host
         run: ./gradlew --no-daemon :app:testStandardDebugUnitTest
 
-      - name: Remove superseded standalone NGR CI workflow
-        run: rm -f .github/workflows/android-ci.yml
-
       - name: Commit imported source tree
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf donor
           git add -A
           git commit -m "Import WinNative runtime as NGR compatibility host" || echo "No source changes to commit"
           git push origin integration/winnative-runtime-base
