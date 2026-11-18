@@ -875,3 +875,28 @@ This is the durable project memory. Update it in every development session.
 - Run CI and fix any native C++ or Kotlin failures.
 - After green CI, implement a trusted in-process backend registry/lifecycle only for app-bundled or verified components; never dlopen NGRPACK game payloads.
 - Keep untrusted plugins disabled until signature/provenance policy exists; this ABI is not a sandbox.
+
+
+## Session 2026-11-18 — Backend ABI v1 host validation
+
+### Baseline and CI
+- Verified current main baseline commit `489384e384ef386dcde70b9e14622251d9201943` and successful Android CI run #315 (`44249623666`): JVM tests, ARM64 APK build and artifact upload all passed. Artifact `NGR-arm64-debug`, ID `14402883613`.
+- Downloaded the run #315 artifact ZIP and verified it is a valid ZIP containing `app-debug.apk` (2,391,045 bytes). This artifact predates the ABI validation changes below.
+
+### ABI validation implementation
+- Added `backend_abi_validation.hpp/.cpp` with host API and backend API table checks: struct sizes, ABI major/minor compatibility, execution backend kind, bounded backend ID/version string views and required lifecycle callbacks.
+- Added native conformance tests for valid tables, missing host callback, ABI major mismatch, invalid backend ID, missing lifecycle callback and undersized struct.
+- Added validator source to `ngr_runtime` CMake target so the Android native library compiles the same validation code tested on CI.
+- Added a native ABI conformance CI step ahead of JVM tests and APK packaging.
+- ABI remains trusted-code boundary only: this validator does not load plugins, sandbox them, verify signatures or execute NGRPACK payloads.
+
+### CI diagnosis / correction
+- Initial conformance CI runs #321–#324 failed before Gradle because YAML shell continuations contained doubled backslashes, causing the linker to interpret a literal backslash as an input file.
+- Corrected shell line continuations to one backslash in commit `28ad3d4eac093b58849f93872fcc102248b1396a`.
+- CMake integration commit: `c2ef6d04f069c361fd9fa7dbae23536d40fb0de5`.
+- Earlier ABI implementation files were added in commits leading to `e4498083b0f7074ae80e24c20162c0dcc9d22f6d`.
+- CI run #327 (`44270340309`) was in progress at journal update time; native tests, JVM tests, ARM64 APK and artifact upload are not yet confirmed.
+
+### Next
+- Verify run #327 end-to-end. If native conformance fails, inspect compiler/test output before proceeding.
+- Only after green CI, mark ABI validation complete; then add a trusted built-in test backend fixture and lifecycle state machine. Do not implement dynamic loading of arbitrary package content.
