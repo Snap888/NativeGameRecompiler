@@ -20,7 +20,9 @@ object NgrLaunchConfigurationResolver {
         val graphicsProvider: NgrEnvironmentProfile.GraphicsProvider,
         val displayBackend: NgrEnvironmentProfile.DisplayBackend,
         val environment: Map<String, String>,
-        val requiresWineCompatibilityRuntime: Boolean
+        val requiresWineCompatibilityRuntime: Boolean,
+        val box64Preset: NgrEnvironmentProfile.Box64Preset,
+        val fexPreset: NgrEnvironmentProfile.FexPreset
     )
 
     data class Result(
@@ -98,7 +100,9 @@ object NgrLaunchConfigurationResolver {
                 graphicsProvider = effectiveProvider,
                 displayBackend = effectiveDisplay,
                 environment = mergedEnvironment.toMap(),
-                requiresWineCompatibilityRuntime = requiresWine
+                requiresWineCompatibilityRuntime = requiresWine,
+                box64Preset = profile.box64Preset,
+                fexPreset = profile.fexPreset
             )
         )
     }
