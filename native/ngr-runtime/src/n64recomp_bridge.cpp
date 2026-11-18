@@ -294,6 +294,25 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
         }
     }
 
+    // Ship the upstream instruction/runtime ABI header with the generated sources.
+    // It defines recomp_context, memory helpers and generated-code macros; title services
+    // (get_function, cop0 handlers, RSP, graphics/audio/input) remain a separate runtime.
+    try {
+        const upstreamInclude = std::filesystem::path(NGR_N64RECOMP_INCLUDE_DIR);
+        std::filesystem::copy_file(
+            upstreamInclude / "recomp.h",
+            staging / "recomp.h",
+            std::filesystem::copy_options::overwrite_existing);
+        const licensePath = std::filesystem::path(NGR_N64RECOMP_LICENSE_FILE);
+        if (std::filesystem::exists(licensePath)) {
+            std::filesystem::copy_file(
+                licensePath, staging / "LICENSE-N64Recomp.txt",
+                std::filesystem::copy_options::overwrite_existing);
+        }
+    } catch (const std::exception& e) {
+        return fail(std::string("Cannot stage N64Recomp support files: ") + e.what());
+    }
+
     // Emit declarations after every discovered static function is known.
     {
         std::ofstream header(staging / "funcs.h", std::ios::binary | std::ios::trunc);
@@ -306,6 +325,19 @@ Java_com_ngr_app_N64RecompilerActivity_nativeGenerateN64C(JNIEnv* env, jobject, 
         }
         header << "#ifdef __cplusplus\n}\n#endif\n";
         if (!header.good()) return fail("Failed writing funcs.h");
+    }
+
+    {
+        std::ofstream readme(staging / "README-NGR.txt", std::ios::binary | std::ios::trunc);
+        if (!readme) return fail("Cannot create generated-project README");
+        readme << "NGR N64Recomp output\\n"
+               << "=====================\\n\\n"
+               << "This directory contains generated C sources and the upstream N64Recomp recomp.h ABI header.\\n"
+               << "It is not a standalone executable. A compatible title runtime must provide function lookup,\\n"
+               << "RDRAM initialization, COP0/system services, RSP, graphics, audio, save data and input.\\n"
+               << "The input ELF must be accompanied by the correct game-specific metadata/configuration.\\n"
+               << "No ROM or proprietary game data is included in this output.\\n";
+        if (!readme.good()) return fail("Failed writing generated-project README");
     }
 
     // A generated C project is not executable until the game-specific runtime is supplied.
