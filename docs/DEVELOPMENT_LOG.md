@@ -903,3 +903,30 @@ This is the durable project memory. Update it in every development session.
 ### Next
 - Verify run #327 end-to-end. If native conformance fails, inspect compiler/test output before proceeding.
 - Only after green CI, mark ABI validation complete; then add a trusted built-in test backend fixture and lifecycle state machine. Do not implement dynamic loading of arbitrary package content.
+
+
+## Session 2026-11-18 — ABI v1 CI verified; built-in registry foundation
+
+### CI verification
+- Latest main commit before this stage: `2b95090ae5c1e84f773916fc7068842236785d58`.
+- Android CI run #334 (`44270549436`) completed successfully. Every step passed: Android SDK, NDK/CMake, Gradle, native ABI conformance tests, JVM unit tests, ARM64 debug APK build and artifact upload.
+- Artifact `NGR-arm64-debug`, ID `14413025119`, archive SHA-256 `d82e9e4469032f631689a491abfddf9ea0584337fd40204da12907fe70fc591f`.
+- Extracted APK size: 2,394,605 bytes; SHA-256 `8abd8b7c6dc6ed1bdef25e2b4fb4d16316547f3d44fed6703a1e020f0aec501f`.
+- Physical-device validation remains outstanding.
+
+### Audit and design boundary
+- Re-read README, technical specification/audit, continuation prompt, development log and next-actions list.
+- Audited current ABI header, validator, CMake target, JNI bridge and capability registry.
+- No backend registry or lifecycle manager existed yet.
+- Added a deliberately narrow in-process registry for trusted, app-bundled API tables only. It validates ABI tables, rejects duplicate backend IDs, and provides thread-safe membership/count queries.
+- Registry does not load libraries, execute callbacks, accept NGRPACK paths, or imply a package is trusted. Dynamic loading remains disabled.
+
+### Changes in progress
+- Added `backend_registry.hpp/.cpp` and native tests for registration, duplicate IDs, invalid IDs and registry queries.
+- Linked registry source into the Android runtime target and added a native CI conformance command.
+- Capability report now distinguishes this registry foundation from the still-unimplemented lifecycle and verified dynamic loading.
+
+### Next
+1. Verify native registry tests, JVM tests, ARM64 build and artifact upload in CI.
+2. Add lifecycle orchestration only after the registry stage is green. Define stop-completion ownership explicitly; do not destroy backend state while callbacks or worker threads may still be active.
+3. Keep arbitrary NGRPACK payloads permanently outside the dynamic-library loader boundary until a separate signature/provenance policy is implemented.
