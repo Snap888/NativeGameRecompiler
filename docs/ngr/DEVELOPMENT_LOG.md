@@ -1153,3 +1153,11 @@ This is the durable project memory. Update it in every development session.
 - Added a dedicated Android build workflow that builds the current integrated branch directly, avoiding the long donor re-import path for ordinary code changes.
 - Audited N64ModernRuntime at `e4342ae030a9d94aa97a81aafd3368ed7daa74df` (GPL-3.0). Its `ultramodern::input` callback API is a clear adapter point for WinNative controls, and its renderer callback accepts SDL_Window on Android/Linux. It still requires a game-specific runtime header, a display-list renderer, game registration/metadata and ROM data. Details: `docs/ngr/N64_RUNTIME_INTEGRATION_AUDIT.md`.
 - Current codegen/UI changes are awaiting a fresh green direct Android CI run. No generated C has yet been tested against a real legal game ELF, no ARM64 game library has been built, and no game has launched.
+
+
+## Session 2026-11-18 — N64 codegen packaging and Android source-set repair
+- [x] Diagnosed Actions run [44379837404](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44379837404): N64Recomp host tools and native ABI checks passed; Kotlin compilation failed because WinNative's custom Gradle source roots omitted `app/src/main/java`, where the preserved NGR activities and managers live.
+- [x] Added `src/main/java` to the app's Android source set and made the WinNative import workflow reapply that source-root entry after donor import. The import workflow now watches `app/build.gradle` as well as its own workflow file.
+- [x] Extended N64 code generation to include the pinned upstream `recomp.h` ABI header and N64Recomp license text in the generated output directory. Added a README that clearly lists title-runtime services still required.
+- [ ] Verify the new import/build run and direct Android CI after these changes; no green result is claimed yet.
+- [ ] Add synthetic MIPS ELF fixture and test the JNI code-generation path; then implement metadata/config import and runtime integration.
