@@ -170,5 +170,15 @@ Mark complete only when evidence exists.
 - [x] Audit current HEAD and read the project source-of-truth docs.
 - [x] Diagnose current HEAD run #312: Kotlin compile error at `NgrWinePrefixManager.kt:280` (`files += file` collection reassignment/type mismatch); SDK/NDK/CMake/Gradle setup succeeded.
 - [x] Fix using explicit `files.add(file)` in commit `18b02fcb8454b2f43b44106b968ca58c9c7d0e49`.
-- [ ] Verify run #313 (`44249549118`): JVM unit tests, ARM64 APK build and artifact upload. Do not continue to ABI loader until green.
-- [ ] After green CI, download and verify `NGR-arm64-debug`; then implement ABI v1 host negotiation and validation.
+- [x] Verify run #315 (`44249623666`) at commit `489384e384ef386dcde70b9e14622251d9201943`: JVM unit tests, ARM64 APK build and artifact upload all passed.
+- [x] Download and verify artifact ID `14402883613`; APK SHA-256 `10327bc566746291a1f403b025b62b36774eca321ebca55675e463c23c5af8be`.
+- [x] Add host/backend ABI v1 table validation and native conformance tests; CI integration is pending.
+
+
+## P2 — Backend ABI v1 validation foundation (2026-11-18)
+- [x] Add host and backend API table validators for struct sizes, ABI version, backend kind, bounded identifiers and required callbacks.
+- [x] Add native conformance tests for valid/invalid tables and ABI mismatch cases.
+- [x] Compile validator into Android runtime and run native tests in CI.
+- [ ] Verify CI for commits `45a4f8fe` through `c09e1a84`; fix any native test/compiler errors before proceeding.
+- [ ] Implement trusted backend registration and serialized lifecycle; no NGRPACK payload may be loaded as a shared library.
+- [ ] Add app-bundled/verified library provenance policy before enabling dynamic loading.
