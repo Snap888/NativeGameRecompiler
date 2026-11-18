@@ -417,11 +417,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
 
     private fun detectedGameControllers(): List<InputDevice> =
-        inputManager.inputDeviceIds.mapNotNull { id ->
+        inputManager.inputDeviceIds.asSequence().mapNotNull { id ->
             inputManager.getInputDevice(id)?.takeIf { device ->
                 device.sources and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
             }
-        }.sortedBy { it.name }
+        }.sortedBy { it.name }.toList()
 
     private fun showCreateControllerProfileDialog() {
         val controllers = detectedGameControllers()
