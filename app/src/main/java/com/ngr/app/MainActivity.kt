@@ -44,6 +44,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var componentStore: NgrComponentStore
     private lateinit var componentStatus: TextView
     private lateinit var componentList: LinearLayout
+    private lateinit var controllerProfileStore: NgrControllerProfileStore
+    private lateinit var controllerStatus: TextView
+    private lateinit var controllerProfileList: LinearLayout
     private lateinit var profileStore: NgrEnvironmentProfileStore
     private lateinit var prefixManager: NgrWinePrefixManager
     private lateinit var prefixStatus: TextView
@@ -77,6 +80,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         shortcutStore = NgrGameShortcutStore(File(filesDir, "ngr-runtime"))
         catalogStore = NgrComponentCatalogStore(File(filesDir, "ngr-runtime"))
         componentStore = NgrComponentStore(File(filesDir, "ngr-runtime"))
+        controllerProfileStore = NgrControllerProfileStore(File(filesDir, "ngr-runtime"))
         profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
         prefixManager = NgrWinePrefixManager(File(filesDir, "ngr-runtime"))
 
@@ -254,6 +258,20 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         hardwareCard.addView(devices)
         root.addView(hardwareCard, sectionParams())
 
+        addSection(root, "CONTROLLERS", "Controller profiles & mappings")
+        val controllerCard = createCard()
+        controllerCard.addView(TextView(this).apply {
+            text = "Bind Android gamepad keys, axes and hats to game actions. Configure dead zones, sensitivity, curves, inversion, triggers, vibration and touch overlay. Profiles are stored now; game-session input injection is a separate runtime integration."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        controllerCard.addView(primaryButton("＋  Create controller profile") { showCreateControllerProfileDialog() })
+        controllerStatus = mutedText()
+        controllerCard.addView(controllerStatus)
+        controllerProfileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        controllerCard.addView(controllerProfileList)
+        root.addView(controllerCard, sectionParams())
+
         addSection(root, "SUPPORT", "Diagnostics")
         val diagnostics = createCard()
         diagnostics.addView(TextView(this).apply {
@@ -367,6 +385,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         refreshPrefixes()
         refreshShortcuts()
         refreshComponents()
+        refreshControllerProfiles()
     }
 
     override fun onPause() {
@@ -395,6 +414,218 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     }
 
 
+
+
+    private fun detectedGameControllers(): List<InputDevice> =
+        inputManager.inputDeviceIds.mapNotNull { id ->
+            inputManager.getInputDevice(id)?.takeIf { device ->
+                device.sources and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
+            }
+        }.sortedBy { it.name }
+
+    private fun showCreateControllerProfileDialog() {
+        val controllers = detectedGameControllers()
+        if (controllers.isEmpty()) {
+            Toast.makeText(this, "Connect a gamepad or joystick first", Toast.LENGTH_LONG).show()
+            return
+        }
+        val labels = controllers.map { "${it.name} · ${it.descriptor}" }
+        AlertDialog.Builder(this)
+            .setTitle("Select controller")
+            .setItems(labels.toTypedArray()) { _, index ->
+                val device = controllers[index]
+                val existing = controllerProfileStore.loadAll().profiles.firstOrNull {
+                    it.deviceDescriptor == device.descriptor && it.gamePackageId == null
+                }
+                if (existing != null) {
+                    showEditControllerProfileDialog(existing)
+                    return@setItems
+                }
+                val profile = NgrControllerProfile(
+                    profileId = "pad-" + UUID.randomUUID().toString().take(8),
+                    displayName = device.name,
+                    deviceDescriptor = device.descriptor,
+                    deviceName = device.name
+                )
+                val result = controllerProfileStore.save(profile)
+                if (!result.success) {
+                    Toast.makeText(this, "Controller profile creation failed: ${result.error}", Toast.LENGTH_LONG).show()
+                } else {
+                    refreshControllerProfiles()
+                    showEditControllerProfileDialog(profile)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun refreshControllerProfiles() {
+        if (!::controllerProfileStore.isInitialized || !::controllerProfileList.isInitialized) return
+        val loaded = controllerProfileStore.loadAll()
+        val connected = detectedGameControllers().map { it.descriptor }.toSet()
+        controllerStatus.text = "${loaded.profiles.size} profile(s) · ${connected.size} controller(s) connected"
+        loaded.errors.forEach { NgrLogger.warn("input.profile", it) }
+        controllerProfileList.removeAllViews()
+        if (loaded.profiles.isEmpty()) {
+            controllerProfileList.addView(TextView(this).apply {
+                text = "No controller profiles saved"
+                textSize = 12f
+                setTextColor(Color.rgb(143, 155, 174))
+                setPadding(0, dp(8), 0, dp(8))
+            })
+        }
+        loaded.profiles.forEach { profile ->
+            val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(8), 0, dp(8)) }
+            val state = if (profile.deviceDescriptor in connected) "connected" else "not connected"
+            item.addView(TextView(this).apply {
+                text = "${profile.displayName}\n${profile.deviceName} · $state\n" +
+                    "${profile.bindings.size} binding(s) · dead zone L/R ${profile.leftStickDeadZone}/${profile.rightStickDeadZone}"
+                textSize = 12f
+                setTextColor(Color.rgb(177, 190, 208))
+            })
+            val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            actions.addView(secondaryButton("Edit mappings") { showEditControllerProfileDialog(profile) },
+                LinearLayout.LayoutParams(0, dp(42), 1f))
+            actions.addView(secondaryButton("Delete") {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Delete controller profile?")
+                    .setMessage(profile.displayName)
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete") { _, _ ->
+                        val result = controllerProfileStore.delete(profile.profileId)
+                        if (!result.success) Toast.makeText(this@MainActivity, result.error, Toast.LENGTH_LONG).show()
+                        refreshControllerProfiles()
+                    }.show()
+            }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { leftMargin = dp(6) })
+            item.addView(actions)
+            controllerProfileList.addView(item)
+        }
+    }
+
+    private fun showEditControllerProfileDialog(profile: NgrControllerProfile) {
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), dp(8))
+        }
+        fun field(label: String, value: String, numeric: Boolean = false): EditText {
+            form.addView(TextView(this).apply { text = label; textSize = 12f; setTextColor(Color.rgb(163, 174, 191)) })
+            return EditText(this).apply {
+                setSingleLine(true)
+                setText(value)
+                if (numeric) inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
+                form.addView(this)
+            }
+        }
+        val name = field("Profile name", profile.displayName)
+        val gamePackage = field("Game package ID (blank = global)", profile.gamePackageId.orEmpty())
+        val leftDeadZone = field("Left stick dead zone (0.0–0.5)", profile.leftStickDeadZone.toString(), true)
+        val rightDeadZone = field("Right stick dead zone (0.0–0.5)", profile.rightStickDeadZone.toString(), true)
+        val leftSensitivity = field("Left stick sensitivity (0.25–3.0)", profile.leftStickSensitivity.toString(), true)
+        val rightSensitivity = field("Right stick sensitivity (0.25–3.0)", profile.rightStickSensitivity.toString(), true)
+        val trigger = field("Trigger threshold (0.1–0.9)", profile.triggerThreshold.toString(), true)
+        val invertLeftX = CheckBox(this).apply { text = "Invert left X"; isChecked = profile.invertLeftX }
+        val invertLeftY = CheckBox(this).apply { text = "Invert left Y"; isChecked = profile.invertLeftY }
+        val invertRightX = CheckBox(this).apply { text = "Invert right X"; isChecked = profile.invertRightX }
+        val invertRightY = CheckBox(this).apply { text = "Invert right Y"; isChecked = profile.invertRightY }
+        val vibration = CheckBox(this).apply { text = "Enable vibration"; isChecked = profile.vibrationEnabled }
+        listOf(invertLeftX, invertLeftY, invertRightX, invertRightY, vibration).forEach(form::addView)
+
+        val curve = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val curveButtons = NgrControllerProfile.StickCurve.values().associateWith { value ->
+            RadioButton(this@MainActivity).apply {
+                id = View.generateViewId()
+                text = value.name
+                isChecked = value == profile.stickCurve
+                curve.addView(this)
+            }
+        }
+        form.addView(TextView(this).apply { text = "Stick response curve"; textSize = 12f })
+        form.addView(curve)
+
+        val touch = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val touchButtons = NgrControllerProfile.TouchLayout.values().associateWith { value ->
+            RadioButton(this@MainActivity).apply {
+                id = View.generateViewId()
+                text = value.name.replace('_', ' ')
+                isChecked = value == profile.touchLayout
+                touch.addView(this)
+            }
+        }
+        form.addView(TextView(this).apply { text = "Touch overlay layout"; textSize = 12f })
+        form.addView(touch)
+        val touchOpacity = field("Touch overlay opacity (0.1–1.0)", profile.touchOpacity.toString(), true)
+        val touchScale = field("Touch overlay scale (0.5–1.5)", profile.touchScale.toString(), true)
+
+        val bindingText = field(
+            "Bindings (ACTION=KEY:code or AXIS:code:+1 or HAT:code:-1, one per line)",
+            profile.bindings.toSortedMap(compareBy { it.name }).entries.joinToString("\n") {
+                "${it.key.name}=${it.value.kind.name}:${it.value.code}" +
+                    if (it.value.kind == NgrControllerProfile.InputKind.KEY) "" else ":${if (it.value.direction > 0) "+1" else "-1"}"
+            }
+        ).apply {
+            minLines = 4
+            maxLines = 12
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        }
+
+        val scroll = ScrollView(this).apply { addView(form) }
+        AlertDialog.Builder(this)
+            .setTitle("Controller mapping")
+            .setView(scroll)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ ->
+                try {
+                    val bindings = linkedMapOf<NgrControllerProfile.Action, NgrControllerProfile.Binding>()
+                    bindingText.text.toString().lineSequence().forEach { raw ->
+                        val line = raw.trim()
+                        if (line.isEmpty()) return@forEach
+                        val split = line.indexOf('=')
+                        require(split > 0) { "Binding must use ACTION=KIND:CODE[:DIRECTION]" }
+                        val action = NgrControllerProfile.Action.valueOf(line.substring(0, split).trim().uppercase(Locale.ROOT))
+                        val parts = line.substring(split + 1).trim().split(':')
+                        require(parts.size in 2..3) { "Binding must use KIND:CODE[:DIRECTION]" }
+                        val kind = NgrControllerProfile.InputKind.valueOf(parts[0].uppercase(Locale.ROOT))
+                        val code = parts[1].toInt()
+                        val direction = if (kind == NgrControllerProfile.InputKind.KEY) 0 else {
+                            require(parts.size == 3) { "AXIS/HAT binding requires a direction" }
+                            parts[2].removePrefix("+").toInt()
+                        }
+                        require(!bindings.containsKey(action)) { "Duplicate action binding: $action" }
+                        bindings[action] = NgrControllerProfile.Binding(kind, code, direction)
+                    }
+                    val selectedCurve = curveButtons.entries.firstOrNull { it.value.isChecked }?.key
+                        ?: NgrControllerProfile.StickCurve.LINEAR
+                    val selectedTouch = touchButtons.entries.firstOrNull { it.value.isChecked }?.key
+                        ?: NgrControllerProfile.TouchLayout.HIDDEN
+                    val updated = profile.copy(
+                        displayName = name.text.toString().trim(),
+                        gamePackageId = gamePackage.text.toString().trim().ifEmpty { null },
+                        bindings = bindings,
+                        leftStickDeadZone = leftDeadZone.text.toString().toDouble(),
+                        rightStickDeadZone = rightDeadZone.text.toString().toDouble(),
+                        leftStickSensitivity = leftSensitivity.text.toString().toDouble(),
+                        rightStickSensitivity = rightSensitivity.text.toString().toDouble(),
+                        triggerThreshold = trigger.text.toString().toDouble(),
+                        invertLeftX = invertLeftX.isChecked,
+                        invertLeftY = invertLeftY.isChecked,
+                        invertRightX = invertRightX.isChecked,
+                        invertRightY = invertRightY.isChecked,
+                        stickCurve = selectedCurve,
+                        vibrationEnabled = vibration.isChecked,
+                        touchLayout = selectedTouch,
+                        touchOpacity = touchOpacity.text.toString().toDouble(),
+                        touchScale = touchScale.text.toString().toDouble()
+                    )
+                    val result = controllerProfileStore.save(updated)
+                    if (!result.success) throw IllegalArgumentException(result.error ?: "Controller profile validation failed")
+                    refreshControllerProfiles()
+                    Toast.makeText(this, "Controller profile saved. It is not active in a game session yet.", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Controller profile not saved: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
 
     private fun chooseComponentCatalog() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
