@@ -1,5 +1,7 @@
 package com.winlator.cmod.app.shell
 
+import com.ngr.app.NgrLogger
+
 import com.winlator.cmod.runtime.input.controls.SteamControllerBackend
 import com.winlator.cmod.runtime.input.controls.SteamControllerPointer
 import com.winlator.cmod.runtime.input.controls.SteamControllerNavigation
@@ -1085,6 +1087,8 @@ class UnifiedActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         instance = this
         super.onCreate(savedInstanceState)
+        NgrLogger.initialize(this)
+        NgrLogger.info("app", "UnifiedActivity launcher created")
 
         if (!SetupWizardActivity.isSetupComplete(this) || !ImageFs.find(this).isUpToDate) {
             startActivity(
