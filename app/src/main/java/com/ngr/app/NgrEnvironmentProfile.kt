@@ -159,8 +159,7 @@ data class NgrEnvironmentProfile(
         if (values.size > 128) errors += "$scope contains more than 128 variables"
         values.forEach { (key, value) ->
             if (!key.matches(ENV_KEY_PATTERN)) errors += "$scope contains an invalid variable name"
-            if (key.startsWith("LD_") || key.startsWith("NGR_") ||
-                key == "PATH" || key == "HOME" || key == "PREFIX") {
+            if (NgrEnvironmentVariablePolicy.isRuntimeManaged(key)) {
                 errors += "$scope attempts to override a runtime-managed variable: $key"
             }
             if (value.length > 4096 || value.contains('\u0000')) errors += "$scope contains an invalid value for $key"
