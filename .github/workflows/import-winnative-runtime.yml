@@ -53,13 +53,8 @@ jobs:
           git lfs install
           rsync -a --exclude='.git' --exclude='.github/workflows/***' donor/ ./
           # The donor owns its own .gitmodules; restore the NGR recompiler pin after importing it.
-          if ! grep -q 'path = native/recompilers/N64Recomp' .gitmodules; then
-            cat >> .gitmodules <<'EOF'
-          [submodule "native/recompilers/N64Recomp"]
-          \tpath = native/recompilers/N64Recomp
-          \turl = https://github.com/N64Recomp/N64Recomp.git
-          EOF
-          fi
+          git config -f .gitmodules submodule."native/recompilers/N64Recomp".path native/recompilers/N64Recomp
+          git config -f .gitmodules submodule."native/recompilers/N64Recomp".url https://github.com/N64Recomp/N64Recomp.git
           rm -f settings.gradle.kts build.gradle.kts app/build.gradle.kts
           mkdir -p app/src/main/java app/src/test/java app/src/main/cpp
           mkdir -p app/src/main/java/com app/src/test/java/com
