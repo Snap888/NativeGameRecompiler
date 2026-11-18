@@ -85,11 +85,11 @@ class N64RecompilerActivity : Activity() {
                 val target = File(dir, "input.elf")
                 var total = 0L
                 contentResolver.openInputStream(uri).use { input ->
-                    requireNotNull(input) { "Unable to open selected document" }
+                    val source = requireNotNull(input) { "Unable to open selected document" }
                     FileOutputStream(target).use { output ->
                         val buffer = ByteArray(65536)
                         while (true) {
-                            val count = input.read(buffer)
+                            val count = source.read(buffer)
                             if (count < 0) break
                             total += count
                             require(total <= MAX_ELF_BYTES) { "ELF exceeds 512 MiB limit" }
