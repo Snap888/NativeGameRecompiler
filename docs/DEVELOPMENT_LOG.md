@@ -1009,3 +1009,13 @@ This is the durable project memory. Update it in every development session.
 - Catalog metadata has no signature trust chain yet; HTTPS and archive SHA-256 protect transport/integrity relative to the imported catalog, not the trustworthiness of the catalog author. Use only trusted catalogs until signature/pinning is implemented.
 - Only ZIP component archives are installable. TAR/RAW formats remain disabled.
 - No physical-device component download/install or runtime activation test has been performed.
+
+
+### Component version lifecycle follow-up — 2026-11-18
+- Extended `NgrComponentInstallPlanner` with installed-version metadata. It skips only the exact catalog version; mismatched versions are planned as updates.
+- Added `NgrComponentStore.storedVersionDirectory` and `activateStoredVersion`. Existing stored trees are validated before switching the atomic active-version pointer, avoiding unnecessary downloads when a requested version is already present.
+- Component manager now reuses stored versions and exposes rollback/uninstall. Uninstall is blocked while a base profile, game override, or installed dependent component references the component.
+- Added tests for mismatched-version update planning and reactivation of a previously stored version.
+- Commits: `3ceb604d73b0e4ba6c7b5aa067220ed0c420190d` (version-aware planning), `6bd6e93a4ef8cd1f43ca8a04a0eb0c31ef1c3676` (UI version metadata), `27fec1c16742a63b45da14a34470e90b1f3a6c7d` (stored version activation), `26883c4c700c6cc19081a41bf46598a02214e13a` (reuse stored version in UI), `9a166c0ac389d5c8b30b7b1df81c4947228e781d` (update planning test), `e0e40973c952365e5d45c41d205e0f8ae600b87a` (stored version activation test), `211e8526df5ed53966e00d74c2eed28a42fd39fa` (rollback/uninstall UI).
+- Actions run #370 (`44284848217`) for the initial catalog manager UI passed native ABI, backend registry, JVM tests, ARM64 APK and artifact upload. Later version lifecycle commits require run #380 (`44285264320`) verification.
+- Component payloads remain inert; no Wine/Box64/FEX process, Vulkan ICD activation, ReShade injection or frame-generation provider is active yet.
