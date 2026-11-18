@@ -295,22 +295,12 @@ class NgrRecompilerPickerActivity : Activity() {
                     magic == listOf(0x40, 0x12, 0x37, 0x80)
                 if (isN64Rom) return@use NgrRecompilerCatalog.SystemId.N64_ROM
             }
-            if (offset >= 4) {
-                val magicText = String(header, 0, 4, Charsets.US_ASCII)
-                if (magicText == "XEX2" || magicText == "CON " ||
-                    magicText == "LIVE" || magicText == "PIRS") {
-                    return@use NgrRecompilerCatalog.SystemId.XBOX_360
-                }
+            if (Xbox360InputProbe.detect(header) != null) {
+                NgrLogger.info("recompiler.detect", "Xbox 360 header detected: ${Xbox360InputProbe.detect(header)}")
+                return@use NgrRecompilerCatalog.SystemId.XBOX_360
             }
             if (extension in setOf("xex", "con", "live", "pirs")) {
-                NgrLogger.info("recompiler.detect", "Xbox 360 extension accepted for header validation: $name")
-                if (offset >= 4) {
-                    val magicText = String(header, 0, 4, Charsets.US_ASCII)
-                    if (magicText == "XEX2" || magicText == "CON " ||
-                        magicText == "LIVE" || magicText == "PIRS") {
-                        return@use NgrRecompilerCatalog.SystemId.XBOX_360
-                    }
-                }
+                NgrLogger.warn("recompiler.detect", "Xbox 360 extension with unrecognized header: $name")
             }
             if (offset < 20 || header[0] != 0x7f.toByte() ||
                 header[1] != 'E'.code.toByte() || header[2] != 'L'.code.toByte() ||
