@@ -36,6 +36,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var devices: TextView
     private lateinit var inputManager: InputManager
     private lateinit var packageManager: NgrPackPackageManager
+    private lateinit var shortcutStore: NgrGameShortcutStore
+    private lateinit var shortcutStatus: TextView
+    private lateinit var shortcutList: LinearLayout
     private lateinit var profileStore: NgrEnvironmentProfileStore
     private lateinit var prefixManager: NgrWinePrefixManager
     private lateinit var prefixStatus: TextView
@@ -64,6 +67,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("app", "MainActivity.onCreate")
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
+        shortcutStore = NgrGameShortcutStore(File(filesDir, "ngr-runtime"))
         profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
         prefixManager = NgrWinePrefixManager(File(filesDir, "ngr-runtime"))
 
@@ -146,6 +150,20 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(packageStatus)
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
+
+        addSection(root, "GAME SHORTCUTS", "Per-game launch settings")
+        val shortcutCard = createCard()
+        shortcutCard.addView(TextView(this).apply {
+            text = "Create per-game launch profiles with a selected executable, environment profile and arguments. Process launch and Android home-screen pinning are separate upcoming integrations."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        shortcutCard.addView(primaryButton("＋  Add game shortcut") { showCreateGameShortcutDialog() })
+        shortcutStatus = mutedText()
+        shortcutCard.addView(shortcutStatus)
+        shortcutList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        shortcutCard.addView(shortcutList)
+        root.addView(shortcutCard, sectionParams())
 
         addSection(root, "COMPATIBILITY", "Runtime environments")
         val runtimeCard = createCard()
@@ -324,6 +342,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         refreshPackages()
         refreshProfiles()
         refreshPrefixes()
+        refreshShortcuts()
     }
 
     override fun onPause() {
@@ -1054,6 +1073,159 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("package.import", "SAF stream copied; bytes=$copied")
     }
 
+
+    private fun showCreateGameShortcutDialog() {
+        val packages = packageManager.listInstalled().packages
+        val profiles = profileStore.loadAll().profiles
+        if (packages.isEmpty()) {
+            Toast.makeText(this, "Import a game package first", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (profiles.isEmpty()) {
+            Toast.makeText(this, "Create an environment profile first", Toast.LENGTH_LONG).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Select installed game")
+            .setItems(packages.map { "${it.displayName} · ${it.sourceArchitecture ?: "unknown"}" }.toTypedArray()) { _, packageIndex ->
+                val selectedPackage = packages[packageIndex]
+                AlertDialog.Builder(this)
+                    .setTitle("Select environment profile")
+                    .setItems(profiles.map { "${it.displayName} · ${it.containerMode}" }.toTypedArray()) { _, profileIndex ->
+                        val selectedProfile = profiles[profileIndex]
+                        val shortcut = NgrGameShortcut(
+                            shortcutId = "game-" + UUID.randomUUID().toString().take(8),
+                            title = selectedPackage.displayName,
+                            packageId = selectedPackage.packageId,
+                            executablePath = selectedPackage.entryPoint,
+                            environmentProfileId = selectedProfile.profileId
+                        )
+                        val result = shortcutStore.save(shortcut)
+                        if (!result.success) {
+                            Toast.makeText(this, "Shortcut creation failed: ${result.error}", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this, "Game shortcut created", Toast.LENGTH_SHORT).show()
+                            refreshShortcuts()
+                            showEditGameShortcutDialog(shortcut)
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun refreshShortcuts() {
+        if (!::shortcutStore.isInitialized || !::shortcutList.isInitialized) return
+        val loaded = shortcutStore.loadAll()
+        shortcutStatus.text = "${loaded.shortcuts.size} shortcut(s) · metadata only; launch backend is not connected"
+        loaded.errors.forEach { NgrLogger.warn("game.shortcut", it) }
+        shortcutList.removeAllViews()
+        if (loaded.shortcuts.isEmpty()) {
+            shortcutList.addView(TextView(this).apply {
+                text = "No game shortcuts yet"
+                textSize = 12f
+                setTextColor(Color.rgb(143, 155, 174))
+                setPadding(0, dp(8), 0, dp(8))
+            })
+        }
+        loaded.shortcuts.forEach { shortcut ->
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, dp(10), 0, dp(10))
+            }
+            item.addView(TextView(this).apply {
+                text = "${shortcut.title}\n${shortcut.executablePath}\nProfile: ${shortcut.environmentProfileId} · ${shortcut.launchMode}"
+                textSize = 13f
+                setTextColor(Color.rgb(196, 207, 222))
+            })
+            val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            actions.addView(secondaryButton("Launch settings") { showEditGameShortcutDialog(shortcut) },
+                LinearLayout.LayoutParams(0, dp(44), 1f).apply { rightMargin = dp(5) })
+            actions.addView(secondaryButton("Delete") {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Delete game shortcut?")
+                    .setMessage(shortcut.title)
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete") { _, _ ->
+                        val result = shortcutStore.delete(shortcut.shortcutId)
+                        if (!result.success) Toast.makeText(this@MainActivity, result.error, Toast.LENGTH_LONG).show()
+                        refreshShortcuts()
+                    }.show()
+            }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { leftMargin = dp(5) })
+            item.addView(actions)
+            shortcutList.addView(item)
+        }
+    }
+
+    private fun showEditGameShortcutDialog(shortcut: NgrGameShortcut) {
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(8), dp(24), 0) }
+        fun field(label: String, value: String, multiline: Boolean = false): EditText {
+            form.addView(TextView(this).apply { text = label; textSize = 12f; setTextColor(Color.rgb(163, 174, 191)) })
+            return EditText(this).apply {
+                setText(value)
+                if (multiline) { minLines = 2; maxLines = 5; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
+                else setSingleLine(true)
+                form.addView(this)
+            }
+        }
+        val title = field("Shortcut title", shortcut.title)
+        val executable = field("Package-relative executable path", shortcut.executablePath)
+        val workingDirectory = field("Working directory (optional)", shortcut.workingDirectory.orEmpty())
+        val arguments = field("Launch arguments (one per line)", shortcut.arguments.joinToString("\n"), true)
+        val profile = field("Environment profile ID", shortcut.environmentProfileId)
+        val environment = field("Per-game environment overrides (KEY=VALUE)", shortcut.environmentOverrides.toSortedMap().entries.joinToString("\n") { "${it.key}=${it.value}" }, true)
+        val modes = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val modeButtons = NgrGameShortcut.LaunchMode.values().associateWith { mode ->
+            RadioButton(this@MainActivity).apply {
+                id = View.generateViewId()
+                text = mode.name.replace('_', ' ')
+                isChecked = mode == shortcut.launchMode
+                modes.addView(this)
+            }
+        }
+        form.addView(TextView(this).apply { text = "Execution mode"; textSize = 12f })
+        form.addView(modes)
+        val scroll = ScrollView(this).apply { addView(form) }
+        AlertDialog.Builder(this)
+            .setTitle("Launch settings")
+            .setView(scroll)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ ->
+                try {
+                    val env = linkedMapOf<String, String>()
+                    environment.text.toString().lineSequence().forEach { line ->
+                        val value = line.trim()
+                        if (value.isEmpty()) return@forEach
+                        val split = value.indexOf('=')
+                        require(split > 0) { "Environment overrides must use KEY=VALUE" }
+                        val key = value.substring(0, split).trim()
+                        require(!env.containsKey(key)) { "Duplicate environment override: $key" }
+                        env[key] = value.substring(split + 1)
+                    }
+                    val selectedMode = modeButtons.entries.firstOrNull { it.value.isChecked }?.key
+                        ?: NgrGameShortcut.LaunchMode.WINE_COMPATIBILITY
+                    val updated = shortcut.copy(
+                        title = title.text.toString().trim(),
+                        executablePath = executable.text.toString().trim(),
+                        workingDirectory = workingDirectory.text.toString().trim().ifEmpty { null },
+                        arguments = arguments.text.toString().lineSequence().filter { it.isNotBlank() }.toList(),
+                        environmentProfileId = profile.text.toString().trim(),
+                        environmentOverrides = env,
+                        launchMode = selectedMode
+                    )
+                    val result = shortcutStore.save(updated)
+                    if (!result.success) throw IllegalArgumentException(result.error ?: "Shortcut validation failed")
+                    refreshShortcuts()
+                    Toast.makeText(this, "Launch settings saved. Runtime launch is not yet connected.", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Settings not saved: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            .show()
+    }
+
     private fun refreshPackages() {
         packageWorker.execute {
             NgrLogger.info("package.inventory", "Scanning installed packages")
@@ -1102,6 +1274,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 if (inventory.errors.isNotEmpty()) {
                     packageStatus.text = inventory.errors.joinToString("\n")
                 }
+                refreshShortcuts()
             }
         }
     }
