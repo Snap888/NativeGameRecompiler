@@ -228,3 +228,13 @@ Mark complete only when evidence exists.
 - [ ] Runtime diagnostics, process/session manager, logs, crash reporting, profile export/import and safe rollback.
 - [ ] Release-pinned SPDX/SBOM/provenance review for every runtime binary and transitive dependency.
 - [ ] Completion audit and target-device test matrix before starting static recompilation.
+
+
+## P0 — Deterministic launch configuration (2026-11-18)
+- [x] Centralize runtime-owned environment variable protection across profile and per-game shortcut validation (`LD_*`, `NGR_*`, PATH/HOME/PREFIX, Vulkan ICD/layer paths, Adrenotools, Wine prefix/loader and FEX rootfs control variables).
+- [x] Resolve profile defaults + package-specific override + shortcut override in deterministic precedence; validate profile identity and launch mode requirements.
+- [x] Resolve per-game Wine/DXVK/VKD3D/Turnip/display choices and reject unverified Wayland combinations.
+- [x] Add in-app resolved-configuration preview; it explicitly does not start a process.
+- [ ] Verify resolver JVM tests and ARM64 build in latest Actions run.
+- [ ] Add component catalog selection and installed-version readiness to preview; never infer availability from IDs alone.
+- [ ] Implement Android pinned shortcuts and safe icon import.
