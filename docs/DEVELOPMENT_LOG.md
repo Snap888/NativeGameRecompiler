@@ -771,3 +771,28 @@ This is the durable project memory. Update it in every development session.
 - Extracted APK SHA-256: 9859793a9fa1068fa6d03cf325b932eba27353667975c9d3aafe0ff22cedf5e0.
 - Commits after this source/test commit only update development/next-action documentation. The APK therefore contains all large-import source changes and the new limits consistency test.
 - Physical-device retest of the same folder is still required; CI does not prove available storage or SAF-provider behavior on the user's phone.
+
+
+## Session 2026-11-18 — Wine prefix lifecycle foundation
+
+### Implemented
+- Added `NgrWinePrefixManager` under app-private `wine-prefixes/` and `wine-prefix-backups/`.
+- Prefix creation produces a `PREPARED` empty prefix only. It is never marked runnable merely because the directory exists.
+- `READY` requires regular `system.reg`, `user.reg`, `userdef.reg` plus real `drive_c/` and `dosdevices/` directories.
+- Clone and backup are allowed only for validated READY prefixes. Restore verifies a deterministic SHA-256 tree digest before promotion.
+- Clone/backup/restore use private staging directories and atomic directory promotion.
+- Reset and removal are constrained to managed prefix roots. Symlinks, special files, unsafe IDs, oversized trees and out-of-root paths are rejected.
+- Added JVM tests for prepared-vs-ready state, clone/backup/restore, duplicate IDs, reset/removal and symlink rejection.
+- Added a NGR-styled prefix section in the Android UI with prepare, clone, private backup, reset and delete actions.
+
+### Explicit limitations
+- No Wine binary is integrated and no `wineboot` initialization is performed.
+- Backups are app-private directory snapshots, not portable ZIP exports.
+- Prefixes are not connected to environment profiles or game launch yet.
+- No process is launched from prefix contents; this manager only stores and validates files.
+- READY means structural marker validation, not proof that the registry is semantically healthy or compatible with a particular Wine build.
+
+### Validation
+- Source and tests committed to `main`; CI result is pending inspection.
+- No APK is claimed for this stage until JVM tests, ARM64 build and artifact upload are confirmed.
+- Device-side lifecycle testing remains outstanding.
