@@ -203,3 +203,27 @@ Mark complete only when evidence exists.
 - [ ] Verify new registry native tests and complete Android CI.
 - [ ] Implement lifecycle state machine with explicit stop-completion/join contract and tests.
 - [ ] Design signed/provenance-verified library policy before considering dynamic loading; NGRPACK game payloads remain data-only.
+
+
+## P0 — Game shortcut and launch configuration foundation (2026-11-18)
+- [x] Add validated per-game shortcut metadata with package/profile identity, guest executable/working directory, argument vector, launch mode, per-game environment overrides, icon asset reference and launch timestamps.
+- [x] Add bounded atomic app-private shortcut store; reject symlinks, unsafe IDs/paths, protected environment variables, unknown schema fields and corrupt metadata.
+- [ ] Verify shortcut store JVM tests and ARM64 APK in Actions run #344 (44280634973).
+- [ ] Integrate shortcut CRUD and executable/icon selection into the game library UI.
+- [ ] Add Android pinned-shortcut adapter with immutable launch identity and no host-path leakage.
+- [ ] Add per-game launch settings editor and deterministic profile/container override resolution.
+- [ ] Add launcher/session API; do not claim launch capability until process start/stop and exit reporting work.
+
+## P1 — Complete runtime management layer before static recompilation
+- [ ] Persisted game library and shortcut UI, custom icon/cover import, executable chooser and package-to-shortcut binding.
+- [ ] Full container manager and Wine prefix initialization through selected Wine runtime (wineboot), repair/reset/clone/backup/restore.
+- [ ] Wine/Proton, Box64/Box86, FEXCore/FEX UnixLibs/WOWBox64 managers, preset editors and architecture routing.
+- [ ] DXVK/VKD3D/D8VK/D7VK configuration and per-game graphics profiles.
+- [ ] Driver catalog/import/download/install/rollback/remove with isolated Turnip provider activation and Vulkan ICD verification.
+- [ ] ReShade-compatible vkBasalt effects integration; separate verified Wine ReShade DLL injection research, shader/preset/texture management.
+- [ ] Frame-generation/upscaling provider API, Vulkan capture stages, pacing/latency settings and real provider validation; keep UI gated until provider exists.
+- [ ] Controller assignment, mapping editor, touch layouts, dead zones/curves, rumble and per-game profiles.
+- [ ] Audio device/backend controls, display/window/resolution/DPI settings, X11 first; Wayland gated.
+- [ ] Runtime diagnostics, process/session manager, logs, crash reporting, profile export/import and safe rollback.
+- [ ] Release-pinned SPDX/SBOM/provenance review for every runtime binary and transitive dependency.
+- [ ] Completion audit and target-device test matrix before starting static recompilation.
