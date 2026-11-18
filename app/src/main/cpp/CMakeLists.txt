@@ -239,4 +239,7 @@ add_subdirectory(waylandcomp)
 add_subdirectory(proot)
 
 # Native Game Recompiler runtime is an independent execution backend.
+# N64Recomp core is compiled for the Android ABI and linked into the trusted NGR runtime.
+# EXCLUDE_FROM_ALL keeps upstream command-line tools out of the APK build.
+add_subdirectory(../../../../native/recompilers/N64Recomp n64recomp EXCLUDE_FROM_ALL)
 add_subdirectory(../../../../native/ngr-runtime ngr-runtime-build)
