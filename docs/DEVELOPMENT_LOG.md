@@ -1019,3 +1019,20 @@ This is the durable project memory. Update it in every development session.
 - Commits: `3ceb604d73b0e4ba6c7b5aa067220ed0c420190d` (version-aware planning), `6bd6e93a4ef8cd1f43ca8a04a0eb0c31ef1c3676` (UI version metadata), `27fec1c16742a63b45da14a34470e90b1f3a6c7d` (stored version activation), `26883c4c700c6cc19081a41bf46598a02214e13a` (reuse stored version in UI), `9a166c0ac389d5c8b30b7b1df81c4947228e781d` (update planning test), `e0e40973c952365e5d45c41d205e0f8ae600b87a` (stored version activation test), `211e8526df5ed53966e00d74c2eed28a42fd39fa` (rollback/uninstall UI).
 - Actions run #370 (`44284848217`) for the initial catalog manager UI passed native ABI, backend registry, JVM tests, ARM64 APK and artifact upload. Later version lifecycle commits require run #380 (`44285264320`) verification.
 - Component payloads remain inert; no Wine/Box64/FEX process, Vulkan ICD activation, ReShade injection or frame-generation provider is active yet.
+
+
+## Session continuation 2026-11-18 — Controller mapping profiles
+
+### Implementation
+- Added `NgrControllerProfile` with Android device descriptor/name, optional game package assignment, action-to-key/axis/hat bindings, duplicate physical binding checks, dead zones, sensitivity, axis inversion, stick curves, trigger threshold, vibration and touch-layout tuning.
+- Added bounded atomic `NgrControllerProfileStore` with strict JSON schema, symlink/path checks and corrupt-profile reporting.
+- Added JVM tests for round-trip persistence, invalid/duplicate bindings, invalid tuning ranges and unknown schema handling.
+- Added CONTROLLERS UI: detects connected Android gamepads/joysticks, creates a profile for a selected device, edits binding map and tuning, shows connected/disconnected state and deletes profiles.
+- Binding text format is `ACTION=KEY:code`, `ACTION=AXIS:code:+1`, or `ACTION=HAT:code:-1`. This is manual configuration, not an input-capture wizard.
+- The UI explicitly warns that saved mappings do not affect a running game until the session input adapter is connected.
+- Commits: `185cfa719d2443cbfd6ea49dda418a314248dede` (controller model), `3fa2ced8c518c160e8f2cf276e3869b23ac5d7a6` (store), `c4225eb7fd58faff2e2bf13812e1d82ddd443304` (tests), `50a887c3b6d158bfdfbadd787ebf0866338cea14` (UI), `bd6a01b3d6e750560f4468ffcd6f08c172e923e6` (explicit view insertion).
+
+### Validation status
+- Controller model/store/tests/UI commits are newer than the last verified CI and require a fresh run.
+- Run #380 (`44285264320`) is still verifying the prior component version lifecycle stage.
+- No physical controller remapping or game-session input test has been performed.
