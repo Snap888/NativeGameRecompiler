@@ -43,6 +43,8 @@ jobs:
           cp -a native/ngr-runtime /tmp/ngr-preserve/ngr-runtime
           cp -a docs /tmp/ngr-preserve/docs
           cp -a schemas /tmp/ngr-preserve/schemas
+          cp LICENSE /tmp/ngr-preserve/LICENSE-MIT
+          cp README.md /tmp/ngr-preserve/README.md
           cp .github/workflows/android-ci.yml /tmp/ngr-preserve/ngr-android-ci.yml
 
       - name: Import WinNative application, runtime, assets and modules
@@ -59,6 +61,8 @@ jobs:
           cp -a /tmp/ngr-preserve/ngr-runtime native/ngr-runtime
           mkdir -p docs/ngr
           cp -a /tmp/ngr-preserve/docs/. docs/ngr/
+          cp /tmp/ngr-preserve/LICENSE-MIT docs/ngr/LICENSE-MIT
+          cp /tmp/ngr-preserve/README.md docs/ngr/README.md
           mkdir -p schemas/ngr
           cp -a /tmp/ngr-preserve/schemas/. schemas/ngr/
           mkdir -p .github/workflows
@@ -92,6 +96,22 @@ jobs:
           if "org.json:json" not in source:
               source = source.replace(dependencies, dependencies + "\n    testImplementation 'org.json:json:20240303'")
           gradle.write_text(source)
+
+          license_doc = Path("docs/ngr/LICENSING_AND_PROVENANCE.md")
+          if license_doc.exists():
+              source = license_doc.read_text()
+              source = source.replace("| NativeGameRecompiler | MIT (root LICENSE) | Existing host/runtime source remains MIT. |",
+                  "| NativeGameRecompiler | Originally MIT; combined distribution now GPL-3.0 | Original MIT notice is preserved in docs/ngr/LICENSE-MIT; NGR code is included in the combined GPL-3.0 work. |")
+              source += "\\n\\n## Combined-project license transition\\n\\nThe NGR source was originally published under MIT. The combined NativeGameRecompiler distribution now uses GPL-3.0 to permit direct integration of WinNative. The original MIT license text is retained at docs/ngr/LICENSE-MIT; WinNative and third-party notices remain in the repository. This is a source integration record, not legal advice.\\n"
+              license_doc.write_text(source)
+
+          plan = Path("docs/ngr/WINNATIVE_INTEGRATION_PLAN.md")
+          if plan.exists():
+              source = plan.read_text()
+              source = source.replace("NGR must not become a thin fork of WinNative. It owns game identity, package/library management, compiler pipelines, execution selection, diagnostics and per-game profiles. The compatibility runtime is an isolated subsystem behind NGR interfaces.",
+                  "NGR adopts the WinNative Android host/runtime as its compatibility foundation. NGR-specific package identity, recompiler pipelines, execution selection, diagnostics and static-backend interfaces remain distinct modules integrated into that host.")
+              source += "\\n\\n## Source integration decision\\n\\nOn 2026-11-18 the project direction changed to direct integration of WinNative at pinned commit 99c3305d163780de5ca39b493aefcde436acad5c. The WinNative app is the Android host; NGR's Kotlin package manager, schemas, tests and C++20 runtime are retained as a distinct feature/backend. Existing WinNative component catalog, downloader, container settings, Wine/Proton launcher, Box64/FEX presets, driver manager, vkBasalt/ReShade-effect configuration, Frame Generation, input/controller pipeline, X11/Wayland compositor and shortcuts are reused as the source of truth. No parallel replacement managers should be developed.\\n"
+              plan.write_text(source)
           PY
 
       - name: Preserve NGR documentation and identify combined project
