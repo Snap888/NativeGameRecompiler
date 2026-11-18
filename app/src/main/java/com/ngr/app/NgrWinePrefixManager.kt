@@ -131,6 +131,7 @@ class NgrWinePrefixManager(private val privateRoot: File) {
             val meta = JSONObject(marker.readText(Charsets.UTF_8))
             require(meta.optInt("schemaVersion") == 1 && meta.optString("backupId") == backupId) { "Unsupported or mismatched backup metadata" }
             val expected = meta.getString("treeSha256")
+            scanTree(backup.toPath())
             require(hasWineMarkers(backup) && treeDigest(backup.toPath(), BACKUP_MARKER) == expected) { "Backup integrity check failed" }
             val targetRoot = prefixesRoot()
             val target = File(targetRoot, targetId)
@@ -217,16 +218,21 @@ class NgrWinePrefixManager(private val privateRoot: File) {
 
     private fun scanTree(root: Path, includeMetadata: Boolean = true): Pair<Int, Long> {
         var files = 0
+        var entries = 0
         var bytes = 0L
         Files.walkFileTree(root, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
                 require(!attrs.isSymbolicLink && !Files.isSymbolicLink(dir)) { "Symbolic link found in prefix" }
+                entries++
+                require(entries <= MAX_FILES) { "Prefix exceeds entry-count safety limit" }
                 return FileVisitResult.CONTINUE
             }
             override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
                 require(attrs.isRegularFile && !attrs.isSymbolicLink && !Files.isSymbolicLink(file)) {
                     "Non-regular file found in prefix"
                 }
+                entries++
+                require(entries <= MAX_FILES) { "Prefix exceeds entry-count safety limit" }
                 if (!includeMetadata && file.fileName.toString() == PREFIX_MARKER) return FileVisitResult.CONTINUE
                 files++
                 bytes = Math.addExact(bytes, attrs.size())
