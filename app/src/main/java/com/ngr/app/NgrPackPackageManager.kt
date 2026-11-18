@@ -177,9 +177,14 @@ class NgrPackPackageManager(
         if (errors.isNotEmpty()) return OperationResult(false, "Package storage recovery requires attention", errors = errors)
         val staging = stagingDirectory.toPath().toAbsolutePath().normalize()
         val stagingParent = root.resolve(".folder-staging").toAbsolutePath().normalize()
-        if (staging.parent != stagingParent || Files.isSymbolicLink(staging) ||
-            !Files.isDirectory(staging, LinkOption.NOFOLLOW_LINKS))
-            return OperationResult(false, "Folder import staging path is invalid", errors = listOf("Staging must be a real direct child of the private folder-staging directory"))
+        if (staging.parent != stagingParent || Files.isSymbolicLink(stagingParent) ||
+            !Files.isDirectory(stagingParent, LinkOption.NOFOLLOW_LINKS) ||
+            !staging.fileName.toString().matches(Regex("^[0-9a-fA-F-]{36}$")) ||
+            Files.isSymbolicLink(staging) || !Files.isDirectory(staging, LinkOption.NOFOLLOW_LINKS))
+            return OperationResult(false, "Folder import staging path is invalid", errors = listOf("Staging must be a UUID-named real directory directly inside the private folder-staging directory"))
+        if (runCatching { stagingParent.toRealPath() }.getOrNull() != stagingParent ||
+            runCatching { staging.toRealPath().parent }.getOrNull() != stagingParent)
+            return OperationResult(false, "Folder import staging path is invalid", errors = listOf("Staging path resolves outside its private parent"))
 
         try {
             val info = readPackageInfo(staging.toFile(), verifyHashes = true)
