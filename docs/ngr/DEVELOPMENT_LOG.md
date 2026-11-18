@@ -1191,6 +1191,12 @@ This is the durable project memory. Update it in every development session.
 
 
 ## Session 2026-11-19 — Xbox 360 XDroid360 backend audit and source pin
+- [x] Diagnosed the WinNative import CI failure: two import jobs raced while pushing generated donor commits, causing a non-fast-forward rejection. Serialized import jobs and added fetch/rebase before push.
+- [x] Fixed a Python tuple typo in the Gradle source-root patch so the commented source-root entry is actually matched and activated.
+- [x] Added Xbox 360 XEX2 and STFS (CON/LIVE/PIRS) header detection in the unified picker; recognized files are explicitly reported as detected but not launchable without a validated title profile/runtime.
+- [x] Added a pure Kotlin Xbox 360 input probe and unit tests for XEX2, all three STFS package types, short headers and unknown headers.
+- [ ] Verify the latest Android CI after the detector and test additions; the previous green APK build predates these latest changes.
+
 - [x] Inspected failed Android CI run [44399528476](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44399528476): Kotlin compilation failed at N64 ROM/ELF magic validation because a Byte was compared with an Int.
 - [x] Fixed the ELF magic byte comparison (`'F'.code.toByte()`) in `NgrRecompilerPickerActivity.kt`.
 - [x] Updated both Android workflows to validate the pinned XDroid360 source; updated the WinNative import workflow to restore the XDroid360 .gitmodules entry after donor import.
