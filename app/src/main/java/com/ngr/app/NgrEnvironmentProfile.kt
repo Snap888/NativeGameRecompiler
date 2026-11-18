@@ -12,6 +12,8 @@ data class NgrEnvironmentProfile(
     val displayName: String,
     val containerMode: ContainerMode,
     val wineLayerId: String? = null,
+    /** Managed Wine prefix ID; null means no prefix has been assigned. */
+    val winePrefixId: String? = null,
     val box64ComponentId: String? = null,
     val box86ComponentId: String? = null,
     val cpuTranslator: CpuTranslator,
@@ -78,6 +80,7 @@ data class NgrEnvironmentProfile(
         }
 
         if (wineLayerId != null && !wineLayerId.matches(ID_PATTERN)) errors += "wineLayerId is invalid"
+        if (winePrefixId != null && !winePrefixId.matches(ID_PATTERN)) errors += "winePrefixId is invalid"
         listOf(
             "box64ComponentId" to box64ComponentId,
             "box86ComponentId" to box86ComponentId,
@@ -165,7 +168,7 @@ data class NgrEnvironmentProfile(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 1
+        const val CURRENT_SCHEMA_VERSION = 2
         private val ID_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
         private val VERSION_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._+-]{0,127}$")
         private val ENV_KEY_PATTERN = Regex("^[A-Z_][A-Z0-9_]{0,127}$")
