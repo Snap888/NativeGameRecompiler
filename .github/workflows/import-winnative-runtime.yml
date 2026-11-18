@@ -165,6 +165,8 @@ jobs:
         run: |
           git lfs pull
           git submodule update --init --recursive
+          test -f native/recompilers/N64Recomp/include/recompiler/context.h
+          git -C native/recompilers/N64Recomp rev-parse HEAD
 
       - name: Install Rust Android target for WinNative Steam native client
         run: |
