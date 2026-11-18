@@ -6,6 +6,10 @@ import android.content.Intent
 import android.provider.OpenableColumns
 import android.net.Uri
 import android.os.Bundle
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
 import android.view.InputDevice
 import android.view.View
 import android.text.InputType
@@ -59,61 +63,228 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
         profileStore = NgrEnvironmentProfileStore(File(filesDir, "ngr-runtime"))
 
+        window.statusBarColor = Color.rgb(15, 18, 24)
+        window.navigationBarColor = Color.rgb(15, 18, 24)
+        window.decorView.systemUiVisibility = 0
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(28, 32, 28, 24)
+            setPadding(dp(20), dp(24), dp(20), dp(28))
+            setBackgroundColor(Color.rgb(15, 18, 24))
         }
-        root.addView(TextView(this).apply { text = "Native Game Recompiler"; textSize = 24f })
-        status = TextView(this).apply { textSize = 14f }
-        root.addView(status)
-        root.addView(TextView(this).apply { text = "\nVulkan devices"; textSize = 18f })
-        NgrLogger.info("vulkan", "Starting Vulkan physical-device enumeration")
-        val vulkanReport = nativeVulkanProbe()
-        NgrLogger.info("vulkan", "Vulkan probe completed; reportChars=${vulkanReport.length}")
-        root.addView(TextView(this).apply { text = vulkanReport; textSize = 13f })
-        root.addView(TextView(this).apply { text = "\nRuntime capabilities"; textSize = 18f })
-        root.addView(TextView(this).apply { text = nativeCapabilityReport(); textSize = 12f })
-        root.addView(TextView(this).apply { text = "\nInput devices"; textSize = 18f })
-        devices = TextView(this).apply { textSize = 14f }
-        root.addView(devices)
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setBackgroundColor(Color.rgb(15, 18, 24))
+            addView(root)
+        }
+        val brandRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val brand = TextView(this).apply {
+            text = "NGR"
+            textSize = 27f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif-black", Typeface.NORMAL)
+        }
+        val brandSub = TextView(this).apply {
+            text = "  NATIVE GAME RECOMPILER"
+            textSize = 10f
+            letterSpacing = 0.12f
+            setTextColor(Color.rgb(142, 154, 174))
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        brandRow.addView(brand)
+        brandRow.addView(brandSub)
+        root.addView(brandRow)
+        root.addView(TextView(this).apply {
+            text = "Your games. Your runtime. Your platform."
+            textSize = 13f
+            setTextColor(Color.rgb(151, 163, 182))
+            setPadding(0, dp(4), 0, dp(18))
+        })
 
-        root.addView(TextView(this).apply { text = "\nNGRPACK packages"; textSize = 18f })
-        root.addView(Button(this).apply {
-            text = "Import game folder"
-            setOnClickListener { chooseGameFolder() }
+        val hero = createCard()
+        hero.addView(TextView(this).apply {
+            text = "GAME LIBRARY"
+            textSize = 10f
+            letterSpacing = 0.16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.rgb(105, 166, 255))
         })
-        root.addView(Button(this).apply {
-            text = "Import ordinary game ZIP"
-            setOnClickListener { chooseGameZip() }
+        hero.addView(TextView(this).apply {
+            text = "Ready to build\nyour game space?"
+            textSize = 25f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(8), 0, dp(5))
         })
-        root.addView(Button(this).apply {
-            text = "Import / Update NGRPACK"
-            setOnClickListener { choosePackageArchive() }
+        hero.addView(TextView(this).apply {
+            text = "Import a Windows or Linux game folder, ZIP, or an existing NGR package."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
         })
-        packageStatus = TextView(this).apply { textSize = 12f }
+        val importActions = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(14), 0, 0)
+        }
+        importActions.addView(primaryButton("＋  Import game folder") { chooseGameFolder() })
+        importActions.addView(secondaryButton("Import game ZIP") { chooseGameZip() })
+        importActions.addView(secondaryButton("Import / update NGRPACK") { choosePackageArchive() })
+        hero.addView(importActions)
+        root.addView(hero, sectionParams())
+
+        addSection(root, "LIBRARY", "Installed games")
+        packageStatus = mutedText()
         root.addView(packageStatus)
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
 
-        root.addView(TextView(this).apply { text = "\nWindows runtime environments"; textSize = 18f })
-        root.addView(Button(this).apply {
-            text = "Create environment profile"
-            setOnClickListener { showCreateEnvironmentProfileDialog() }
+        addSection(root, "COMPATIBILITY", "Runtime environments")
+        val runtimeCard = createCard()
+        runtimeCard.addView(TextView(this).apply {
+            text = "Configure Wine / Proton layers, CPU translation and graphics providers in reusable profiles."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
         })
-        profileStatus = TextView(this).apply { textSize = 12f }
-        root.addView(profileStatus)
+        runtimeCard.addView(primaryButton("＋  Create environment profile") { showCreateEnvironmentProfileDialog() })
+        profileStatus = mutedText()
+        runtimeCard.addView(profileStatus)
         profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(profileList)
+        runtimeCard.addView(profileList)
+        root.addView(runtimeCard, sectionParams())
 
-        root.addView(TextView(this).apply { text = "\nDiagnostics"; textSize = 18f })
-        root.addView(Button(this).apply { text = "View runtime log"; setOnClickListener { showLogs() } })
-        root.addView(Button(this).apply { text = "Save log to storage"; setOnClickListener { saveLogs() } })
-
-        setContentView(ScrollView(this).apply {
-            isFillViewport = true
-            addView(root)
+        addSection(root, "DEVICE", "Hardware & graphics")
+        val hardwareCard = createCard()
+        val gpuHeader = TextView(this).apply {
+            text = "VULKAN DEVICE"
+            textSize = 10f
+            letterSpacing = 0.14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.rgb(105, 166, 255))
+        }
+        hardwareCard.addView(gpuHeader)
+        NgrLogger.info("vulkan", "Starting Vulkan physical-device enumeration")
+        val vulkanReport = nativeVulkanProbe()
+        NgrLogger.info("vulkan", "Vulkan probe completed; reportChars=${vulkanReport.length}")
+        hardwareCard.addView(readoutText(vulkanReport))
+        val divider = View(this).apply { setBackgroundColor(Color.rgb(48, 57, 72)) }
+        hardwareCard.addView(divider, LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(12); bottomMargin = dp(12) })
+        hardwareCard.addView(TextView(this).apply {
+            text = "RUNTIME CAPABILITIES"
+            textSize = 10f
+            letterSpacing = 0.14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.rgb(105, 166, 255))
         })
+        hardwareCard.addView(readoutText(nativeCapabilityReport()))
+        hardwareCard.addView(TextView(this).apply {
+            text = "CONNECTED CONTROLLERS"
+            textSize = 10f
+            letterSpacing = 0.14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.rgb(105, 166, 255))
+            setPadding(0, dp(14), 0, dp(5))
+        })
+        devices = readoutText("Scanning input devices…")
+        hardwareCard.addView(devices)
+        root.addView(hardwareCard, sectionParams())
+
+        addSection(root, "SUPPORT", "Diagnostics")
+        val diagnostics = createCard()
+        diagnostics.addView(TextView(this).apply {
+            text = "Runtime logs help investigate device, Vulkan, import and package issues."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        val diagnosticActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        diagnosticActions.addView(secondaryButton("View log") { showLogs() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(6) })
+        diagnosticActions.addView(secondaryButton("Export log") { saveLogs() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(6) })
+        diagnostics.addView(diagnosticActions)
+        root.addView(diagnostics, sectionParams())
+
+        setContentView(scroll)
         refresh()
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun createCard(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(16), dp(16), dp(16), dp(16))
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(25, 30, 39))
+            cornerRadius = dp(18).toFloat()
+            setStroke(dp(1), Color.rgb(43, 52, 67))
+        }
+    }
+
+    private fun sectionParams() = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) }
+
+    private fun addSection(root: LinearLayout, eyebrow: String, heading: String) {
+        val label = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(2), dp(10), 0, dp(9))
+        }
+        label.addView(TextView(this).apply {
+            text = eyebrow
+            textSize = 9f
+            letterSpacing = 0.18f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.rgb(105, 166, 255))
+        })
+        label.addView(TextView(this).apply {
+            text = heading
+            textSize = 19f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(2), 0, 0)
+        })
+        root.addView(label)
+    }
+
+    private fun mutedText() = TextView(this).apply {
+        textSize = 12f
+        setTextColor(Color.rgb(143, 155, 174))
+        setPadding(0, dp(8), 0, dp(8))
+    }
+
+    private fun readoutText(value: String) = TextView(this).apply {
+        text = value
+        textSize = 12f
+        setTextColor(Color.rgb(196, 207, 222))
+        setPadding(0, dp(7), 0, 0)
+    }
+
+    private fun primaryButton(label: String, action: () -> Unit) = Button(this).apply {
+        text = label
+        isAllCaps = false
+        textSize = 14f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.WHITE)
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(39, 112, 220))
+            cornerRadius = dp(12).toFloat()
+        }
+        setPadding(dp(12), 0, dp(12), 0)
+        minHeight = dp(48)
+        setOnClickListener { action() }
+    }
+
+    private fun secondaryButton(label: String, action: () -> Unit) = Button(this).apply {
+        text = label
+        isAllCaps = false
+        textSize = 13f
+        setTextColor(Color.rgb(213, 222, 235))
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(35, 43, 56))
+            cornerRadius = dp(12).toFloat()
+            setStroke(dp(1), Color.rgb(57, 69, 88))
+        }
+        minHeight = dp(46)
+        setPadding(dp(10), 0, dp(10), 0)
+        setOnClickListener { action() }
     }
 
     override fun onResume() {
@@ -147,7 +318,6 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         devices.text = if (found.isEmpty()) "No gamepad detected" else found.joinToString("\n")
         NgrLogger.info("input", "Enumerated ${found.size} gamepad/joystick devices: ${found.joinToString("; ")}")
     }
-
     private fun showCreateEnvironmentProfileDialog() {
         val nameInput = EditText(this).apply {
             hint = "Profile name"
@@ -297,8 +467,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         val wayland = RadioButton(this).apply { id = View.generateViewId(); text = "Wayland"; isChecked = profile.displayBackend == NgrEnvironmentProfile.DisplayBackend.WAYLAND }
         displayGroup.addView(x11); displayGroup.addView(wayland)
         form.addView(TextView(this).apply { text = "Display backend"; textSize = 12f })
-        form.addView(displayGroup)
-        val graphicsGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        form.addView(displayGroup)        val graphicsGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         val systemVk = RadioButton(this).apply { id = View.generateViewId(); text = "System Vulkan"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.SYSTEM_VULKAN }
         val turnipVk = RadioButton(this).apply { id = View.generateViewId(); text = "Turnip"; isChecked = profile.graphicsProvider == NgrEnvironmentProfile.GraphicsProvider.TURNIP }
         graphicsGroup.addView(systemVk); graphicsGroup.addView(turnipVk)
@@ -447,8 +616,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 val destination = data?.data ?: return
                 runCatching {
                     val bytes = NgrLogger.recentText(2_500_000).toByteArray(Charsets.UTF_8)
-                    contentResolver.openOutputStream(destination)?.use { it.write(bytes) }
-                        ?: throw IllegalStateException("Unable to open destination")
+                    contentResolver.openOutputStream(destination)?.use { it.write(bytes) }                        ?: throw IllegalStateException("Unable to open destination")
                     Toast.makeText(this, "Log saved (${bytes.size} bytes)", Toast.LENGTH_SHORT).show()
                     NgrLogger.info("diagnostics", "Exported runtime log; bytes=${bytes.size}")
                 }.onFailure {
@@ -597,8 +765,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             } catch (e: Exception) {
                 NgrLogger.error("package.import", "Game folder import failed", e)
                 runOnUiThread {
-                    packageStatus.text = "Game folder import failed\n${e.message}"
-                    Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
+                    packageStatus.text = "Game folder import failed\n${e.message}"                    Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 if (!ownershipTransferred) {
@@ -747,8 +914,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private fun refreshPackages() {
         packageWorker.execute {
             NgrLogger.info("package.inventory", "Scanning installed packages")
-            val inventory = packageManager.listInstalled()
-            NgrLogger.info("package.inventory", "Inventory valid=${inventory.packages.size}; invalid=${inventory.invalidPackageIds.size}; errors=${inventory.errors.size}")
+            val inventory = packageManager.listInstalled()            NgrLogger.info("package.inventory", "Inventory valid=${inventory.packages.size}; invalid=${inventory.invalidPackageIds.size}; errors=${inventory.errors.size}")
             runOnUiThread {
                 packageList.removeAllViews()
                 if (inventory.packages.isEmpty()) {
