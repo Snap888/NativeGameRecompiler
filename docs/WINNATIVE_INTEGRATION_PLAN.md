@@ -225,3 +225,45 @@ Additional source mapping at donor commit `99c3305d163780de5ca39b493aefcde436aca
 - Select Box64 vs FEXCore/WOWBox64 from the verified Wine architecture and component compatibility, not from a free-form emulator string.
 - Probe the actual installed Wine and driver files before allowing Wayland.
 - Do not claim full ReShade injection support from the existing vkBasalt-based effect path.
+
+
+## Expanded pre-recompiler readiness scope — 2026-11-18
+
+The compatibility/game-management layer is a required milestone before static recompilation is promoted. Completion requires real implementation, tests, usable UI and runtime capability gates.
+
+### Game library and launch settings
+- Per-game shortcut records: package identity, managed icon/cover, guest executable, working directory, arguments, environment profile, execution mode, per-game overrides and launch history.
+- Android home-screen shortcut publication is a separate ShortcutManager adapter; no host filesystem paths in exported intents.
+- Launch editor: executable, arguments, profile/container, architecture, display/DPI, audio, input layout, graphics wrapper/driver, compatibility flags and environment variables.
+- Deterministic merge of protected runtime values, container defaults, profile settings and permitted game overrides. Never let users override PATH, loader paths, HOME, PREFIX or NGR-owned variables.
+- Launch preview must show resolved command/effective environment and redact sensitive values.
+
+### Runtime and compatibility
+- Container/rootfs manager, Wine prefix initialization through wineboot, repair/reset/clone/backup/restore, Wine/Proton version and architecture routing.
+- Box64/Box86, FEXCore/FEX UnixLibs and WOWBox64 managers, preset editors and per-game overrides.
+- DLL overrides, Windows version, registry/component settings, synchronization and compatibility fixes.
+- Session manager: process tree, start/stop, exit status, logs, crash reason and cleanup. Never report launch success before a process starts.
+
+### Graphics, drivers and effects
+- DXVK, VKD3D-Proton, D8VK/D7VK configuration and per-game graphics profiles.
+- System Vulkan and isolated Turnip/Adreno provider, driver catalog/import/download/install/rollback/remove and per-profile binding. Never replace Android system Vulkan.
+- ReShade-compatible effect subsystem: vkBasalt support as a distinct capability; separately audit Wine ReShade DLL injection. Include shader/effect catalogs, presets, textures, search paths and cache.
+- Catalog presence or a UI toggle is not proof of runtime activation; verify loaded modules/providers in a running session.
+
+### Frame generation and upscaling
+- Dedicated graphics-effects contract with Vulkan capture/present stages, synchronization, swapchain format/colour-space preservation and device capability checks.
+- Independent provider adapters for frame generation (WFG/LSFG/SnapFrame-style only after licensing/provenance review), pacing/latency/target multiplier/HUD controls and compatibility fallback.
+- Implement diagnostics/readback before enabling providers. No fabricated frame generation: capability stays unavailable until a real backend is integrated and device-validated.
+- Upscaling/sharpening and frame generation remain separate capabilities.
+
+### Input, controller, audio and display
+- Controller inventory/hotplug, assignment, per-game mapping profiles, touch layouts, mouse/keyboard emulation, dead zones, sensitivity, stick curves, trigger thresholds, rumble and import/export.
+- Audio backend/device, sample rate/latency/buffer and per-game volume/mute controls.
+- Resolution/aspect ratio/DPI/fullscreen/windowed/rotation/cursor/virtual desktop; X11 first, Wayland only for exact validated Wine/driver/compositor combinations.
+
+### Completion gate before static recompilation
+- Persisted schemas, migrations, tests, usable UI and safe rollback for management features.
+- Runtime controls connected to a real launcher/session or clearly marked configuration-only.
+- At least one legal Windows test executable launches through a verified Wine + CPU translator path on target hardware; graphics/audio/controller/suspend/resume/stop/logging are tested.
+- Each driver/effects/frame-generation capability is reported independently; unsupported choices are disabled with a reason.
+- Static recompilation remains a separate execution mode with no Wine dependency.
