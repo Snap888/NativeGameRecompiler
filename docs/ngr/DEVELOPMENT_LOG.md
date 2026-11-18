@@ -1187,3 +1187,4 @@ This is the durable project memory. Update it in every development session.
 - [ ] Verify latest Android CI, run format/detector tests and validate N64 ROM magic detection on device.
 - [ ] Implement an N64 ROM/decompilation project workflow (ROM + matching source/config/symbol metadata) before enabling ROM-to-native game generation.
 - [ ] Implement console and PC recompilers only through dedicated, legally sourced backend integrations; catalog entries remain unavailable meanwhile.
+- [x] Initialize the NGR logger from the actual launcher (`UnifiedActivity`); the previous initialization was only in the legacy NGR activity and did not cover the WinNative launcher flow.
