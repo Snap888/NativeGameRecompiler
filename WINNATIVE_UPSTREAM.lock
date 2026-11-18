@@ -1,0 +1,6 @@
+WinNative repository: https://github.com/Snap888/WinNative
+Imported source commit: 99c3305d163780de5ca39b493aefcde436acad5c
+License: GPL-3.0
+Import date: 2026-11-18
+NGR integration branch: integration/winnative-runtime-base
+NGR runtime remains separately identifiable under native/ngr-runtime and app/src/main/java/com/ngr/app.

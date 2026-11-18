@@ -1,0 +1,61 @@
+# Native Game Recompiler (NGR)
+
+Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
+
+> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. The Wine/Proton process launcher and static-recompilation backend are not implemented yet. Physical-device validation remains pending. NGR is not a general-purpose game recompiler.
+
+## Project direction
+
+- Android host application with Kotlin UI and a native C++20 runtime core.
+- ARM64 as the initial Android target.
+- Independent execution modes: Wine compatibility, static recompilation and native ARM64.
+- NGR Environment Manager foundation: versioned profiles, per-game overrides, component version pins, typed catalog, HTTPS/SHA-256 download, ZIP staging, atomic component store/rollback and dependency resolution.
+- Vulkan graphics-provider abstraction; system Vulkan loader first, optional isolated per-game Turnip integration later.
+- Touch controls and physical gamepad discovery.
+- Versioned NGRPACK package manifest with SHA-256 payload hashes.
+
+## Implemented foundation
+
+- Kotlin Activity + JNI bridge.
+- C++20 runtime information and Vulkan physical-device enumeration.
+- Android gamepad/joystick discovery.
+- Native capability registry with explicit available/planned status.
+- Strict Kotlin manifest validator: schema-aligned metadata, path safety, symlink/non-regular file rejection, complete payload inventory and SHA-256 checks.
+- Read-only NGRPACK ZIP inspector: ZIP Slip, Unix symlink/special-file, duplicate path, entry count, archive/manifest/payload size and compression-ratio checks.
+- Bounded NGRPACK extraction into app-private staging; streamed-byte limits and full post-extraction hash validation.
+- Package manager: atomic install/update, backup/rollback, interrupted-install recovery, inventory and removal.
+- Android UI: Document Picker import/update, installed package list and removal, including corrupt-package cleanup.
+- JVM regression tests for manifest validation, ZIP inspection, package installation/update/removal and recovery.
+- Versioned execution-backend ABI v1 C header contract, compiled as both C and C++; the runtime plugin loader and lifecycle are not yet implemented.
+- WinNative source audit and integration plan documented in `docs/WINNATIVE_INTEGRATION_PLAN.md`; no WinNative source/binary has been copied into NGR. Licensing/provenance inventory is in `docs/LICENSING_AND_PROVENANCE.md`.
+- GitHub Actions runs JVM tests and builds an arm64-v8a debug APK. Check the Actions page for the latest branch status; no APK is claimed for a commit until its complete CI run succeeds.
+- GitHub Actions workflow configured to run unit tests and build arm64-v8a debug APK.
+
+## Build
+
+Requirements: JDK 17, Android SDK, Android NDK 27.2.12479018, CMake 3.22.1, Gradle 8.9.
+
+```bash
+git clone https://github.com/Snap888/NativeGameRecompiler.git
+cd NativeGameRecompiler
+gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
+```
+
+CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/actions).
+
+## Project journal
+
+- [Development log](docs/DEVELOPMENT_LOG.md)
+- [Licensing and provenance](docs/LICENSING_AND_PROVENANCE.md)
+- [Next actions](docs/NEXT_ACTIONS.md)
+- [Continuation prompt for new chats](docs/CONTINUATION_PROMPT.md)
+- [Technical audit](docs/TECHNICAL_AUDIT.md)
+- [Technical specification](docs/TECHNICAL_SPEC.md)
+
+## Not implemented yet
+
+No backend plugin loader, static game recompiler, dynamic translator, N64Recomp integration or Windows guest process launch is included yet. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
+
+## Legal
+
+NGR does not distribute copyrighted game data, ROMs, BIOS images, encryption keys or proprietary assets. Users must provide content they are legally entitled to use. Third-party components will be integrated only after license and compatibility review.
