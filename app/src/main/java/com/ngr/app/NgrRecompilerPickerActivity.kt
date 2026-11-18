@@ -113,12 +113,37 @@ class NgrRecompilerPickerActivity : Activity() {
         }
         root.addView(status)
         root.addView(Button(this).apply {
+            text = "Показать журнал рекомпилятора"
+            setOnClickListener { showRecompilerLog() }
+        })
+        root.addView(Button(this).apply {
             text = "Закрыть"
             setOnClickListener { finish() }
         })
         setContentView(root)
     }
 
+    private fun showRecompilerLog() {
+        val view = TextView(this).apply {
+            text = "Log: ${NgrLogger.filePath()}\n\n${NgrLogger.recentText(120_000)}"
+            textSize = 11f
+            setTextIsSelectable(true)
+            setPadding(20, 16, 20, 16)
+        }
+        val scroll = android.widget.ScrollView(this).apply { addView(view) }
+        AlertDialog.Builder(this)
+            .setTitle("Журнал рекомпилятора")
+            .setView(scroll)
+            .setPositiveButton("Закрыть", null)
+            .setNeutralButton("Поделиться") { _, _ ->
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, NgrLogger.recentText(120_000))
+                }
+                startActivity(Intent.createChooser(send, "Отправить журнал"))
+            }
+            .show()
+    }
     private fun chooseSystem() {
         val systems = NgrRecompilerCatalog.systems
         val labels = systems.map { if (it.available) it.label else "${it.label} · скоро" }
