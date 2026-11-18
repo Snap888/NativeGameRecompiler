@@ -1161,3 +1161,11 @@ This is the durable project memory. Update it in every development session.
 - [x] Extended N64 code generation to include the pinned upstream `recomp.h` ABI header and N64Recomp license text in the generated output directory. Added a README that clearly lists title-runtime services still required.
 - [ ] Verify the new import/build run and direct Android CI after these changes; no green result is claimed yet.
 - [ ] Add synthetic MIPS ELF fixture and test the JNI code-generation path; then implement metadata/config import and runtime integration.
+
+## Session 2026-11-18 — N64 shortcut-library integration and C++ build repair
+- [x] Diagnosed direct Android CI run [44384659633](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44384659633): native ABI tests and N64Recomp host tools passed; Android native build failed because two `std::filesystem::path` declarations in `n64recomp_bridge.cpp` omitted the type specifier.
+- [x] Corrected both path declarations; fresh CI verification is pending.
+- [x] After successful N64 C generation, persist a `NATIVE_ARM64` game shortcut in the same `NgrGameShortcutStore` used by the WinNative/NGR game-shortcut screen. Create a minimal N64 profile only when the profile store is empty.
+- [x] Show recompiled N64 entries in GAME SHORTCUTS with per-game settings and an explicit disabled launch control while the ARM64 binary/title runtime are unavailable.
+- [ ] Verify Kotlin/C++ compilation and inspect the next APK artifact; test generated shortcut persistence and editing on device.
+- [ ] Build generated C into an ARM64 shared library and integrate a compatible N64 title runtime before enabling launch.
