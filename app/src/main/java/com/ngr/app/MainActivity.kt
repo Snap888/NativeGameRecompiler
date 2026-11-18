@@ -854,6 +854,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         budget: FolderImportBudget
     ) {
         val children = source.listFiles().sortedBy { it.name ?: "" }
+        val limits = NgrPackArchiveInspector.Limits()
         for (child in children) {
             val name = child.name ?: throw IOException("A selected file has no name")
             if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
@@ -887,7 +888,6 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                             if (read < 0) break
                             fileBytes += read
                             budget.bytes += read
-                            val limits = NgrPackArchiveInspector.Limits()
                             if (fileBytes > limits.maxFileBytes)
                                 throw IOException("Game file exceeds the ${limits.maxFileBytes / (1024L * 1024)} MiB per-file import limit: $childRelative")
                             if (budget.bytes > limits.maxTotalBytes)
