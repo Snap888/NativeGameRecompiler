@@ -252,6 +252,7 @@ class NgrRecompilerPickerActivity : Activity() {
 
     private fun openN64(uri: Uri) {
         startActivity(Intent(this, N64RecompilerActivity::class.java).apply {
+            data = uri
             putExtra(N64RecompilerActivity.EXTRA_INPUT_URI, uri.toString())
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         })
