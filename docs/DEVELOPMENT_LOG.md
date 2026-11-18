@@ -1036,3 +1036,11 @@ This is the durable project memory. Update it in every development session.
 - Controller model/store/tests/UI commits are newer than the last verified CI and require a fresh run.
 - Run #380 (`44285264320`) is still verifying the prior component version lifecycle stage.
 - No physical controller remapping or game-session input test has been performed.
+
+
+### CI correction — component version result typing
+- Actions runs #380–#383 failed at Kotlin compilation because the component install loop tried to access `success`/`error` on an `if` expression whose branches returned two different result types (`NgrComponentStore.Result` and `NgrComponentInstallPipeline.Result`).
+- Fixed by normalizing both branch results to a `Pair<Boolean, String?>` before handling the outcome in commit `a7aaf6ff8718ef136acc62503093c2810ddaafd7`.
+- This was a compile-time type mismatch; native ABI and backend registry tests had passed. The failed runs did not produce an APK.
+- Added controller hotplug refresh for connected/disconnected profile status in commit `4ba9f812ea9bea4cb991064be68d40aea55f0812`.
+- Latest CI after these corrections is pending; do not distribute an APK from the failed runs.
