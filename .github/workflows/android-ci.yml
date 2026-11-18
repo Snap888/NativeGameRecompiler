@@ -26,6 +26,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Run native backend ABI conformance tests
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I native/ngr-runtime/include \\
+            native/ngr-runtime/src/backend_abi_validation.cpp \\
+            native/ngr-runtime/tests/backend_abi_validation_test.cpp \\
+            -o /tmp/ngr-backend-abi-test
+          /tmp/ngr-backend-abi-test
       - name: Run JVM unit tests
         run: gradle --no-daemon :app:testDebugUnitTest
       - name: Build arm64 debug APK
