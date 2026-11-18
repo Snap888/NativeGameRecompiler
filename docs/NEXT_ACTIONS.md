@@ -238,3 +238,14 @@ Mark complete only when evidence exists.
 - [ ] Verify resolver JVM tests and ARM64 build in latest Actions run.
 - [ ] Add component catalog selection and installed-version readiness to preview; never infer availability from IDs alone.
 - [ ] Implement Android pinned shortcuts and safe icon import.
+
+
+## P1 — Component catalog and installer UI
+- [x] Persist imported catalogs after strict schema/provenance-field validation with bounded size, atomic replacement, safe IDs and symlink checks.
+- [x] Add dependency-first manual component install planner with conflict/forbidden checks and installed-component skipping.
+- [x] Add in-app catalog import/list, source link, install/update action, SHA-256-verified HTTPS download, bounded ZIP extraction and atomic version promotion.
+- [ ] Verify catalog/planner JVM tests, full JVM suite and ARM64 APK in latest Actions run.
+- [ ] Add signed catalog trust roots or explicit user-pinned catalog fingerprints before treating remote catalogs as trusted.
+- [ ] Add archive handlers for TAR_GZ/TAR_XZ/TAR_ZSTD/RAW only with dedicated security tests; ZIP remains the only enabled installer format.
+- [ ] Add installed component detail/rollback/uninstall UI and prevent removal of components referenced by profiles.
+- [ ] Add component version compatibility checks and launch-readiness integration for per-game overrides.
