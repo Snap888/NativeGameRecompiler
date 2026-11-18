@@ -1401,45 +1401,111 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         runCatching {
             contentResolver.takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        packageStatus.text = "Scanning selected game folder…"
+        packageStatus.text = "Importing game folder directly into private package storage…"
         packageWorker.execute {
-            val copied = File(cacheDir, "ngr-folder-${UUID.randomUUID()}")
-            var generated: File? = null
+            var staging: File? = null
             var ownershipTransferred = false
             try {
                 val root = DocumentFile.fromTreeUri(this, treeUri)
                     ?: throw IOException("Unable to open selected folder")
                 if (!root.isDirectory) throw IOException("Selected item is not a directory")
-                if (!copied.mkdirs()) throw IOException("Unable to create private import workspace")
+                staging = packageManager.createFolderImportStaging()
                 val budget = FolderImportBudget()
-                copyDocumentDirectory(root, copied, "", budget)
+                copyDocumentDirectory(root, staging, "", budget)
                 if (budget.files == 0) throw IOException("Selected folder contains no files")
                 val displayName = root.name ?: "Imported game"
-                NgrLogger.info("package.import", "Folder copied; files=${budget.files}; bytes=${budget.bytes}")
-                generated = File.createTempFile("ngr-generated-", ".ngrpack", cacheDir)
+                NgrLogger.info(
+                    "package.import",
+                    "Folder copied directly into package staging; files=${budget.files}; bytes=${budget.bytes}"
+                )
                 val builder = NgrGamePackageBuilder()
-                val built = builder.buildFromFolder(copied, generated, displayName)
-                if (!built.success) throw IOException(built.errors.joinToString("; ").ifBlank { built.message })
-                NgrLogger.info("package.builder", "Folder converted; displayName=${built.displayName}; platform=${built.platform}; architecture=${built.architecture}; entryPoint=${built.entryPoint}; candidates=${built.candidates.size}")
-                val generatedFile = generated ?: throw IOException("Generated package workspace is unavailable")
-                completeBuiltGameImport(generatedFile, built, { selected ->
-                    builder.buildFromFolder(copied, generatedFile, displayName, selected)
+                val prepared = builder.prepareFolderInPlace(staging, displayName)
+                if (!prepared.success) throw IOException(prepared.errors.joinToString("; ").ifBlank { prepared.message })
+                NgrLogger.info(
+                    "package.builder",
+                    "Direct folder prepared; displayName=${prepared.displayName}; platform=${prepared.platform}; " +
+                        "architecture=${prepared.architecture}; entryPoint=${prepared.entryPoint}; candidates=${prepared.candidates.size}"
+                )
+                val stagingDirectory = staging
+                completeBuiltFolderImport(stagingDirectory, prepared, { selected ->
+                    builder.prepareFolderInPlace(
+                        stagingDirectory,
+                        displayName,
+                        selected,
+                        replaceGeneratedManifest = true
+                    )
                 }) {
-                    generatedFile.delete()
-                    copied.deleteRecursively()
+                    stagingDirectory.deleteRecursively()
                 }
                 ownershipTransferred = true
             } catch (e: Exception) {
-                NgrLogger.error("package.import", "Game folder import failed", e)
+                NgrLogger.error("package.import", "Direct game folder import failed", e)
                 runOnUiThread {
                     packageStatus.text = "Game folder import failed\n${e.message}"
                     Toast.makeText(this, "Game folder import failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
-                if (!ownershipTransferred) {
-                    generated?.delete()
-                    copied.deleteRecursively()
+                if (!ownershipTransferred) staging?.deleteRecursively()
+            }
+        }
+    }
+
+    private fun completeBuiltFolderImport(
+        staging: File,
+        initialBuild: NgrGamePackageBuilder.Result,
+        rebuildWithEntryPoint: (String) -> NgrGamePackageBuilder.Result,
+        cleanup: () -> Unit
+    ) {
+        fun installSelected(entryPoint: String?) {
+            packageWorker.execute {
+                try {
+                    if (entryPoint != null) {
+                        val selected = rebuildWithEntryPoint(entryPoint)
+                        if (!selected.success) throw IOException(
+                            selected.errors.joinToString("; ").ifBlank { selected.message }
+                        )
+                        NgrLogger.info("package.builder", "Selected direct-import executable=${selected.entryPoint}")
+                    }
+                    val installed = packageManager.installPreparedFolder(staging)
+                    NgrLogger.info(
+                        "package.import",
+                        "Direct folder install success=${installed.success}; message=${installed.message}; " +
+                            "errors=${installed.errors.joinToString(" | ")}"
+                    )
+                    runOnUiThread {
+                        packageStatus.text = buildString {
+                            append(installed.message)
+                            if (installed.errors.isNotEmpty()) append("\n").append(installed.errors.joinToString("\n"))
+                        }
+                        Toast.makeText(this, installed.message, Toast.LENGTH_LONG).show()
+                        refreshPackages()
+                    }
+                } catch (e: Exception) {
+                    NgrLogger.error("package.import", "Direct folder install commit failed", e)
+                    runOnUiThread {
+                        packageStatus.text = "Game folder installation failed\n${e.message}"
+                        Toast.makeText(this, "Game folder installation failed", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    cleanup()
                 }
+            }
+        }
+
+        runOnUiThread {
+            if (initialBuild.candidates.size > 1) {
+                val labels = initialBuild.candidates.map {
+                    "${it.path}\n${it.platform} · ${it.architecture}"
+                }.toTypedArray()
+                AlertDialog.Builder(this)
+                    .setTitle("Choose game executable")
+                    .setMessage("Several executable files were detected. Select the main game executable.")
+                    .setItems(labels) { _, which -> installSelected(initialBuild.candidates[which].path) }
+                    .setNegativeButton("Cancel") { _, _ -> cleanup() }
+                    .setOnCancelListener { cleanup() }
+                    .show()
+            } else {
+                installSelected(null)
             }
         }
     }
