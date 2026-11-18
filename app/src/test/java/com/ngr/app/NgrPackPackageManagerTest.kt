@@ -149,6 +149,22 @@ class NgrPackPackageManagerTest {
         }
     }
 
+    @Test fun removesOnlyExpiredUuidFolderStagingDirectories() {
+        val base = createTempDir(prefix = "ngr-pm-staging-cleanup-")
+        try {
+            val manager = NgrPackPackageManager(File(base, "packages"))
+            val stale = manager.createFolderImportStaging()
+            File(stale, "partial.bin").writeText("interrupted")
+            val recent = manager.createFolderImportStaging()
+            File(recent, "active.bin").writeText("keep")
+            val oldTime = System.currentTimeMillis() - 60L * 24 * 60 * 60 * 1000
+            assertTrue(stale.setLastModified(oldTime))
+            assertEquals(1, manager.cleanupAbandonedFolderStaging(30L * 24 * 60 * 60 * 1000))
+            assertFalse(stale.exists())
+            assertTrue(recent.exists())
+        } finally { base.deleteRecursively() }
+    }
+
     @Test fun rejectsArchivePayloadNotDeclaredInManifest() {
         val base = createTempDir(prefix = "ngr-pm-unlisted-")
         val packages = File(base, "packages")
