@@ -1119,3 +1119,29 @@ This is the durable project memory. Update it in every development session.
 - Actions run #429 (44316501792), commit `03f369e5fed7bf657bca68c76674cdfe466030cd`, passed Native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
 - Artifact ID `14433695246` downloaded and inspected. ZIP contains `app-debug.apk` (2,486,165 bytes), including `lib/arm64-v8a/libngr_runtime.so`. APK SHA-256: `5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44`.
 - Physical Android installation and multi-GB SAF import remain unverified; no device test is claimed.
+
+
+## Session 2026-11-18 — N64Recomp Android C generation
+
+### Verified host integration build
+- [x] Fixed N64Recomp CMake target linkage by moving the upstream subdirectory into `native/ngr-runtime/CMakeLists.txt`; removed the duplicate upstream subdirectory from the WinNative parent CMake.
+- [x] [Actions run 44343916041](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44343916041) passed all steps: recursive submodules, pinned N64Recomp/RSPRecomp host tools, NGR ABI conformance tests, Android arm64 native build, NGR JVM tests and APK artifact upload.
+- Artifact: `NGR-WinNative-arm64-debug`, ID `14445867739`, SHA-256 `30ee0068a60eea951ad446663e3b89046c90b4504cd23bdc9b2f4687340af8e2`, expires 2026-12-02.
+- This proves the integrated Android host builds; it does not prove game code generation or game launch.
+
+### N64Recomp code generation implementation
+- Added JNI `nativeGenerateN64C` in `native/ngr-runtime/src/n64recomp_bridge.cpp`.
+- The function parses a supported MIPS/N64 ELF using the pinned N64Recomp core, emits one C source per discovered function, follows static functions discovered during code generation, emits `funcs.h` and `ngr-recompile-manifest.json`, and publishes output through a staging-directory rename.
+- Input is capped at 512 MiB; function count and instruction count are bounded; invalid output paths, out-of-range static functions and unsupported instructions fail without publishing a partial output.
+- Added Android UI action “Recompile to C” / “Рекомпилировать в C” after ELF import and inspection. Output is stored under app-private `files/n64recomp/generated/`.
+- The manifest explicitly records `runtime_required=true`, `runtime_status=not-integrated`, `arm64_binary_built=false`, and `launchable=false`.
+- **Not yet build-verified:** code generation JNI and UI commits `4f0f90a` and `ab200f1` require a fresh CI run.
+- **Not implemented:** TOML config import, ARM64 Clang invocation/toolchain provisioning, N64 title runtime, RSP runtime, graphics/audio/input services, package assembly and launch.
+- ELF analysis and C generation require a supported ELF with symbol/relocation metadata. A raw retail ROM alone is not sufficient.
+
+### Next validation
+1. Trigger and inspect CI for the C-generation implementation; fix all Kotlin/C++/CMake errors.
+2. Add a redistributable synthetic MIPS ELF fixture and test parser + generated C output without copyrighted game data.
+3. Add N64Recomp TOML config import, including entrypoint, relocatable sections, manual function sizes, ignored/stubbed functions and MIPS3 float mode.
+4. Provision a verified Android ARM64 Clang toolchain as a managed component; compile generated C only when the required runtime headers are available.
+5. Select a compatible N64 title runtime (e.g. an independently licensed runtime with its own notices) and implement its platform services before claiming playability.
