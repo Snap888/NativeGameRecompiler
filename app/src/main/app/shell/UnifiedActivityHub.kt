@@ -779,6 +779,10 @@ internal fun UnifiedActivity.UnifiedHub() {
                         )
                     }
                 },
+                onOpenN64Recompiler = {
+                    scope.launch { drawerState.close() }
+                    context.startActivity(Intent(context, com.ngr.app.N64RecompilerActivity::class.java))
+                },
                 onExitApp = {
                     AppTerminationHelper.exitApplication(this@UnifiedHub, "hub_drawer_exit")
                 },
