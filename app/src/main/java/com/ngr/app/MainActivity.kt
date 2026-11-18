@@ -1155,8 +1155,55 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     }.show()
             }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { leftMargin = dp(5) })
             item.addView(actions)
+            item.addView(secondaryButton("Preview resolved launch configuration") {
+                showLaunchConfigurationPreview(shortcut)
+            })
             shortcutList.addView(item)
         }
+    }
+
+
+    private fun showLaunchConfigurationPreview(shortcut: NgrGameShortcut) {
+        val profile = profileStore.get(shortcut.environmentProfileId)
+        if (profile == null) {
+            AlertDialog.Builder(this)
+                .setTitle("Launch configuration unavailable")
+                .setMessage("The shortcut's environment profile is missing or invalid.")
+                .setPositiveButton("Close", null)
+                .show()
+            return
+        }
+        val result = NgrLaunchConfigurationResolver.resolve(shortcut, profile)
+        if (!result.valid) {
+            AlertDialog.Builder(this)
+                .setTitle("Configuration validation failed")
+                .setMessage(result.errors.joinToString("\n") { "• $it" })
+                .setPositiveButton("Close", null)
+                .show()
+            return
+        }
+        val config = result.configuration!!
+        val details = buildString {
+            appendLine("Mode: ${config.launchMode}")
+            appendLine("Executable: ${config.executablePath}")
+            appendLine("Working directory: ${config.workingDirectory ?: "(package default)"}")
+            appendLine("Arguments: ${config.arguments.joinToString(" ").ifEmpty { "(none)" }}")
+            appendLine("Wine/Proton: ${config.wineLayerId ?: "not required"}")
+            appendLine("DXVK: ${config.dxvkComponentId ?: "not selected"}")
+            appendLine("VKD3D-Proton: ${config.vkd3dComponentId ?: "not selected"}")
+            appendLine("Graphics: ${config.graphicsProvider} · Turnip: ${config.turnipComponentId ?: "system/default"}")
+            appendLine("Display: ${config.displayBackend}")
+            appendLine()
+            appendLine("Effective environment:")
+            config.environment.forEach { (key, value) -> appendLine("$key=$value") }
+            appendLine()
+            append("Configuration only — no process will be started. Runtime activation and component readiness are verified by later launch stages.")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Resolved: ${shortcut.title}")
+            .setMessage(details)
+            .setPositiveButton("Close", null)
+            .show()
     }
 
     private fun showEditGameShortcutDialog(shortcut: NgrGameShortcut) {
