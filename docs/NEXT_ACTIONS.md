@@ -274,4 +274,6 @@ Mark complete only when evidence exists.
 
 
 - [x] Fix controller enumeration to process Android's `IntArray` device IDs through a sequence.
-- [ ] Verify latest run #395 after controller enumeration correction.
+- [x] Diagnose run #397: 126 JVM tests, one planner assertion failed; native ABI and registry checks passed, APK steps skipped.
+- [x] Fix installed-ID-only planner compatibility while retaining explicit version mismatch updates (commit `255a4684614b69319b5328787b9ad4db725c01aa`).
+- [ ] Verify CI for planner compatibility fix; require JVM suite, ARM64 APK build and artifact upload.
