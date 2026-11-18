@@ -363,6 +363,11 @@ Mark complete only when evidence exists.
 - [x] Add file, multi-file and folder selection with bounded recursive scan.
 - [x] Add auto-detection for MIPS ELF and manual target-system selection.
 - [x] Keep only N64/MIPS selectable until another backend is actually integrated.
-- [ ] Verify CI and test SAF file/folder import on Android.
-- [ ] Add format probes and unit tests for each backend; distinguish raw ROM images from ELF/decompilation inputs.
-- [ ] Add backend interfaces for PS1, PS2, PSP, GameCube/Wii, Dreamcast only alongside actual recompiler implementations.
+- [x] Add persistent diagnostics for picker detection, SAF URI access, folder scans, N64 ELF import/inspection, C generation and shortcut registration; expose log viewer/share action.
+- [x] Detect N64 .z64/.n64/.v64 ROM magic and explain that the current N64Recomp backend needs a MIPS ELF plus decompilation metadata, not a retail ROM directly.
+- [x] Expand planned target catalog to PS3, PS4, Nintendo Switch, Nintendo Switch 2, Xbox, Xbox 360, Xbox One and Windows PC EXE; entries remain unavailable until real backends exist.
+- [x] Scan selected folders for all catalogued extensions, not only .elf.
+- [ ] Verify current CI and test .z64/.n64/.v64 detection, folder permissions and log export on Android.
+- [ ] Add unit tests for N64 ROM byte-order probes and malformed headers.
+- [ ] Implement a legal N64 ROM + decompilation-project metadata workflow before exposing ROM-to-native compilation.
+- [ ] Add dedicated backend interfaces and implementations for each planned console/PC system; do not mark catalog entries available prematurely.
