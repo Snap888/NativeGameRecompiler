@@ -10,6 +10,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NgrGamePackageBuilderTest {
+    @Test fun defaultImportLimitsAllowLargeGamesWithoutRequiringZip64() {
+        val limits = NgrPackArchiveInspector.Limits()
+        assertEquals(3L * 1024 * 1024 * 1024, limits.maxArchiveBytes)
+        assertEquals(2L * 1024 * 1024 * 1024, limits.maxFileBytes)
+        assertEquals(8L * 1024 * 1024 * 1024, limits.maxTotalBytes)
+        assertEquals(limits.maxFileBytes, NgrManifestValidator.MAX_FILE_BYTES)
+        assertEquals(limits.maxTotalBytes, NgrManifestValidator.MAX_TOTAL_BYTES)
+    }
+
     private fun peX64(): ByteArray = ByteArray(128).also { bytes ->
         bytes[0] = 0x4d
         bytes[1] = 0x5a
