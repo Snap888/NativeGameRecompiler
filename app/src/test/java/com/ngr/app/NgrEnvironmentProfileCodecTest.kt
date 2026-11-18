@@ -60,8 +60,9 @@ class NgrEnvironmentProfileCodecTest {
         assertFalse(runCatching { NgrEnvironmentProfileCodec.encode(invalidVersion) }.isSuccess)
     }
     @Test fun migratesSchemaV1ProfilesWithoutLosingSettings() {
-        val legacy = NgrEnvironmentProfileCodec.encode(profile()).replace("\\"schemaVersion\\": 2", "\\"schemaVersion\\": 1")
-            .replace("\\"winePrefixId\\": null,\\n", "")
+        val legacy = NgrEnvironmentProfileCodec.encode(profile())
+            .replace("\"schemaVersion\": 2", "\"schemaVersion\": 1")
+            .replace("\"winePrefixId\": null,\n", "")
         val migrated = NgrEnvironmentProfileCodec.decode(legacy)
         assertEquals(NgrEnvironmentProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion)
         assertEquals(profile(), migrated)
