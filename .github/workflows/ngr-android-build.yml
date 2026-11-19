@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/xdroid360/payload
-          RUN_ID=$(gh run list --workflow ngr-xdroid360-toolchain.yml --branch "$GITHUB_REF_NAME" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          RUN_ID=$(gh run list --workflow ngr-xdroid360-toolchain.yml --branch integration/winnative-runtime-base --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
           if [ -n "$RUN_ID" ]; then
             echo "Using XDroid360 toolchain workflow run $RUN_ID"
             gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name ngr-xdroid360-payload --dir build/xdroid360/payload
