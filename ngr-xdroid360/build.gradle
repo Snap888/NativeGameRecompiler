@@ -1,0 +1,58 @@
+plugins {
+    alias(libs.plugins.androidLibrary)
+}
+
+android {
+    namespace "com.udarmolota.xdroid360"
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 26
+        consumerProguardFiles "consumer-rules.pro"
+        buildConfigField "String", "XDROID360_UPSTREAM_REVISION", '"f388d11fc207502cd5975899c8adc06600cfe34f"'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    sourceSets {
+        main {
+            // Compile the pinned donor's game/build implementation in an isolated namespace.
+            // SDL's Java glue is supplied by WinNative's existing SDL3 AAR; do not package a
+            // second copy of org.libsdl.app into the host application.
+            java.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/java"))
+            java.exclude("org/libsdl/**")
+            res.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/res"))
+            assets.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/assets"))
+            manifest.srcFile("src/main/AndroidManifest.xml")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.coreKtx
+}
+
+tasks.register("verifyXDroid360SourcePin") {
+    doLast {
+        def donor = rootProject.file("native/recompilers/XDroid360")
+        def gitFile = new File(donor, ".git")
+        if (!donor.isDirectory() || !gitFile.exists()) {
+            throw new GradleException("XDroid360 submodule is missing; run git submodule update --init --recursive")
+        }
+        def javaRoot = new File(donor, "android/app/src/main/java/com/udarmolota/xdroid360")
+        ["BuildService.java", "BuildJob.java", "RecipeRunner.java", "Toolchain.java", "GameSource.java", "Xiso.java"].each {
+            if (!new File(javaRoot, it).isFile()) throw new GradleException("XDroid360 source missing: ${it}")
+        }
+    }
+}
+
+preBuild.dependsOn verifyXDroid360SourcePin
