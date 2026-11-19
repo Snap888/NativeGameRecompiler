@@ -25,6 +25,7 @@ class NgrRecompilerPickerActivity : Activity() {
     private var selectedSystem = NgrRecompilerCatalog.SystemId.N64_MIPS
     private lateinit var systemButton: Button
     private lateinit var status: TextView
+    private var selectedTreeUri: Uri? = null
 
     companion object {
         private const val REQUEST_FILES = 7301
@@ -200,6 +201,7 @@ class NgrRecompilerPickerActivity : Activity() {
             }
             REQUEST_FOLDER -> {
                 val treeUri = data.data ?: return
+                selectedTreeUri = treeUri
                 val root = DocumentFile.fromTreeUri(this, treeUri)
                 if (root == null) {
                     NgrLogger.error("recompiler.scan", "Unable to resolve selected folder tree")
@@ -288,10 +290,42 @@ class NgrRecompilerPickerActivity : Activity() {
                     NgrLogger.warn("recompiler.detect", "N64 ROM detected; current N64Recomp backend requires decompilation ELF")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 } else if (xbox360.isNotEmpty()) {
-                    val message = "Входной файл Xbox 360: ${xbox360.joinToString { it.second }}. Записей в библиотеку проектов: $persistedCount. XDroid360 закреплён в проекте, но BuildService/RecipeRunner, проверка title ID/хеша и запуск runtime ещё не подключены к NGR. Проект сохранён со статусом «backend unavailable»; запускаемый ярлык не создаётся."
-                    status.text = message
-                    NgrLogger.info("recompiler.detect", "Xbox 360 source detected; profile/runtime build is not yet enabled")
-                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    val tree = selectedTreeUri
+                    if (tree != null) {
+                        status.text = "Передача папки Xbox 360 в XDroid360: проверка STFS, title ID и профиля…"
+                        NgrLogger.info("recompiler.xbox360", "Dispatching selected SAF tree to XDroid360 GameSource/BuildActivity")
+                        runCatching {
+                            com.udarmolota.xdroid360.XDroid360EntryPoint.launchBuild(this, tree, "tree")
+                        }.onFailure {
+                            NgrLogger.error("recompiler.xbox360", "Unable to launch XDroid360 build flow: ${it.message}")
+                            status.text = "Не удалось открыть конвейер Xbox 360: ${it.message}"
+                        }
+                    } else {
+                        val supported = xbox360.filter { it.second.substringAfterLast('.', "").lowercase() in setOf("iso", "zip") }
+                        if (supported.isEmpty()) {
+                            val message = "Файлы Xbox 360 обнаружены, но отдельный .xex не является поддерживаемым входом XDroid360. Выберите ISO-образ или папку с STFS-пакетами."
+                            status.text = message
+                            NgrLogger.warn("recompiler.xbox360", "Standalone XEX cannot be passed to XDroid360 GameSource")
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        } else {
+                            val launch: (Int) -> Unit = { index ->
+                                val (uri, name, _) = supported[index]
+                                status.text = "Передача $name в XDroid360: проверка XISO/STFS и профиля…"
+                                NgrLogger.info("recompiler.xbox360", "Dispatching $name to XDroid360 BuildActivity")
+                                runCatching {
+                                    com.udarmolota.xdroid360.XDroid360EntryPoint.launchBuild(this, uri, "file")
+                                }.onFailure {
+                                    NgrLogger.error("recompiler.xbox360", "Unable to launch XDroid360 build flow: ${it.message}")
+                                    status.text = "Не удалось открыть конвейер Xbox 360: ${it.message}"
+                                }
+                            }
+                            if (supported.size == 1) launch(0) else AlertDialog.Builder(this)
+                                .setTitle("Выберите игру Xbox 360")
+                                .setItems(supported.map { it.second }.toTypedArray()) { _, index -> launch(index) }
+                                .setNegativeButton("Отмена", null)
+                                .show()
+                        }
+                    }
                 } else {
                     val message = "Не найден поддерживаемый входной файл. Проверено: ${detected.size}."
                     status.text = message
