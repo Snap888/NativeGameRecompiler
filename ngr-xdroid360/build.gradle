@@ -2,10 +2,12 @@ plugins {
     alias(libs.plugins.androidLibrary)
 }
 
-def xdroid360DonorDir = rootProject.file("native/recompilers/XDroid360")
+def ngrRootPath = rootProject.projectDir.absolutePath
+def xdroid360DonorDir = new File(ngrRootPath, "native/recompilers/XDroid360")
+def defaultPayloadPath = new File(ngrRootPath, "build/xdroid360")
 def xdroid360ToolchainDir = providers.gradleProperty("xdroid360.toolchain")
-        .map { rootProject.file(it) }
-        .orElse(rootProject.file("build/xdroid360"))
+        .map { new File(ngrRootPath, it) }
+        .orElse(defaultPayloadPath)
 def generatedAssetsDir = layout.buildDirectory.dir("generated/xdroid360/assets")
 def generatedJniDir = layout.buildDirectory.dir("generated/xdroid360/jniLibs")
 
@@ -76,7 +78,15 @@ tasks.register("prepareXDroid360Payload") {
         def payload = xdroid360ToolchainDir.get()
         def assetsOut = generatedAssetsDir.get().asFile
         def jniOut = generatedJniDir.get().asFile
-        delete assetsOut, jniOut
+        // Use JDK file operations inside the task action; avoid capturing the Gradle script object.
+        [assetsOut, jniOut].each { dir ->
+            if (dir.exists()) {
+                def stream = java.nio.file.Files.walk(dir.toPath())
+                try {
+                    stream.sorted(java.util.Comparator.reverseOrder()).forEach { java.nio.file.Files.deleteIfExists(it) }
+                } finally { stream.close() }
+            }
+        }
         def kit = new File(payload, "kit.zip")
         def games = new File(payload, "games")
         def libs = new File(payload, "jniLibs/arm64-v8a")
@@ -90,21 +100,20 @@ tasks.register("prepareXDroid360Payload") {
         if (!games.isDirectory() || !games.listFiles()?.any { it.name.endsWith(".zip") }) {
             throw new GradleException("XDroid360 payload has no game profile archives in games/")
         }
-        copy {
-            from kit
-            into assetsOut
+        java.nio.file.Files.createDirectories(assetsOut.toPath())
+        java.nio.file.Files.createDirectories(new File(assetsOut, "games").toPath())
+        java.nio.file.Files.createDirectories(new File(jniOut, "arm64-v8a").toPath())
+        java.nio.file.Files.copy(kit.toPath(), new File(assetsOut, "kit.zip").toPath(),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        games.listFiles().findAll { it.name.endsWith(".zip") }.each { file ->
+            java.nio.file.Files.copy(file.toPath(), new File(new File(assetsOut, "games"), file.name).toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
-        copy {
-            from games
-            include "*.zip"
-            into new File(assetsOut, "games")
+        libs.listFiles().findAll { it.name.endsWith(".so") }.each { file ->
+            java.nio.file.Files.copy(file.toPath(), new File(new File(jniOut, "arm64-v8a"), file.name).toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
-        copy {
-            from libs
-            include "*.so"
-            into new File(jniOut, "arm64-v8a")
-        }
-        logger.lifecycle("Prepared XDroid360 kit, " + games.listFiles().count { it.name.endsWith(".zip") } + " profiles and " + required.size() + " ARM64 tools")
+        println("Prepared XDroid360 kit, " + games.listFiles().count { it.name.endsWith(".zip") } + " profiles and " + required.size() + " ARM64 tools")
     }
 }
 
