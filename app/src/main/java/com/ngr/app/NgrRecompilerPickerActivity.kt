@@ -277,7 +277,7 @@ class NgrRecompilerPickerActivity : Activity() {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }
             }
-        }.apply {
+        }).apply {
             name = "NGR-Recompiler-Detect"
             isDaemon = true
         }.start()
