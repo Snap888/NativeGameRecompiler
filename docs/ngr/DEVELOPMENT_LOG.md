@@ -1119,3 +1119,13 @@ This is the durable project memory. Update it in every development session.
 - Actions run #429 (44316501792), commit `03f369e5fed7bf657bca68c76674cdfe466030cd`, passed Native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
 - Artifact ID `14433695246` downloaded and inspected. ZIP contains `app-debug.apk` (2,486,165 bytes), including `lib/arm64-v8a/libngr_runtime.so`. APK SHA-256: `5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44`.
 - Physical Android installation and multi-GB SAF import remain unverified; no device test is claimed.
+
+
+## XDroid360 Android integration — 2026-11-19
+- Confirmed NGR's pinned XDroid360 submodule at `f388d11fc207502cd5975899c8adc06600cfe34f`; the donor contains a standalone Android app with BuildService/BuildJob/RecipeRunner/Toolchain, STFS JNI, SDL3 GameActivity, DAORecomp/Xenia Vulkan runtime, and per-title recipes.
+- Added isolated Gradle Android library module `:ngr-xdroid360`, using donor Java/resources/assets directly from the pinned submodule. SDL3 Java glue is resolved from the same WinNative SDL3 AAR; it is not copied or duplicated.
+- Registered donor launcher, build, instance, bug report, pad editor, game activities and foreground BuildService in the library manifest. Added public `XDroid360EntryPoint` to expose launcher entry and toolchain readiness.
+- Added an Xbox 360 entry in NGR's recompiler picker. It opens the donor's full launcher UI, but warns explicitly when the on-device kit and profiles are absent.
+- CI run 44482630569 exposed a Gradle configuration-cache capture in the source-pin verification task; fixed by capturing the donor path as a configuration-time string. That run passed N64Recomp host tools and native ABI checks but failed before JVM tests.
+- Native toolchain and game runtime are NOT yet packaged. The donor documents a substantial build (LLVM 22 clang/lld, patched XenonRecomp, STFS JNI, shaderlib/DXC, kit.zip, profiles) and DAO/Xenia Vulkan CMake runtime. The module currently provides the Java/resource integration layer only.
+- Latest code commit at this log update: abcd90b8fcb91c2380bdbe97aa96fc430a5690a5. CI verification for this commit is pending; no APK artifact is claimed.

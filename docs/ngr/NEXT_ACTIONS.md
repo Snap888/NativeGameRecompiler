@@ -312,3 +312,16 @@ Mark complete only when evidence exists.
 - [x] JVM unit tests passed, including FEX schema migration and stale folder staging cleanup.
 - [x] ARM64 Debug APK built and uploaded; artifact ID 14433695246 downloaded and inspected.
 - [ ] Install APK and test SAF import of a multi-GB game folder on physical Snapdragon/Adreno hardware.
+
+
+## P0 — XDroid360 integration and Xbox 360 runtime
+- [x] Pin and audit XDroid360 donor; preserve its submodule rather than copying a second source tree.
+- [x] Add isolated Android library module for donor Java/resources and SDL3 activity glue.
+- [x] Register donor launcher/build/game activities and foreground build service without replacing WinNative's application entry point.
+- [x] Add NGR picker entry point and an explicit readiness warning when the toolchain/profile payload is missing.
+- [ ] Pass CI for the embedded Java/resource module and run JVM tests + ARM64 APK build.
+- [ ] Package the pinned Android toolchain: clang/lld, patched XenonRecomp, STFS extractor, shaderlib, DXC, kit.zip and license bundle. Prefer verified upstream release assets if a compatible release exposes all required assets; otherwise build from pinned sources with cached host tablegens.
+- [ ] Fetch/build and validate title profiles (DAO and SoD) by published hashes; never include proprietary game binaries or generated game code in NGR.
+- [ ] Integrate the XDroid360 native CMake graph (SDL3, XenonUtils, DAO/SoD runtime, Xenia Vulkan, native renderer, XenosRecomp/DXC) as isolated ARM64 targets; audit target-name and SDL conflicts with WinNative before linking.
+- [ ] Add recipe lifecycle UI in NGR: detect ISO/XEX/STFS, profile/title ID matching, free-space preflight, foreground build progress, cancel/retry/resume, structured build logs, and persistent instance records.
+- [ ] Test on physical Adreno hardware with legally supplied Dragon Age: Origins and State of Decay files. Only mark Xbox 360 backend available for verified title profiles.
