@@ -1222,3 +1222,23 @@ This is the durable project memory. Update it in every development session.
 - [ ] Verify JVM tests and ARM64 APK in CI after these changes.
 - [ ] Add a persistent recompiler intake/project list so selected ROMs and unsupported future-system files are not silently lost; show a clear “detected / backend unavailable / metadata required” state without adding a false runnable game shortcut.
 - [ ] Implement ROM + matching decompilation metadata workflow and a supported N64 project build before enabling native launch.
+
+
+## Session 2026-11-19 — Xbox 360 intake and XDroid360 audit
+
+### Source audit
+- Confirmed `native/recompilers/XDroid360` is already pinned as a git submodule at `f388d11fc207502cd5975899c8adc06600cfe34f`; do not add a duplicate copy.
+- Confirmed upstream pipeline: XISO/ZIP/STFS intake, title/hash recipe validation, XenonRecomp PowerPC-to-C++, on-device ARM64 clang/lld, DAO/SoD title runtime, Xenia Vulkan/native renderer, SDL3 GameActivity, BuildService/RecipeRunner.
+- Upstream README documents Dragon Age: Origins and State of Decay as playable profiles; this is not universal Xbox 360 title support.
+- Donor app has a separate Android namespace/manifest/resources, foreground service, SDL game activity, native STFS JNI, generated toolchain assets and a separate CMake graph. Adding Java sources alone would not produce a working backend.
+
+### Changes committed
+- Expanded Xbox 360 candidate extensions to ISO, ZIP, XEX, CON, LIVE and PIRS.
+- Added a filename candidate helper and JVM tests; raw XEX2/STFS magic checks remain intact.
+- Updated intake to accept Xbox 360 as a manual target and report the pinned XDroid360 pipeline and current limitation clearly. No false playable shortcut is created.
+- Added `docs/ngr/XBOX360_INTEGRATION.md` with source pin, architecture, licensing and concrete port steps.
+
+### Validation status
+- Source changes committed; Android/JVM CI has not yet run for these commits.
+- Xbox 360 backend remains disabled in the catalog until BuildService, toolchain packaging, runtime CMake and device validation are integrated.
+- No APK is claimed for this stage.
