@@ -16,8 +16,8 @@ import androidx.documentfile.provider.DocumentFile
 
 /**
  * Unified intake for static game recompilers. N64 MIPS ELF is executable; Xbox 360 inputs
- * are recognized for XDroid360 title-recipe validation, but its build pipeline is not yet
- * embedded in this NGR app.
+ * are routed to the isolated XDroid360 Android library. The launcher UI is embedded; toolchain
+ * packaging and native runtime integration remain separately gated.
  */
 class NgrRecompilerPickerActivity : Activity() {
     private enum class Mode { AUTO, MANUAL }
@@ -82,6 +82,27 @@ class NgrRecompilerPickerActivity : Activity() {
             }
         }
         root.addView(modeGroup)
+        root.addView(Button(this).apply {
+            text = "Открыть Xbox 360 (XDroid360)"
+            setOnClickListener {
+                val ready = runCatching {
+                    com.udarmolota.xdroid360.XDroid360EntryPoint.isBuildEnvironmentReady(this@NgrRecompilerPickerActivity)
+                }.getOrDefault(false)
+                NgrLogger.info("recompiler.xbox360", "Opening XDroid360 launcher; buildEnvironmentReady=$ready")
+                if (!ready) {
+                    AlertDialog.Builder(this@NgrRecompilerPickerActivity)
+                        .setTitle("Среда Xbox 360 подключена не полностью")
+                        .setMessage("Интерфейс XDroid360 встроен. Компилятор XenonRecomp, kit и игровые профили ещё не включены в APK, поэтому сборка игры пока недоступна.")
+                        .setPositiveButton("Открыть интерфейс") { _, _ ->
+                            com.udarmolota.xdroid360.XDroid360EntryPoint.launch(this@NgrRecompilerPickerActivity)
+                        }
+                        .setNegativeButton("Отмена", null)
+                        .show()
+                } else {
+                    com.udarmolota.xdroid360.XDroid360EntryPoint.launch(this@NgrRecompilerPickerActivity)
+                }
+            }
+        })
         systemButton = Button(this).apply {
             text = "Система: Nintendo 64 / MIPS ELF"
             isEnabled = mode == Mode.MANUAL
