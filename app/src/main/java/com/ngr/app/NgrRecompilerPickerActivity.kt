@@ -230,11 +230,12 @@ class NgrRecompilerPickerActivity : Activity() {
         val targetSystem = selectedSystem
         NgrLogger.info("recompiler.detect", "Processing count=${uris.size}; mode=$selectedMode; target=$targetSystem")
         status.text = "Проверка форматов: ${uris.size} файл(ов)…"
-        Thread {
+        NgrLogger.info("recompiler.detect", "Detection worker started; count=${uris.size}")
+        Thread({
             val detected = uris.map { uri ->
                 val name = queryName(uri) ?: uri.lastPathSegment ?: "unknown"
                 val system = detectSystem(uri)
-                NgrLogger.info("recompiler.detect", "File=$name; detected=${system ?: "unknown"}")
+                NgrLogger.info("recompiler.detect", "File=$name; detected=${system ?: "unknown"}; uriScheme=${uri.scheme}")
                 Triple(uri, name, system)
             }
             val elfs = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_MIPS }
@@ -274,6 +275,9 @@ class NgrRecompilerPickerActivity : Activity() {
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }
             }
+        }.apply {
+            name = "NGR-Recompiler-Detect"
+            isDaemon = true
         }.start()
     }
 
@@ -289,11 +293,11 @@ class NgrRecompilerPickerActivity : Activity() {
                 offset += count
             }
             if (offset >= 4) {
-                val magic = header.take(4).map { it.toInt() and 0xff }
-                val isN64Rom = magic == listOf(0x80, 0x37, 0x12, 0x40) ||
-                    magic == listOf(0x37, 0x80, 0x40, 0x12) ||
-                    magic == listOf(0x40, 0x12, 0x37, 0x80)
-                if (isN64Rom) return@use NgrRecompilerCatalog.SystemId.N64_ROM
+                val romOrder = N64RomInputProbe.detect(header)
+                if (romOrder != null) {
+                    NgrLogger.info("recompiler.detect", "N64 ROM magic detected; byteOrder=$romOrder; name=$name")
+                    return@use NgrRecompilerCatalog.SystemId.N64_ROM
+                }
             }
             if (Xbox360InputProbe.detect(header) != null) {
                 NgrLogger.info("recompiler.detect", "Xbox 360 header detected: ${Xbox360InputProbe.detect(header)}")
