@@ -1,0 +1,185 @@
+name: NGR XDroid360 Toolchain
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/winnative-runtime-base
+    paths:
+      - "native/recompilers/XDroid360"
+      - ".github/workflows/ngr-xdroid360-toolchain.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ngr-xdroid360-toolchain-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-xbox360-toolchain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout NGR and pinned XDroid360 sources
+        uses: actions/checkout@v4
+        with:
+          ref: integration/winnative-runtime-base
+          submodules: recursive
+          lfs: true
+          fetch-depth: 0
+
+      - name: Free disk space and install build tools
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift /usr/local/share/boost
+          sudo apt-get update -q
+          sudo apt-get install -y -q ninja-build python3 python3-pip zip unzip
+          df -h /
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK and NDK
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.3.13750724" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> "$GITHUB_ENV"
+          echo "$ANDROID_SDK_ROOT/cmake/3.22.1/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK_ROOT/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Verify pinned XDroid360 recipe and native source graph
+        run: |
+          set -euo pipefail
+          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "f388d11fc207502cd5975899c8adc06600cfe34f"
+          test -f native/recompilers/XDroid360/toolchain/env.sh
+          test -f native/recompilers/XDroid360/toolchain/package.sh
+          test -f native/recompilers/XDroid360/android/app/src/main/cpp/CMakeLists.txt
+          test -f native/recompilers/XDroid360/android/app/src/main/java/com/udarmolota/xdroid360/BuildService.java
+          git -C native/recompilers/XDroid360 submodule status --recursive
+
+      - name: Fetch pinned LLVM, XenonRecomp, SDL3 and DXC sources
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: bash fetch_sources.sh
+
+      - name: Restore LLVM host and Android compiler cache
+        id: llvm
+        uses: actions/cache@v4
+        with:
+          path: |
+            native/recompilers/XDroid360/toolchain/stage/bin/clang
+            native/recompilers/XDroid360/toolchain/stage/bin/lld
+            native/recompilers/XDroid360/toolchain/stage/lib/clang
+          key: ngr-xdroid360-llvm-${{ hashFiles('native/recompilers/XDroid360/toolchain/env.sh', 'native/recompilers/XDroid360/toolchain/configure_android_llvm.sh', 'native/recompilers/XDroid360/toolchain/build_host_tablegen.sh') }}
+
+      - name: Build LLVM host tablegens
+        if: steps.llvm.outputs.cache-hit != 'true'
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: HOST_TABLEGEN_BUILD_DIR=/mnt/build-host bash build_host_tablegen.sh
+
+      - name: Build Android Clang 22 and LLD
+        if: steps.llvm.outputs.cache-hit != 'true'
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: |
+          HOST_LLVM_BIN=/mnt/build-host/bin LLVM_BUILD_DIR=/mnt/build-android bash build_tools.sh llvm
+          rm -rf /mnt/build-android /mnt/build-host
+
+      - name: Build XenonRecomp and native STFS extractor
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: |
+          bash build_tools.sh xr
+          bash build_tools.sh stfs
+
+      - name: Restore DXC compiler cache
+        id: dxc
+        uses: actions/cache@v4
+        with:
+          path: native/recompilers/XDroid360/toolchain/stage/bin/libdxcompiler.so
+          key: ngr-xdroid360-dxc-${{ hashFiles('native/recompilers/XDroid360/toolchain/env.sh', 'native/recompilers/XDroid360/toolchain/build_dxc_host_tablegen.sh') }}
+
+      - name: Build DXC host tablegens
+        if: steps.dxc.outputs.cache-hit != 'true'
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: DXC_HOST_BUILD_DIR=/mnt/build-dxc-host bash build_dxc_host_tablegen.sh
+
+      - name: Build Xenos shader library and DXC
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: |
+          if [ "${{ steps.dxc.outputs.cache-hit }}" = "true" ]; then
+            DXC_LIB="$PWD/stage/bin/libdxcompiler.so" bash build_tools.sh shaderlib
+          else
+            DXC_HOST_BIN=/mnt/build-dxc-host/bin DXC_BUILD_DIR=/mnt/build-dxc-android bash build_tools.sh shaderlib
+            rm -rf /mnt/build-dxc-android /mnt/build-dxc-host
+          fi
+
+      - name: Package ARM64 compiler kit and licenses
+        working-directory: native/recompilers/XDroid360/toolchain
+        run: |
+          set -euo pipefail
+          RELEASE="ngr-dev-${GITHUB_SHA::7}" bash package.sh
+          READELF="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          for f in out/jniLibs/arm64-v8a/*.so; do
+            for align in $("$READELF" -lW "$f" | awk '/LOAD/{print $NF}'); do
+              [ "$((align))" -ge 16384 ] || { echo "$f has a LOAD segment aligned to $align"; exit 1; }
+            done
+          done
+          tar -czf out/xenonrecomp-source.tar.gz --exclude=.git \
+            -C sources XenonRecomp patch_recompiler.py \
+            -C "$GITHUB_WORKSPACE/native/recompilers/XDroid360/toolchain" licenses/GPL-2.0.txt
+          test -s out/kit.zip
+          test -s out/jniLibs/arm64-v8a/libxenonrecomp.so
+
+      - name: Fetch DAO build dependencies and external game profiles
+        run: |
+          set -euo pipefail
+          python3 -I native/recompilers/XDroid360/scripts/fetch_build_sources.py
+          python3 -I native/recompilers/XDroid360/scripts/fetch_toolchain.py --out build/xdroid360/fetched
+
+      - name: Build the Dragon Age Origins ARM64 runtime profile
+        run: |
+          set -euo pipefail
+          cmake -G Ninja -S native/recompilers/XDroid360/android/app/src/main/cpp -B build/xdroid360/profile-android \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static \
+            -DCMAKE_BUILD_TYPE=Release -DXDROID360_PROFILE_BUILD=ON
+          python3 -I native/recompilers/XDroid360/scripts/make_dao_profile.py \
+            --build build/xdroid360/profile-android \
+            --kit native/recompilers/XDroid360/toolchain/out/kit \
+            --out build/xdroid360/profile
+
+      - name: Verify all game profiles against the pinned kit
+        run: |
+          python3 -I native/recompilers/XDroid360/scripts/check_profiles.py \
+            native/recompilers/XDroid360/toolchain/out/kit/kit.json \
+            build/xdroid360/profile/dao.zip \
+            build/xdroid360/fetched/games/sod.zip \
+            build/xdroid360/fetched/games/me1.zip
+
+      - name: Assemble the NGR runtime payload
+        run: |
+          set -euo pipefail
+          OUT=build/xdroid360/payload
+          mkdir -p "$OUT/games"
+          cp -a native/recompilers/XDroid360/toolchain/out/jniLibs "$OUT/"
+          cp native/recompilers/XDroid360/toolchain/out/kit.zip "$OUT/kit.zip"
+          cp build/xdroid360/profile/dao.zip "$OUT/games/dao.zip"
+          cp build/xdroid360/fetched/games/sod.zip "$OUT/games/sod.zip"
+          cp build/xdroid360/fetched/games/me1.zip "$OUT/games/me1.zip"
+          for f in libclang.so liblld.so libxenonrecomp.so libstfsextract.so libshaderlib.so libdxcompiler.so; do
+            test -s "$OUT/jniLibs/arm64-v8a/$f"
+          done
+          test -s "$OUT/kit.zip"
+          test -s "$OUT/games/dao.zip"
+          test -s "$OUT/games/sod.zip"
+          test -s "$OUT/games/me1.zip"
+          sha256sum "$OUT/kit.zip" "$OUT/jniLibs/arm64-v8a/"*.so "$OUT/games/"*.zip > "$OUT/SHA256SUMS"
+          du -sh "$OUT"
+
+      - name: Upload XDroid360 ARM64 toolchain and game runtime profiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: ngr-xdroid360-payload
+          path: build/xdroid360/payload
+          if-no-files-found: error
+          retention-days: 30
