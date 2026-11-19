@@ -120,6 +120,18 @@ jobs:
               source = source.replace(dependencies, dependencies + "\n    testImplementation 'org.json:json:20240303'")
           gradle.write_text(source)
 
+          # Preserve the isolated XDroid360 Android library when the WinNative host is re-imported.
+          settings = Path("settings.gradle")
+          settings_source = settings.read_text()
+          if "include ':ngr-xdroid360'" not in settings_source:
+              settings.write_text(settings_source.rstrip() + "\\ninclude ':ngr-xdroid360'\\n")
+
+          gradle = Path("app/build.gradle")
+          source = gradle.read_text()
+          if "implementation project(':ngr-xdroid360')" not in source:
+              source = source.replace("dependencies {", "dependencies {\\n    implementation project(':ngr-xdroid360')", 1)
+          gradle.write_text(source)
+
           license_doc = Path("docs/ngr/LICENSING_AND_PROVENANCE.md")
           if license_doc.exists():
               source = license_doc.read_text()
