@@ -2,29 +2,51 @@ plugins {
     alias(libs.plugins.androidLibrary)
 }
 
+def xdroid360DonorDir = rootProject.file("native/recompilers/XDroid360")
+def xdroid360ToolchainDir = providers.gradleProperty("xdroid360.toolchain")
+        .map { rootProject.file(it) }
+        .orElse(rootProject.file("build/xdroid360"))
+def generatedAssetsDir = layout.buildDirectory.dir("generated/xdroid360/assets")
+def generatedJniDir = layout.buildDirectory.dir("generated/xdroid360/jniLibs")
+
 android {
     namespace "com.udarmolota.xdroid360"
     compileSdk 36
+    ndkVersion "27.3.13750724"
 
     defaultConfig {
         minSdk 26
         consumerProguardFiles "consumer-rules.pro"
         buildConfigField "String", "XDROID360_UPSTREAM_REVISION", '"f388d11fc207502cd5975899c8adc06600cfe34f"'
+        ndk { abiFilters "arm64-v8a" }
+        externalNativeBuild {
+            cmake {
+                arguments "-DDAO_LAUNCHER_ONLY=ON",
+                          "-DANDROID_STL=c++_static",
+                          "-DANDROID_PLATFORM=android-29",
+                          "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                          "-DCMAKE_BUILD_TYPE=Release"
+            }
+        }
     }
 
-    buildFeatures {
-        buildConfig true
+    externalNativeBuild {
+        cmake {
+            path file("../native/recompilers/XDroid360/android/app/src/main/cpp/CMakeLists.txt")
+            version "3.22.1"
+        }
     }
+
+    buildFeatures { buildConfig true }
 
     sourceSets {
         main {
-            // Compile the pinned donor's game/build implementation in an isolated namespace.
-            // SDL's Java glue is supplied by WinNative's existing SDL3 AAR; do not package a
-            // second copy of org.libsdl.app into the host application.
             java.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/java"))
             java.exclude("org/libsdl/**")
             res.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/res"))
             assets.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/assets"))
+            assets.srcDir(generatedAssetsDir)
+            jniLibs.srcDir(generatedJniDir)
             manifest.srcFile("src/main/AndroidManifest.xml")
         }
     }
@@ -33,30 +55,76 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    packaging {
+        jniLibs { useLegacyPackaging = true }
+    }
 }
 
 dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.coreKtx
-    // SDL3's Java Activity glue is already shipped by the WinNative host; resolve the same AAR here for compilation.
     implementation 'org.libsdl.android:SDL3:3.4.16-winnative.2@aar'
 }
 
-def xdroid360DonorDir = layout.projectDirectory.dir("../native/recompilers/XDroid360").asFile.absolutePath
+tasks.register("prepareXDroid360Payload") {
+    inputs.dir(xdroid360ToolchainDir).optional()
+    outputs.dir(generatedAssetsDir)
+    outputs.dir(generatedJniDir)
+    doLast {
+        def payload = xdroid360ToolchainDir.get()
+        def assetsOut = generatedAssetsDir.get().asFile
+        def jniOut = generatedJniDir.get().asFile
+        delete assetsOut, jniOut
+        def kit = new File(payload, "kit.zip")
+        def games = new File(payload, "games")
+        def libs = new File(payload, "jniLibs/arm64-v8a")
+        if (!kit.isFile()) {
+            logger.lifecycle("XDroid360 toolchain payload absent; packaging UI/runtime shell only. Run the XDroid360 toolchain workflow to enable game builds.")
+            return
+        }
+        def required = ["libclang.so", "liblld.so", "libxenonrecomp.so", "libstfsextract.so", "libshaderlib.so", "libdxcompiler.so"]
+        def missing = required.findAll { !new File(libs, it).isFile() }
+        if (!missing.isEmpty()) throw new GradleException("XDroid360 payload is incomplete; missing " + missing.join(", "))
+        if (!games.isDirectory() || !games.listFiles()?.any { it.name.endsWith(".zip") }) {
+            throw new GradleException("XDroid360 payload has no game profile archives in games/")
+        }
+        copy {
+            from kit
+            into assetsOut
+        }
+        copy {
+            from games
+            include "*.zip"
+            into new File(assetsOut, "games")
+        }
+        copy {
+            from libs
+            include "*.so"
+            into new File(jniOut, "arm64-v8a")
+        }
+        logger.lifecycle("Prepared XDroid360 kit, " + games.listFiles().count { it.name.endsWith(".zip") } + " profiles and " + required.size() + " ARM64 tools")
+    }
+}
 
+def xdroid360DonorPath = xdroid360DonorDir.absolutePath
 tasks.register("verifyXDroid360SourcePin") {
     doLast {
-        def donor = new File(xdroid360DonorDir)
-        def gitFile = new File(donor, ".git")
-        if (!donor.isDirectory() || !gitFile.exists()) {
+        def donor = new File(xdroid360DonorPath)
+        if (!donor.isDirectory() || !new File(donor, ".git").exists()) {
             throw new GradleException("XDroid360 submodule is missing; run git submodule update --init --recursive")
         }
         def javaRoot = new File(donor, "android/app/src/main/java/com/udarmolota/xdroid360")
         ["BuildService.java", "BuildJob.java", "RecipeRunner.java", "Toolchain.java", "GameSource.java", "Xiso.java"].each {
-            if (!new File(javaRoot, it).isFile()) throw new GradleException("XDroid360 source missing: ${it}")
+            if (!new File(javaRoot, it).isFile()) throw new GradleException("XDroid360 source missing: " + it)
+        }
+        if (!new File(donor, "android/app/src/main/cpp/CMakeLists.txt").isFile()) {
+            throw new GradleException("XDroid360 native SDL3/Vulkan build graph is missing")
         }
     }
 }
 
-preBuild.dependsOn verifyXDroid360SourcePin
+tasks.named("preBuild") {
+    dependsOn("verifyXDroid360SourcePin", "prepareXDroid360Payload")
+}
