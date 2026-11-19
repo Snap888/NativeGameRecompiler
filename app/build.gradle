@@ -447,6 +447,8 @@ dependencies {
     implementation project(':framegen')
     implementation project(':armsx2')
     implementation project(':dolphin')
+    // Isolated XDroid360 build/profile/runtime Java layer; native Xenia/DAO targets are gated separately.
+    implementation project(':ngr-xdroid360')
 }
 
 spotless {
