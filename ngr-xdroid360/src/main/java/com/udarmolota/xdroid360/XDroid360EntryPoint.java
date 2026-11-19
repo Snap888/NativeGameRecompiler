@@ -26,10 +26,17 @@ public final class XDroid360EntryPoint {
         if (!"file".equals(pick) && !"tree".equals(pick)) {
             throw new IllegalArgumentException("pick must be file or tree");
         }
+        // Keep the full donor library behind the build screen. When BuildActivity finishes,
+        // the player lands on the refreshed list of compiled instances rather than back in NGR.
+        Intent launcher = new Intent(context, LauncherActivity.class);
         Intent intent = new Intent(context, BuildActivity.class)
                 .putExtra(BuildActivity.EXTRA_URI, source)
                 .putExtra(BuildActivity.EXTRA_PICK, pick);
-        if (!(context instanceof android.app.Activity)) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!(context instanceof android.app.Activity)) {
+            launcher.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        context.startActivity(launcher);
         context.startActivity(intent);
     }
 }
