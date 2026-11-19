@@ -41,9 +41,11 @@ dependencies {
     implementation libs.coreKtx
 }
 
+def xdroid360DonorDir = layout.projectDirectory.dir("../native/recompilers/XDroid360").asFile.absolutePath
+
 tasks.register("verifyXDroid360SourcePin") {
     doLast {
-        def donor = rootProject.file("native/recompilers/XDroid360")
+        def donor = new File(xdroid360DonorDir)
         def gitFile = new File(donor, ".git")
         if (!donor.isDirectory() || !gitFile.exists()) {
             throw new GradleException("XDroid360 submodule is missing; run git submodule update --init --recursive")
