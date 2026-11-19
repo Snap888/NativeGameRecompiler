@@ -27,7 +27,7 @@ object NgrRecompilerCatalog {
         SystemEntry(SystemId.NINTENDO_SWITCH, "Nintendo Switch", setOf("nsp", "xci", "nro", "nso"), false),
         SystemEntry(SystemId.NINTENDO_SWITCH_2, "Nintendo Switch 2", setOf("nsp", "xci", "nro", "nso"), false),
         SystemEntry(SystemId.XBOX, "Xbox (Original)", setOf("iso", "xbe"), false),
-        SystemEntry(SystemId.XBOX_360, "Xbox 360", setOf("iso", "xex", "LIVE"), false),
+        SystemEntry(SystemId.XBOX_360, "Xbox 360", setOf("iso", "zip", "xex", "con", "live", "pirs"), false),
         SystemEntry(SystemId.XBOX_ONE, "Xbox One", setOf("xvc", "pkg", "iso"), false),
         SystemEntry(SystemId.PC_EXE, "PC Windows (EXE)", setOf("exe", "dll"), false)
     )
