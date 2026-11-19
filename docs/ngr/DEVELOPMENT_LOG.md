@@ -1129,3 +1129,14 @@ This is the durable project memory. Update it in every development session.
 - CI run 44482630569 exposed a Gradle configuration-cache capture in the source-pin verification task; fixed by capturing the donor path as a configuration-time string. That run passed N64Recomp host tools and native ABI checks but failed before JVM tests.
 - Native toolchain and game runtime are NOT yet packaged. The donor documents a substantial build (LLVM 22 clang/lld, patched XenonRecomp, STFS JNI, shaderlib/DXC, kit.zip, profiles) and DAO/Xenia Vulkan CMake runtime. The module currently provides the Java/resource integration layer only.
 - Latest code commit at this log update: abcd90b8fcb91c2380bdbe97aa96fc430a5690a5. CI verification for this commit is pending; no APK artifact is claimed.
+
+
+## 2026-11-19 — XDroid360 runtime transfer continuation
+
+- Fixed the missing Android Gradle wiring: `:ngr-xdroid360` is now included by `settings.gradle` and linked from `:app`. This addresses the CI Kotlin unresolved-package failure at the NGR picker.
+- The XDroid360 library now builds its donor CMake graph in launcher-only mode, producing SDL3 and the private Vulkan driver hook while leaving game-specific runtime code to the profile build pipeline.
+- Added an optional, validated toolchain payload stage: `kit.zip`, ARM64 compiler/STFS/Xenos/DXC tools and game profile ZIPs are copied into the library's generated assets/JNI directories. An APK without the payload remains explicitly non-build-capable.
+- Added a dedicated manual/changed-source GitHub Actions workflow to reproduce the pinned LLVM 22, XenonRecomp, STFS, Xenos shaderlib/DXC toolchain, DAO ARM64 runtime profile, and fetch the pinned SoD/ME1 profiles. The resulting artifact is named `ngr-xdroid360-payload`.
+- The normal NGR Android workflow now downloads the latest successful payload when available and passes it into Gradle.
+- NGR Xbox 360 ISO and selected STFS folder inputs now route directly to XDroid360's existing `BuildActivity` / `GameSource` / `BuildService` / `RecipeRunner` pipeline instead of stopping at a placeholder message. Standalone `.xex` files are deliberately not passed as supported input; the donor expects an XISO image or an STFS folder/ZIP.
+- No playable-game claim is made until the toolchain/profile artifact is built and the APK is verified to contain the payload.
