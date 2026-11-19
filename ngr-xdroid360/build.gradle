@@ -91,7 +91,7 @@ tasks.register("prepareXDroid360Payload") {
         def games = new File(payload, "games")
         def libs = new File(payload, "jniLibs/arm64-v8a")
         if (!kit.isFile()) {
-            logger.lifecycle("XDroid360 toolchain payload absent; packaging UI/runtime shell only. Run the XDroid360 toolchain workflow to enable game builds.")
+            println("XDroid360 toolchain payload absent; packaging UI/runtime shell only. Run the XDroid360 toolchain workflow to enable game builds.")
             return
         }
         def required = ["libclang.so", "liblld.so", "libxenonrecomp.so", "libstfsextract.so", "libshaderlib.so", "libdxcompiler.so"]
