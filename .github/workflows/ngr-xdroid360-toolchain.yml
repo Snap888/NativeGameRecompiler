@@ -20,6 +20,9 @@ jobs:
   build-xbox360-toolchain:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    env:
+      CMAKE: cmake
+      NINJA: ninja
     steps:
       - name: Checkout NGR and pinned XDroid360 sources
         uses: actions/checkout@v4
@@ -41,6 +44,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android SDK and NDK
         run: |
