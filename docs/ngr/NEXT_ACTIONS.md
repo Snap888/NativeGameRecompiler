@@ -329,9 +329,9 @@ Mark complete only when evidence exists.
 
 ## XDroid360 transfer — next verification gates
 
-- [ ] Run `NGR XDroid360 Toolchain` and fix any upstream script, host dependency, memory/disk, profile or checksum failures.
+- [ ] Complete the active `NGR XDroid360 Toolchain` run; verify LLVM host tablegens, Android Clang/LLD, XenonRecomp, STFS, DXC/Xenos shaderlib and DAO profile stages.
 - [ ] Verify artifact contains `kit.zip`, six ARM64 tools, and DAO/SoD/ME1 profile ZIPs.
 - [ ] Verify normal NGR CI downloads the payload and that Gradle packages it under `assets/kit.zip`, `assets/games/*.zip`, and `lib/arm64-v8a/*.so`.
-- [ ] Build all NGR Android module native targets and resolve manifest/resource/SDL3 integration conflicts.
+- [ ] Build the NGR Android module and verify the donor Vulkan hook + existing WinNative SDL3 AAR merge without duplicate native libraries.
 - [ ] Test XISO and STFS tree detection, build progress/cancel/retry, and resulting instance launch on Android Adreno.
 - [ ] Keep support scoped to the donor's actual recipe profiles; do not mark arbitrary Xbox 360 titles as playable.
