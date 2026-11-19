@@ -314,36 +314,111 @@ Mark complete only when evidence exists.
 - [ ] Install APK and test SAF import of a multi-GB game folder on physical Snapdragon/Adreno hardware.
 
 
-## P4 — N64Recomp integration (active — 2026-11-18)
-- [x] Pin N64Recomp MIT upstream at `598ce2080004a5672d604dceadbda436045307b7` as `native/recompilers/N64Recomp`.
-- [x] Preserve recursive dependency submodules and upstream license notices.
-- [x] Add reproducible host-tool build of N64Recomp and RSPRecomp to integration CI.
-- [ ] Verify CI can recursively fetch all N64Recomp dependency submodules and build both tools.
-- [ ] Add Android JNI wrapper around the N64Recomp core API with bounded job lifecycle, cancellation and progress/log reporting.
-- [ ] Build N64Recomp core/dependencies for Android ARM64 (do not package a host executable in the APK).
-- [ ] Add validated ROM/ELF metadata inspection and a clear unsupported-input report.
-- [ ] Generate C source into app-private workspace and compile it with NDK Clang for arm64-v8a.
-- [ ] Integrate a versioned N64 title runtime; do not assume N64Recomp output is self-contained.
-- [ ] Add a synthetic/redistributable end-to-end fixture and verify generated ARM64 output.
-- [ ] Register the static backend with trusted built-in ABI lifecycle and launch only validated generated packages.
-- [ ] Verify the resulting app APK and device execution before marking N64 support available.
-
-### Scope guard
-- N64/MIPS is the first bounded proof of concept only.
-- N64Recomp currently needs ELF/symbol metadata; ROM-only automatic function discovery is not promised.
-- Do not include copyrighted ROMs, ELFs, assets or title-specific generated code in CI/repository.
-- Host-tool compilation is not the same as Android embedding or game execution.
+## P4 — N64 static recompiler (active)
+- [x] Pin N64Recomp upstream commit `598ce2080004a5672d604dceadbda436045307b7`.
+- [x] Build pinned N64Recomp and RSPRecomp host tools in CI.
+- [x] Link the N64Recomp core into the Android ARM64 JNI runtime; verified by Actions run [44343916041](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44343916041).
+- [x] Add JNI pipeline to parse supported N64 ELF and emit per-function C source, static-function discoveries, `funcs.h` and a machine-readable generation manifest.
+- [x] Add Android “Recompile to C” action.
+- [ ] Verify N64 code-generation and source-set repair in the current Android CI runs; run #44379837404 exposed the omitted `src/main/java` source root.
+- [ ] Add synthetic, redistributable MIPS ELF fixture tests for actual generated C and error paths.
+- [x] Include the pinned upstream `recomp.h` ABI header and N64Recomp license in generated output; add a README describing the missing title-runtime services.
+- [ ] Add N64Recomp TOML configuration import and preserve required metadata/entrypoint.
+- [ ] Provision Android ARM64 Clang and compile generated C against a real title runtime.
+- [ ] Integrate a compatible N64 title runtime, including CPU/memory, RSP, graphics, audio, save data and platform services.
+- [ ] Connect WinNative touch and gamepad input to the N64 runtime's controller API.
+- [ ] Package generated ARM64 library + runtime assets as an installable NGR game package.
+- [ ] Launch and validate a legally supplied test title on device. Do not mark launch complete before this test.
 
 
-## P5 — N64Recomp Android core (active — 2026-11-18)
+## N64Recomp implementation checkpoint — 2026-11-18
+- [x] Add the recompiler screen to the WinNative drawer.
+- [x] Add Android JNI code generation from supported N64 ELF to per-function C sources.
+- [x] Follow N64Recomp-discovered static functions across sections and bound generated function/instruction counts and ROM offsets.
+- [x] Add direct branch Android CI workflow: `.github/workflows/ngr-android-build.yml`.
+- [x] Audit N64ModernRuntime input/renderer callback seams and GPL-3.0 provenance in `docs/ngr/N64_RUNTIME_INTEGRATION_AUDIT.md`.
+- [ ] Confirm latest direct CI run green after fixing the missing std::filesystem::path declarations and adding shared shortcut registration.
+- [x] Register successfully generated N64 projects in the shared GAME SHORTCUTS list with editable launch settings.
+- [x] Show a disabled Launch control and an explicit runtime-pending state; do not attempt to launch C source files.
+- [ ] Enable launch only after ARM64 library build, title runtime integration, package validation and device verification.
+- [ ] Add synthetic MIPS ELF fixture and execute the actual NGR JNI/codegen path in a host test harness.
+- [ ] Add N64Recomp metadata/configuration import (entrypoint, relocatable sections, manual sizes, references, ignored/stubbed symbols).
+- [ ] Integrate N64ModernRuntime `librecomp` / `ultramodern` for Android without duplicate N64Recomp targets.
+- [ ] Select and integrate a compatible N64 display-list renderer.
+- [ ] Connect SDL/Vulkan surface lifecycle, WinNative controller/touch callbacks and audio callbacks.
+- [ ] Compile generated C to ARM64 using a verified managed Clang toolchain and link the title runtime.
+- [ ] Package title-specific runtime, generated library and legally supplied ROM/data.
+- [ ] Device-test a legally supplied title; only then mark “launchable”.
 
-- [x] Add pinned N64Recomp to Android CMake graph.
-- [x] Link N64Recomp ELF/core libraries into NGR JNI runtime.
-- [x] Add bounded JNI ELF inspection entry point.
-- [x] Add bilingual English/Russian screen and SAF import.
-- [x] Restore N64Recomp submodule metadata after WinNative import and register the activity in CI import script.
-- [ ] Verify CI submodule initialization and host tools.
-- [ ] Verify Android ARM64 compile/link of N64Recomp core.
-- [ ] Add ROM + symbol/config inputs and real C code generation.
-- [ ] Compile generated C with NDK Clang and link a compatible N64 title runtime.
-- [ ] Add synthetic fixture tests and device validation.
+
+## N64 recompiler build repair — 2026-11-18
+- [x] Diagnose Kotlin source resolution failure: NGR sources were preserved under `app/src/main/java`, but WinNative's custom Gradle source roots excluded that directory.
+- [x] Add the source root in Gradle and make the donor-import workflow restore it after every import.
+- [x] Bundle upstream N64Recomp ABI header and license in generated C output.
+- [ ] Verify latest CI, then add synthetic ELF code-generation regression tests.
+
+
+## Recompiler intake / backend expansion
+- [x] Add a dedicated Recompiler entry to the Library add-game dialog.
+- [x] Add file, multi-file and folder selection with bounded recursive scan.
+- [x] Add auto-detection for MIPS ELF and manual target-system selection.
+- [x] Keep only N64/MIPS selectable until another backend is actually integrated.
+- [x] Add persistent diagnostics for picker detection, SAF URI access, folder scans, N64 ELF import/inspection, C generation and shortcut registration; expose log viewer/share action.
+- [x] Detect N64 .z64/.n64/.v64 ROM magic and explain that the current N64Recomp backend needs a MIPS ELF plus decompilation metadata, not a retail ROM directly.
+- [x] Expand planned target catalog to PS3, PS4, Nintendo Switch, Nintendo Switch 2, Xbox, Xbox 360, Xbox One and Windows PC EXE; entries remain unavailable until real backends exist.
+- [x] Scan selected folders for all catalogued extensions, not only .elf.
+- [ ] Verify current CI and test .z64/.n64/.v64 detection, folder permissions and log export on Android.
+- [ ] Add unit tests for N64 ROM byte-order probes and malformed headers.
+- [ ] Implement a legal N64 ROM + decompilation-project metadata workflow before exposing ROM-to-native compilation.
+- [ ] Add dedicated backend interfaces and implementations for each planned console/PC system; do not mark catalog entries available prematurely.
+
+
+
+## Xbox 360 / XDroid360 integration
+- [x] Stabilize the WinNative import workflow against concurrent pushes and repair the source-root insertion script.
+- [x] Add tested XEX2/STFS header detection to NGR auto-detection. This is format recognition only; no generic ISO/XEX execution is enabled.
+- [ ] Verify unit tests and Android APK build after Xbox 360 detector changes.
+- [ ] Implement a safe XEX/STFS/XISO import and bounded extraction pipeline based on XDroid360/XenonUtils; do not shell out to arbitrary commands.
+
+- [x] Diagnose and fix the Kotlin Byte-vs-Int ELF magic comparison from run #44399528476.
+- [x] Preserve the XDroid360 submodule mapping through WinNative donor imports and add CI source-pin checks.
+- [ ] Check runs #44401088392, #44401119729 and #44401136332; repair any recursive submodule or Android build failures.
+
+- [x] Audit `Snap888/XDroid360` fork and upstream architecture; record supported-title limits and license provenance.
+- [x] Pin XDroid360 source at `f388d11fc207502cd5975899c8adc06600cfe34f` under `native/recompilers/XDroid360`; nested DAORecomp submodule requires recursive checkout.
+- [ ] Verify recursive checkout and inspect nested submodule commit/license state in CI.
+- [ ] Port XenonRecomp + XenonUtils/XEX as an NGR backend without the donor launcher UI.
+- [ ] Port the pinned Clang/LLD toolchain packaging and version/hash compatibility checks.
+- [ ] Adapt bounded recipe execution, extraction, progress, cancellation, resume and detailed per-step logs to NGR build jobs.
+- [ ] Integrate a first title-specific runtime/profile (DAO or State of Decay); arbitrary Xbox 360 XEX/ISO must remain unsupported without a matching profile.
+- [ ] Add NGR Android host adapters for Vulkan surface, audio/XMA, controller input, storage, lifecycle and per-game settings; reuse WinNative services instead of adding duplicate managers.
+- [ ] Compile/link one legally supplied title to ARM64, validate its package, register a shortcut and verify actual launch on device before enabling the backend.
+
+
+## P2 — Xbox 360 / XDroid360 integration
+- [x] Audit and pin XDroid360 source at `f388d11fc207502cd5975899c8adc06600cfe34f` (existing submodule; no duplicate source import).
+- [x] Document the donor pipeline, supported-title boundary, CMake/app integration constraints and license obligations.
+- [x] Recognize ISO/ZIP/XEX/STFS container candidates and test candidate extension matching.
+- [ ] Port donor Android launcher/build UI into an isolated NGR feature without replacing WinNative host activity.
+- [ ] Integrate pinned clang/lld + XenonRecomp + STFS JNI toolchain and hash-verified kit/profile assets.
+- [ ] Integrate DAO/SoD runtime, Xenia Vulkan/native renderer, SDL3 and Xenos shader pipeline for arm64-v8a.
+- [ ] Adapt BuildService/RecipeRunner resume, cancellation, progress and game instance lifecycle to NGR.
+- [ ] Add synthetic XEX/STFS/XISO fixtures, recipe validation tests and native build CI.
+- [ ] Enable Xbox 360 catalog availability only after green CI and end-to-end device validation for supported profiles.
+
+
+## Immediate — verify recompiler intake
+- [x] Fix Kotlin worker lambda parse error found in run 44471496862.
+- [x] Add atomic persistent project registry with explicit lifecycle states.
+- [x] Persist Xbox 360 and N64 ROM candidates without creating runnable shortcuts.
+- [x] Add JVM coverage for project-store persistence and validation.
+- [ ] Confirm latest JVM test and Android ARM64 CI run green; inspect APK artifact only after successful build.
+
+## Xbox 360 integration — donor app port
+- [ ] Create isolated Android library/module boundary for XDroid360 Java sources, resources, manifest components and SDL3 Java activity; keep NGR/WinNative launcher as the sole MAIN activity.
+- [ ] Port BuildService/BuildJob/RecipeRunner/Toolchain/GameSource and profile validation, including cancellation/resume and bounded logging.
+- [ ] Port STFS JNI and XISO/ZIP source readers; preserve SAF URI access and copy-to-private-storage behavior.
+- [ ] Integrate on-device toolchain packaging (clang/lld/XenonRecomp/STFS/shaderlib/DXC) with pinned SHA-256 checks and storage preflight.
+- [ ] Integrate DAO/SoD runtime CMake, Xenia Vulkan/native renderer, SDL3 and Xenos shader pipeline as an isolated arm64 target.
+- [ ] Add NGR UI flow to import, validate, build, resume/cancel and launch supported profile instances.
+- [ ] Verify profile compatibility and end-to-end builds on device for each supported title before enabling backend availability.

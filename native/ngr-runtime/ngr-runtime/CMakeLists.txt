@@ -28,6 +28,10 @@ target_include_directories(ngr_runtime PRIVATE
     "${NGR_N64RECOMP_DIR}/lib/ELFIO"
 )
 target_compile_features(ngr_runtime PRIVATE cxx_std_20)
+target_compile_definitions(ngr_runtime PRIVATE
+    NGR_N64RECOMP_INCLUDE_DIR="${NGR_N64RECOMP_DIR}/include"
+    NGR_N64RECOMP_LICENSE_FILE="${NGR_N64RECOMP_DIR}/LICENSE"
+)
 target_compile_options(ngr_runtime PRIVATE -Wall -Wextra -Wpedantic)
 find_library(android-lib android)
 find_library(log-lib log)

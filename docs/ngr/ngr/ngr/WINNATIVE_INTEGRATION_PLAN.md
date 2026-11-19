@@ -1,0 +1,295 @@
+# WinNative Runtime & Environment Integration Plan
+
+Status: environment/profile and component-management foundation implemented; Windows runtime execution is not integrated. This document separates verified donor capabilities from items that still require source audit and compatibility validation.
+
+## Goal
+
+Reuse the proven Android Windows-compatibility environment from WinNative / its Winlator Bionic lineage so NGR can launch ordinary Windows games early, while keeping static recompilation as a separate first-class execution path.
+
+NGR adopts the WinNative Android host/runtime as its compatibility foundation. NGR-specific package identity, recompiler pipelines, execution selection, diagnostics and static-backend interfaces remain distinct modules integrated into that host.
+
+
+
+## NGR implementation status — 2026-11-18
+
+### Implemented in NGR
+- Versioned environment profile model with standard x86_64/Box64 and ARM64EC/FEXCore validation, component references, graphics/display/audio fields, global environment variables and per-game overrides.
+- Strict profile JSON codec and atomic app-private profile storage; UI can create, edit, select and delete profiles.
+- Typed component catalog and bounded strict JSON parser with source/license/hash/ABI metadata, dependency/conflict constraints and cycle detection.
+- HTTPS-only component downloader with bounded redirects, no HTTPS downgrade, connect/read timeouts, streamed size and Content-Length checks, SHA-256 verification and temporary private output.
+- ZIP component installer with immutable private snapshot, central-directory inspection, traversal/symlink/special-file rejection, bounded extraction, executable-bit preservation and staging cleanup.
+- Versioned component store with atomic promotion, active/previous state, rollback, inactive-version removal and uninstall.
+- Dependency resolver with profile-selected components, ABI/container-mode checks, required/forbidden components, conflicts and dependency-first install plans.
+- Install pipeline connects verified HTTPS download, ZIP extraction and component activation. It does not execute component payloads.
+
+### Not yet implemented
+- No Wine/Proton process launcher, Windows prefix lifecycle, Box64/FEX runtime invocation or guest process supervision.
+- No real DXVK/VKD3D/Turnip provider activation or Vulkan loader isolation at runtime.
+- No ReShade DLL injector. Donor audit found vkBasalt-based ReShade-compatible effect handling; do not label this as ReShade DLL injection.
+- No X11/Wayland game session launch path in NGR.
+- No TAR.GZ/TAR.XZ/TAR.ZSTD/RAW component extraction. Catalog formats outside ZIP are rejected by the current installer.
+- No live-network integration tests for redirect, TLS and server-failure paths; downloader currently has URL-policy/preflight tests.
+- No donor runtime binaries/source have been copied into NGR. License/provenance inventory remains incomplete.
+
+## Execution architecture
+
+- **Wine compatibility backend:** Windows PE games through a selected Wine/Proton layer, CPU translation runtime and graphics stack.
+- **Static recompiled backend:** generated ARM64 code plus the title-specific NGR runtime; must not require Wine.
+- **Native ARM64 backend:** already-native game ports or separately trusted native backends.
+
+The game library records source format/architecture and available execution paths. Backend selection is explicit and explainable; it must never silently treat an imported EXE as a runnable native package.
+
+## Environment Manager scope
+
+### Container and Wine configuration
+- Container/rootfs lifecycle, Wine prefix creation, backup, clone, reset and repair.
+- Wine/Proton layer catalog, install/update/remove, pinning and rollback.
+- Windows version, architecture mode, desktop/window resolution, DPI, display backend, audio/input options.
+- Container-wide environment variables plus per-game overrides.
+- DLL overrides, synchronization options and compatibility toggles.
+- Per-game shortcut/profile settings layered over container defaults.
+
+### CPU translation
+- Box64 (and Box86 only if needed by a supported 32-bit path): versioned runtime, presets, environment variables and per-game overrides.
+- FEXCore and FEX unix libraries for ARM64EC paths, versioned and independently selectable.
+- WOWBox64 only where the chosen ARM64EC/FEX configuration requires it.
+- Explicit architecture routing: x86_64/standard containers vs ARM64EC/FEX paths. These are not interchangeable toggles.
+- Runtime capability checks before allowing incompatible combinations.
+
+### Graphics and drivers
+- DXVK for Direct3D 8/9/10/11 paths, with standard and ARM64EC variants where available.
+- VKD3D-Proton for Direct3D 12; D8VK/D7VK only as separately catalogued optional components.
+- Turnip/Adreno driver packages through an isolated provider mechanism (AdrenoTools or equivalent).
+- Android system Vulkan loader remains untouched. Per-container/per-game driver selection must not overwrite system libraries.
+- X11 first for initial compatibility; Wayland only when the selected Wine/Proton layer ships a matching winewayland driver and the compatible Wayland Vulkan path is present.
+- Preserve component version, source, checksum, ABI/architecture and installation state.
+
+### ReShade and shader ecosystem
+- Audit the WinNative client integration separately from component-catalog support.
+- Support catalogued ReShade builds, compatible shader/effect packages, presets and texture assets only after confirming the required Wine/Vulkan/DXVK injection path.
+- Per-game enable/disable, preset selection, shader search paths and cache management.
+- Never assume a ReShade catalog JSON means the donor APK already implements installation or runtime activation.
+
+### Additional environment controls
+- Audio bridge/device configuration, controller/input mapping, display options and session diagnostics.
+- Import/export complete environment profiles with explicit component versions.
+- Safe reset and rollback after failed component installation.
+
+## Component catalog and package management
+
+Use a typed catalog model inspired by Winlator/WinNative downloadable-content catalogs, not hard-coded download URLs in UI code. A catalog entry must include:
+- stable component ID and type;
+- semantic version/build and upstream commit where available;
+- target ABI/container mode (x86_64, ARM64EC, aarch64 host, etc.);
+- download URL, archive format and expected SHA-256;
+- license identifier, source repository and attribution;
+- compatibility constraints/conflicts and minimum runtime;
+- install layout and uninstall/rollback metadata.
+
+All downloaded packages are untrusted input. Validate HTTPS origin policy, size limits, archive paths, file types, hashes and expected layout before installation. Never load executable payloads from imported game packages as backend plugins. Component binaries are installed only into app-private managed locations and are activated through controlled runtime paths.
+
+## Verified donor research
+
+### WinNative repository
+- Repository: https://github.com/Snap888/WinNative (upstream identity documented as WinNative-Emu/WinNative).
+- README describes an Android x86_64 Windows emulation environment and links build, Wayland and attribution documentation.
+- Build guide requires JDK 17, Android SDK compileSdk 35, NDK 27.3.13750724, CMake 3.22.1, Git LFS and recursive submodules.
+- Native CMake confirms a Winlator native library, Vulkan compositor helpers, AdrenoTools, embedded Wayland compositor, PRoot, audio shims and WFG. This is not a drop-in NGR library: source ownership, JNI surface, app lifecycle and dependency graph need extraction boundaries.
+- Wayland documentation confirms strict requirements: Adreno, a Wine/Proton layer containing matching winewayland and Wayland Turnip libraries, and per-session socket/ICD configuration. X11 remains the safer first milestone.
+- WinNative is GPL-3.0 according to its README. Any direct code reuse must preserve GPL obligations and all per-component licenses/attributions. Confirm NGR licensing before copying or linking donor code.
+
+### Runtime/component families confirmed by the Winlator Bionic lineage and component catalogs
+- Box64 is used for standard x86_64 containers.
+- FEXCore is used for ARM64EC execution paths; FEX unix libraries are distinct artifacts.
+- Optional WOWBox64 may serve a 32-bit ARM64EC path.
+- DXVK, VKD3D-Proton and Turnip drivers are separately installable components in WCP-style catalogs.
+- Component catalogs also list Wine/Proton layers and ReShade-related catalogs. This establishes an ecosystem to investigate, not proof that every catalog item is integrated in the current WinNative APK.
+- Reference catalogs: https://github.com/The412Banner/winlator-contents and https://github.com/nicholasx417/WinNative-Components.
+- ReShade catalog reference: https://github.com/The412Banner/winlator-contents/blob/main/reshade.json.
+
+
+
+### Additional source mapping — CPU presets, Wine routing and graphics selection
+
+- `Box64PresetManager.getEnvVars(prefix, context, id)` translates the built-in Stability/Compatibility/Intermediate/Performance and custom preset IDs into explicit `BOX64_DYNAREC_*` environment settings; some BOX64-only flags include AVX, UnityPlayer, MMAP32 and DYNACACHE. Custom presets are persisted in Android SharedPreferences. NGR should serialize the resolved key/value map in its profile rather than depend on donor SharedPreferences string encoding.
+- `FEXCorePresetManager.getEnvVars(context, id)` has distinct Stability, Compatibility, Intermediate, Performance, Performance-TSO, Extreme, Extreme-TSO and Denuvo presets. It normalizes both `FEX_SMCCHECKS` and legacy `FEX_SMC_CHECKS`; NGR should preserve that alias normalization when translating profile settings. `FEXCoreManager.ensureAppConfigOverrides` writes per-executable FEX AppConfig JSON for Rockstar/Steam helper processes.
+- `GuestProgramLauncherComponent` selects the guest command by Wine architecture: standard x86_64 runs the guest through Box64; ARM64EC invokes the ARM64 Wine binary directly and sets `HODLL=wowbox64.dll` for WOWBox64 or `HODLL=libwow64fex.dll` for FEXCore. This is a hard routing distinction, not a single emulator toggle. It also prepares prefix updates before session startup and merges launcher-owned preload/input paths with the selected driver/DXVK environment.
+- `WineInfo` resolves Wine/Proton content IDs to their installed paths and architecture. NGR's resolver must validate the exact installed Wine layer metadata and architecture instead of guessing from a display name.
+- `DXVKConfigUtils.setEnvVars` maps async and GPL async-cache settings to `DXVK_ASYNC` and `DXVK_GPLASYNCCACHE`, applies `VKD3D_FEATURE_LEVEL`, and sets a state-cache path. Container configuration separately persists the selected DX wrapper, wrapper version and renderer/device options.
+- `GraphicsDriverCatalog` merges built-in wrapper drivers that pass `GPUInformation.isDriverSupported` with installed AdrenoTools driver IDs. `AdrenotoolsManager` validates a driver's `meta.json` and library presence, identifies Turnip/Freedreno packages, and rewrites containers/shortcuts that refer to a removed driver back to System. The launcher receives driver selection through `ADRENOTOOLS_DRIVER_PATH`/`ADRENOTOOLS_DRIVER_NAME`; NGR must preserve per-container isolation and must not overwrite Android's system Vulkan loader.
+- `DriverPackages` also manages a distinct Linux-runtime driver catalog under `contents/linux-drivers`, with a selected Linux ICD manifest. Do not conflate that Linux-runtime provider with the Android AdrenoTools path.
+- `DXVKConfigUtils` and the container defaults are configuration helpers, not proof that the NGR runtime has loaded DXVK/VKD3D. NGR should only report those components active after the launcher binds the matching files and the runtime probe confirms them.
+
+## Important distinction: confirmed vs not yet verified
+
+| Area | Current evidence | NGR decision |
+|---|---|---|
+| Wine/Proton + Box64 | Donor lineage and app purpose confirm | Port after code/license audit |
+| FEXCore + ARM64EC | Component ecosystem confirms | Separate backend/configuration path |
+| DXVK / VKD3D | Catalogs and donor native build ecosystem confirm | Managed optional components |
+| Turnip | WinNative Wayland docs and AdrenoTools integration confirm | Isolated provider only |
+| X11 / Wayland | WinNative Wayland docs confirm both paths and strict prerequisites | X11 first; Wayland gated |
+| ReShade | ReShade catalog exists | Client-side install/activation still needs direct source audit |
+| Shader packs/presets | Catalog ecosystem exists | Implement only after ReShade activation is proven |
+| Exact donor settings UI and install code | Not fully audited in this pass | Must map source classes and data flows before port |
+
+## Implementation sequence
+
+1. Complete source-level donor audit: container model/manager, launch pipeline, Wine/Proton layer resolver, WCP installer, component catalog parser, environment variable editor, Box64/FEX settings, DXVK/VKD3D selection, driver manager, ReShade injection and shader UI.
+2. Produce a file-by-file port map with upstream commit pins, SPDX/license inventory, ABI constraints and binary provenance.
+3. Define NGR Environment Manager models and storage: immutable component records, container profiles, per-game overrides, schema versioning and migration.
+4. Implement secure component catalog/download/verification/install/rollback.
+5. Integrate Wine + Box64 standard x86_64 path and launch a known legal test executable/game.
+6. Add ARM64EC + FEXCore path and verify exact Wine layer compatibility.
+7. Add DXVK/VKD3D and isolated Turnip provider selection.
+8. Add ReShade/shader activation after a real compatibility test.
+9. Add Wayland only for validated matching Wine/Proton + driver combinations.
+10. Continue static recompilation as an independent track; validate that a recompiled game launches without Wine.
+
+## Acceptance criteria
+
+- A game can have its own complete reproducible environment profile.
+- Every selected component has an exact version, ABI, source, license and checksum.
+- Failed downloads/installations leave the previous working environment intact.
+- No Android system Vulkan libraries are replaced.
+- Wine, Box64, FEX, DXVK, VKD3D, Turnip and ReShade are reported as available only after install/probe succeeds.
+- Logs identify the selected container, Wine layer, CPU translator, graphics stack, driver, environment overrides and display backend.
+- A normal Windows game can launch through Wine; a static recompiled title can launch independently through its native backend.
+
+
+## Source audit update — 2026-11-18
+
+Pinned donor tree: `Snap888/WinNative` commit `99c3305d163780de5ca39b493aefcde436acad5c`.
+
+| Concern | Source entry points inspected | Integration decision |
+|---|---|---|
+| Container model/lifecycle | `runtime/container/Container.java`, `ContainerManager.java` | Map persisted per-container Wine, display, env, DX wrapper, graphics, audio and CPU settings into NGR's own schema. Do not reuse the donor's global active-container symlink design unchanged. |
+| Proton | `runtime/linux/LinuxProtons.kt` | Reuse catalog concepts (ID, URL, SHA-256, size, installed marker), but NGR uses typed immutable catalog records and atomic staging. |
+| Box64/FEX | `runtime/compat/box64/Box64PresetManager.java`, `runtime/compat/fexcore/FEXCoreManager.java` | Preserve distinct version/preset paths; do not treat Box64 and FEXCore as interchangeable. |
+| Driver selection | `runtime/system/GraphicsDriverCatalog.kt` | Existing catalog queries built-in driver support and AdrenoTools-installed drivers. NGR must scope provider/ICD selection to its managed environment. |
+| Wayland | `runtime/display/wayland/WineWaylandSupport.java` | Require Adreno plus the exact selected Wine build's `winewayland.so` and matching Wayland Turnip ICD/library. Never copy this Wine unixlib from another build. |
+| ReShade | `runtime/reshade/ReshadeManager.java`, `ReshadeDownloader.kt` | Effect discovery/uniform reflection is reusable as a design reference. Existing downloader uses optional MD5 and direct live-folder extraction after deleting the previous folder; replace with SHA-256, staging and rollback. |
+| Component recipes | `runtime/content/component/ComponentInstaller.kt` | Recipe action model is informative, but ZIP extraction lacks canonical containment checks and destination resolution permits absolute paths. Do not port this installer/extractor. |
+| Environment variables | `runtime/wine/EnvVars.java` | Ordered KEY=value representation and escaped output are useful references. NGR retains strict structured-map validation and protects runtime-managed variables. |
+
+### Security implications
+
+The donor's current component recipe installer is not a safe foundation for NGR's untrusted catalog archives. In particular, its ZIP extractor creates output files from `File(outDir, entry.name)` without verifying canonical containment, and its destination resolver can accept arbitrary absolute destinations. NGR's installer must instead:
+- reject absolute, traversal, duplicate-normalized and symlink/special-file archive entries;
+- enforce archive entry, compressed/uncompressed byte, total expansion and compression-ratio limits;
+- extract into a newly created app-private staging directory with no-follow/create-new semantics;
+- verify SHA-256 and expected install layout before activation;
+- atomically switch active version only after validation, preserving previous version for rollback.
+
+The ReShade catalog and effect scanner do not by themselves prove a working ReShade Vulkan injection path in the NGR runtime. Injection/activation remains blocked on a dedicated source and runtime audit.
+
+This audit is a bounded source mapping, not a complete audit of every launch call site, submodule, native dependency, binary provenance or license. No donor code or binary has been copied into NGR in this stage.
+
+
+## NGR component catalog and ZIP staging implementation — 2026-11-18
+
+The following first implementation now exists in NGR:
+- `NgrComponentCatalog.kt`: typed versioned metadata and provenance/ABI/dependency/conflict/path validation, including cycle detection.
+- `NgrComponentCatalogParser.kt`: bounded strict JSON parser; unknown fields and invalid types/enums are rejected.
+- `NgrComponentArchiveInstaller.kt`: ZIP-only component staging, bounded private snapshot, SHA-256 verification, shared archive inspection, path containment, file/total-size limits, create-new writes, executable-bit preservation and failed-stage cleanup.
+- `NgrPackArchiveInspector.EntryInfo` now exposes a validated executable bit from Unix ZIP mode metadata.
+
+The installer intentionally does not yet download, activate, load or execute components. TAR.GZ/TAR.XZ/TAR.ZSTD/RAW handlers, expected-layout checks, atomic version promotion, rollback and uninstall remain future work. Do not advertise unsupported archive formats as installable yet.
+
+
+### HTTPS download implementation
+
+NGR now has an HTTPS-only component downloader with manual bounded redirects, no HTTPS downgrade, timeouts, Content-Length and streaming-size checks, identity-only response encoding, SHA-256 verification and private temporary-file output. It deliberately stops at a verified file; the separate ZIP staging installer handles extraction. Live network integration tests and the full download-to-install orchestration remain outstanding.
+
+
+## Launch-pipeline source map — 2026-11-18
+
+Additional source mapping at donor commit `99c3305d163780de5ca39b493aefcde436acad5c`:
+
+| Stage | WinNative source | Findings relevant to NGR |
+|---|---|---|
+| Per-container settings | `runtime/container/Container.java` | JSON persists Wine layer, screen size, env vars, graphics driver/config, DX wrapper/config, audio driver, drives, emulator choices, Box64/FEX versions and presets, CPU lists, executable and args. Save uses atomic file writing. |
+| Container activation | `runtime/container/ContainerManager.java` | Switches a shared `xuser` path via a symlink to the active container. NGR must instead resolve every game to an isolated root/profile; do not reuse this global mutable activation mechanism. |
+| Launch orchestration | `runtime/display/XServerDisplayActivity.java` | Resolves shortcut overrides over container defaults; configures prefix, locale, DX wrapper, graphics driver, audio, env vars, vkBasalt effect loadout and Wayland env; then creates and configures the guest launcher component. |
+| Windows guest launcher | `runtime/display/environment/components/GuestProgramLauncherComponent.java` | Prepares Box64 or ARM64EC runtime files, runs prerequisite callbacks, prepares Wayland, builds host/guest environment, preloads input/network/audio shims and starts the process. Standard x86_64 path invokes `box64 <guest executable>`; ARM64EC invokes Wine directly and selects `HODLL` for FEXCore or WOWBox64. |
+| Linux/Proton session | `runtime/display/environment/components/LinuxProgramLauncherComponent.java`, `runtime/linux/LinuxProtons.kt` | Separate PRoot-based session path. Proton download verifies declared size and SHA-256; TAR extraction uses staging, canonical containment, constrained symlink targets, expected Wine ELF architecture and manifest checks before rename. This is a useful reference, not yet a proven reusable NGR installer. |
+| CPU settings | `runtime/compat/box64/Box64PresetManager.java`, `runtime/compat/fexcore/FEXCoreManager.java` | Box64 and FEXCore have separate presets/configuration. The launcher selects them according to Wine architecture and applies their environment separately. |
+| Graphics provider | `runtime/content/AdrenotoolsManager.java`, `runtime/system/GraphicsDriverCatalog.kt` | Driver selection writes `ADRENOTOOLS_DRIVER_PATH`, `ADRENOTOOLS_HOOKS_PATH` and `ADRENOTOOLS_DRIVER_NAME`; it falls back to system driver when selected package is missing. NGR must verify installed metadata and keep provider libraries isolated. |
+| Wayland | `runtime/display/wayland/WineWaylandSupport.java` | Capability is based on actual Wine `winewayland.so` and matching Wayland Turnip files, not merely a user preference. |
+| Effect compatibility | `runtime/reshade/ReshadeConfigWriter.java`, `ReshadeManager.java` | Important correction: the current implementation writes `vkBasalt.conf`, enables `ENABLE_VKBASALT` and `VKBASALT_CONFIG_FILE`, and stages ReShade-compatible `.fx` effects for vkBasalt. This is not proof of a ReShade Vulkan DLL injector. NGR should label this as vkBasalt/ReShade-effect compatibility until a separate DLL-injection path is demonstrated. |
+
+### NGR design consequences
+
+- Keep Wine compatibility launch and Linux/Proton PRoot launch as distinct backends; do not combine their environment assembly or lifecycle.
+- Store per-game overrides as structured typed data, then resolve them against a validated base profile at launch. Runtime-owned keys such as `PATH`, `HOME`, `PREFIX`, `LD_LIBRARY_PATH`, `LD_PRELOAD`, `VK_ICD_FILENAMES` and `ADRENOTOOLS_*` must not be user-overridable without an explicit privileged setting.
+- Select Box64 vs FEXCore/WOWBox64 from the verified Wine architecture and component compatibility, not from a free-form emulator string.
+- Probe the actual installed Wine and driver files before allowing Wayland.
+- Do not claim full ReShade injection support from the existing vkBasalt-based effect path.
+
+
+## Expanded pre-recompiler readiness scope — 2026-11-18
+
+The compatibility/game-management layer is a required milestone before static recompilation is promoted. Completion requires real implementation, tests, usable UI and runtime capability gates.
+
+### Game library and launch settings
+- Per-game shortcut records: package identity, managed icon/cover, guest executable, working directory, arguments, environment profile, execution mode, per-game overrides and launch history.
+- Android home-screen shortcut publication is a separate ShortcutManager adapter; no host filesystem paths in exported intents.
+- Launch editor: executable, arguments, profile/container, architecture, display/DPI, audio, input layout, graphics wrapper/driver, compatibility flags and environment variables.
+- Deterministic merge of protected runtime values, container defaults, profile settings and permitted game overrides. Never let users override PATH, loader paths, HOME, PREFIX or NGR-owned variables.
+- Launch preview must show resolved command/effective environment and redact sensitive values.
+
+### Runtime and compatibility
+- Container/rootfs manager, Wine prefix initialization through wineboot, repair/reset/clone/backup/restore, Wine/Proton version and architecture routing.
+- Box64/Box86, FEXCore/FEX UnixLibs and WOWBox64 managers, preset editors and per-game overrides.
+- DLL overrides, Windows version, registry/component settings, synchronization and compatibility fixes.
+- Session manager: process tree, start/stop, exit status, logs, crash reason and cleanup. Never report launch success before a process starts.
+
+### Graphics, drivers and effects
+- DXVK, VKD3D-Proton, D8VK/D7VK configuration and per-game graphics profiles.
+- System Vulkan and isolated Turnip/Adreno provider, driver catalog/import/download/install/rollback/remove and per-profile binding. Never replace Android system Vulkan.
+- ReShade-compatible effect subsystem: vkBasalt support as a distinct capability; separately audit Wine ReShade DLL injection. Include shader/effect catalogs, presets, textures, search paths and cache.
+- Catalog presence or a UI toggle is not proof of runtime activation; verify loaded modules/providers in a running session.
+
+### Frame generation and upscaling
+- Dedicated graphics-effects contract with Vulkan capture/present stages, synchronization, swapchain format/colour-space preservation and device capability checks.
+- Independent provider adapters for frame generation (WFG/LSFG/SnapFrame-style only after licensing/provenance review), pacing/latency/target multiplier/HUD controls and compatibility fallback.
+- Implement diagnostics/readback before enabling providers. No fabricated frame generation: capability stays unavailable until a real backend is integrated and device-validated.
+- Upscaling/sharpening and frame generation remain separate capabilities.
+
+### Input, controller, audio and display
+- Controller inventory/hotplug, assignment, per-game mapping profiles, touch layouts, mouse/keyboard emulation, dead zones, sensitivity, stick curves, trigger thresholds, rumble and import/export.
+- Audio backend/device, sample rate/latency/buffer and per-game volume/mute controls.
+- Resolution/aspect ratio/DPI/fullscreen/windowed/rotation/cursor/virtual desktop; X11 first, Wayland only for exact validated Wine/driver/compositor combinations.
+
+### Completion gate before static recompilation
+- Persisted schemas, migrations, tests, usable UI and safe rollback for management features.
+- Runtime controls connected to a real launcher/session or clearly marked configuration-only.
+- At least one legal Windows test executable launches through a verified Wine + CPU translator path on target hardware; graphics/audio/controller/suspend/resume/stop/logging are tested.
+- Each driver/effects/frame-generation capability is reported independently; unsupported choices are disabled with a reason.
+- Static recompilation remains a separate execution mode with no Wine dependency.
+
+
+## Launch configuration resolution contract
+- The profile defaults are merged first, then the package-ID-specific `gameOverrides`, then the shortcut's per-game overrides. Later layers replace earlier values only for permitted keys.
+- `NgrEnvironmentVariablePolicy` owns host/runtime control variables: PATH/HOME/PREFIX, LD_*, NGR_*, Vulkan ICD/driver/layer variables, ADRENOTOOLS_*, Wine prefix/loader controls and FEX rootfs/config controls. User values cannot override them.
+- Wine compatibility mode requires the selected Wine/Proton and architecture-specific CPU translator components. Static-recompiled and native ARM64 modes do not inherit a Wine requirement.
+- The resolved preview is diagnostic only. Before launch it must be augmented with catalog provenance, installed component/version verification, prefix READY validation and backend capability checks.
+
+
+## Component catalog and installation UI
+- Catalog JSON is imported from SAF, strictly parsed, bounded to 4 MiB and atomically stored under app-private storage. Catalog metadata is untrusted; the current design has no signature trust root yet.
+- The component manager resolves transitive dependencies, rejects catalog conflicts/forbidden components, downloads only HTTPS URLs, verifies the archive SHA-256, extracts bounded ZIP files and atomically promotes the selected version.
+- Only ZIP archive components are enabled. Other declared formats remain disabled until dedicated safe extractors and tests exist.
+- Installed component payloads are inert files. This manager does not activate Vulkan ICDs, inject DLLs, load native libraries or execute translator binaries.
+
+
+### Component version lifecycle guarantees
+- The install planner compares the requested catalog version with the currently stored version. A mismatch is an update, not a successful match.
+- Previously stored versions may be reactivated only after validating the complete stored tree and the declared payload directory; the active-version pointer changes atomically.
+- Rollback and uninstall are available from the component manager. Uninstall is blocked when an environment profile, package override or installed dependent component references the component.
+- Component store activation means selecting an inert payload version in private storage. It does not mean loading the library or activating it in a game session.
+
+
+## Source integration decision
+
+On 2026-11-18 the project direction changed to direct integration of WinNative at pinned commit 99c3305d163780de5ca39b493aefcde436acad5c. The WinNative app is the Android host; NGR's Kotlin package manager, schemas, tests and C++20 runtime are retained as a distinct feature/backend. Existing WinNative component catalog, downloader, container settings, Wine/Proton launcher, Box64/FEX presets, driver manager, vkBasalt/ReShade-effect configuration, Frame Generation, input/controller pipeline, X11/Wayland compositor and shortcuts are reused as the source of truth. No parallel replacement managers should be developed.\n
