@@ -37,7 +37,9 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift /usr/local/share/boost
           sudo apt-get update -q
           sudo apt-get install -y -q ninja-build python3 python3-pip zip unzip
-          df -h /
+          sudo mkdir -p /mnt/work
+          sudo chown "$USER" /mnt/work
+          df -h / /mnt/work
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -84,14 +86,14 @@ jobs:
       - name: Build LLVM host tablegens
         if: steps.llvm.outputs.cache-hit != 'true'
         working-directory: native/recompilers/XDroid360/toolchain
-        run: HOST_TABLEGEN_BUILD_DIR=/mnt/build-host bash build_host_tablegen.sh
+        run: HOST_TABLEGEN_BUILD_DIR=/mnt/work/build-host bash build_host_tablegen.sh
 
       - name: Build Android Clang 22 and LLD
         if: steps.llvm.outputs.cache-hit != 'true'
         working-directory: native/recompilers/XDroid360/toolchain
         run: |
-          HOST_LLVM_BIN=/mnt/build-host/bin LLVM_BUILD_DIR=/mnt/build-android bash build_tools.sh llvm
-          rm -rf /mnt/build-android /mnt/build-host
+          HOST_LLVM_BIN=/mnt/work/build-host/bin LLVM_BUILD_DIR=/mnt/work/build-android bash build_tools.sh llvm
+          rm -rf /mnt/work/build-android /mnt/work/build-host
 
       - name: Build XenonRecomp and native STFS extractor
         working-directory: native/recompilers/XDroid360/toolchain
@@ -109,7 +111,7 @@ jobs:
       - name: Build DXC host tablegens
         if: steps.dxc.outputs.cache-hit != 'true'
         working-directory: native/recompilers/XDroid360/toolchain
-        run: DXC_HOST_BUILD_DIR=/mnt/build-dxc-host bash build_dxc_host_tablegen.sh
+        run: DXC_HOST_BUILD_DIR=/mnt/work/build-dxc-host bash build_dxc_host_tablegen.sh
 
       - name: Build Xenos shader library and DXC
         working-directory: native/recompilers/XDroid360/toolchain
@@ -117,8 +119,8 @@ jobs:
           if [ "${{ steps.dxc.outputs.cache-hit }}" = "true" ]; then
             DXC_LIB="$PWD/stage/bin/libdxcompiler.so" bash build_tools.sh shaderlib
           else
-            DXC_HOST_BIN=/mnt/build-dxc-host/bin DXC_BUILD_DIR=/mnt/build-dxc-android bash build_tools.sh shaderlib
-            rm -rf /mnt/build-dxc-android /mnt/build-dxc-host
+            DXC_HOST_BIN=/mnt/work/build-dxc-host/bin DXC_BUILD_DIR=/mnt/work/build-dxc-android bash build_tools.sh shaderlib
+            rm -rf /mnt/work/build-dxc-android /mnt/work/build-dxc-host
           fi
 
       - name: Package ARM64 compiler kit and licenses
