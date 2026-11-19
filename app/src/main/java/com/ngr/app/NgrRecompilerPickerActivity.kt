@@ -262,12 +262,12 @@ class NgrRecompilerPickerActivity : Activity() {
                         status.text = "Найдено N64 MIPS ELF: ${elfs.size}"
                     }
                 } else if (roms.isNotEmpty()) {
-                    val message = "Nintendo 64 ROM обнаружен и сохранён в проектах NGR: ${roms.joinToString { it.second }}. Заголовок и порядок байтов распознаны. N64Recomp не принимает retail .z64 напрямую: ему нужен MIPS ELF и конфигурация проекта декомпиляции (symbols/functions). Проект сохранён со статусом «backend unavailable», запускаемый ярлык не создаётся."
+                    val message = "Nintendo 64 ROM обнаружен: ${roms.joinToString { it.second }}. Записей в библиотеку проектов: $persistedCount. Заголовок и порядок байтов распознаны. N64Recomp не принимает retail .z64 напрямую: ему нужен MIPS ELF и конфигурация проекта декомпиляции (symbols/functions). Проект сохранён со статусом «backend unavailable», запускаемый ярлык не создаётся."
                     status.text = message
                     NgrLogger.warn("recompiler.detect", "N64 ROM detected; current N64Recomp backend requires decompilation ELF")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 } else if (xbox360.isNotEmpty()) {
-                    val message = "Входной файл Xbox 360 сохранён в проектах NGR: ${xbox360.joinToString { it.second }}. XDroid360 закреплён в проекте, но BuildService/RecipeRunner, проверка title ID/хеша и запуск runtime ещё не подключены к NGR. Проект сохранён со статусом «backend unavailable»; запускаемый ярлык не создаётся."
+                    val message = "Входной файл Xbox 360: ${xbox360.joinToString { it.second }}. Записей в библиотеку проектов: $persistedCount. XDroid360 закреплён в проекте, но BuildService/RecipeRunner, проверка title ID/хеша и запуск runtime ещё не подключены к NGR. Проект сохранён со статусом «backend unavailable»; запускаемый ярлык не создаётся."
                     status.text = message
                     NgrLogger.info("recompiler.detect", "Xbox 360 source detected; profile/runtime build is not yet enabled")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
