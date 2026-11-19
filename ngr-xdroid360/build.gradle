@@ -44,7 +44,6 @@ android {
     sourceSets {
         main {
             java.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/java"))
-            java.exclude("org/libsdl/**")
             res.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/res"))
             assets.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/assets"))
             assets.srcDir(generatedAssetsDir)
