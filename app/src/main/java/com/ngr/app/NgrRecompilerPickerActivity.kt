@@ -242,6 +242,7 @@ class NgrRecompilerPickerActivity : Activity() {
             val elfs = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_MIPS }
             val roms = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_ROM }
             val xbox360 = detected.filter { it.third == NgrRecompilerCatalog.SystemId.XBOX_360 }
+            val persistedCount = persistDetectedProjects(detected)
             runOnUiThread {
                 if (selectedMode == Mode.MANUAL && targetSystem != NgrRecompilerCatalog.SystemId.N64_MIPS &&
                     targetSystem != NgrRecompilerCatalog.SystemId.XBOX_360) {
@@ -261,12 +262,12 @@ class NgrRecompilerPickerActivity : Activity() {
                         status.text = "Найдено N64 MIPS ELF: ${elfs.size}"
                     }
                 } else if (roms.isNotEmpty()) {
-                    val message = "Nintendo 64 ROM обнаружен: ${roms.joinToString { it.second }}. Заголовок и порядок байтов распознаны. Но N64Recomp не принимает retail .z64 напрямую: ему нужен MIPS ELF и конфигурация проекта декомпиляции (symbols/functions). ROM не был добавлен как запускаемая игра."
+                    val message = "Nintendo 64 ROM обнаружен и сохранён в проектах NGR: ${roms.joinToString { it.second }}. Заголовок и порядок байтов распознаны. N64Recomp не принимает retail .z64 напрямую: ему нужен MIPS ELF и конфигурация проекта декомпиляции (symbols/functions). Проект сохранён со статусом «backend unavailable», запускаемый ярлык не создаётся."
                     status.text = message
                     NgrLogger.warn("recompiler.detect", "N64 ROM detected; current N64Recomp backend requires decompilation ELF")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 } else if (xbox360.isNotEmpty()) {
-                    val message = "Обнаружен входной файл Xbox 360: ${xbox360.joinToString { it.second }}. Источник XDroid360 закреплён в NGR (XenonRecomp + STFS/XISO intake + ARM64 toolchain + DAO/SoD runtime profiles). Следующий шаг — подключить его BuildService и GameActivity к NGR. Сейчас файл распознан, но проверка title ID/хеша и сборка ещё не запускаются; ярлык игры не создаётся."
+                    val message = "Входной файл Xbox 360 сохранён в проектах NGR: ${xbox360.joinToString { it.second }}. XDroid360 закреплён в проекте, но BuildService/RecipeRunner, проверка title ID/хеша и запуск runtime ещё не подключены к NGR. Проект сохранён со статусом «backend unavailable»; запускаемый ярлык не создаётся."
                     status.text = message
                     NgrLogger.info("recompiler.detect", "Xbox 360 source detected; profile/runtime build is not yet enabled")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -281,6 +282,45 @@ class NgrRecompilerPickerActivity : Activity() {
             name = "NGR-Recompiler-Detect"
             isDaemon = true
         }.start()
+    }
+
+    private fun persistDetectedProjects(
+        detected: List<Triple<Uri, String, NgrRecompilerCatalog.SystemId?>>
+    ): Int {
+        val store = NgrRecompilerProjectStore(filesDir)
+        var saved = 0
+        detected.forEach { (uri, name, system) ->
+            val record = when (system) {
+                NgrRecompilerCatalog.SystemId.XBOX_360 -> NgrRecompilerProject(
+                    projectId = "xbox360-" + java.util.UUID.nameUUIDFromBytes(uri.toString().toByteArray()).toString(),
+                    displayName = name.take(240),
+                    systemId = "XBOX_360",
+                    sourceUri = uri.toString(),
+                    sourceExtension = name.substringAfterLast('.', "").lowercase().take(16),
+                    status = NgrRecompilerProject.Status.BACKEND_UNAVAILABLE,
+                    detail = "XDroid360 source is pinned, but its BuildService, recipe validation and game runtime are not yet wired into NGR."
+                )
+                NgrRecompilerCatalog.SystemId.N64_ROM -> NgrRecompilerProject(
+                    projectId = "n64rom-" + java.util.UUID.nameUUIDFromBytes(uri.toString().toByteArray()).toString(),
+                    displayName = name.take(240),
+                    systemId = "N64_ROM",
+                    sourceUri = uri.toString(),
+                    sourceExtension = name.substringAfterLast('.', "").lowercase().take(16),
+                    status = NgrRecompilerProject.Status.BACKEND_UNAVAILABLE,
+                    detail = "Retail N64 ROM requires a title-specific decompilation project; N64Recomp consumes a MIPS ELF."
+                )
+                else -> null
+            } ?: return@forEach
+            val result = store.upsert(record)
+            if (result.isSuccess) {
+                saved++
+                NgrLogger.info("recompiler.project", "Project persisted; id=${record.projectId}; system=${record.systemId}; status=${record.status}")
+            } else {
+                NgrLogger.error("recompiler.project", "Project persistence failed; name=$name; error=${result.exceptionOrNull()?.message}")
+            }
+        }
+        NgrLogger.info("recompiler.project", "Persisted ${saved} recompiler project(s)")
+        return saved
     }
 
     private fun detectSystem(uri: Uri): NgrRecompilerCatalog.SystemId? = runCatching {
