@@ -17,6 +17,12 @@ class Xbox360InputProbeTest {
         assertEquals(Xbox360InputProbe.Kind.STFS_PIRS, Xbox360InputProbe.detect(bytes("PIRS")))
     }
 
+    @Test fun acceptsXDroid360ContainerExtensionsAsCandidates() {
+        listOf("game.iso", "game.zip", "default.xex", "content.con", "content.live", "content.pirs")
+            .forEach { assertEquals(true, Xbox360InputProbe.isCandidateFileName(it)) }
+        assertEquals(false, Xbox360InputProbe.isCandidateFileName("game.exe"))
+    }
+
     @Test fun rejectsShortAndUnknownHeaders() {
         assertNull(Xbox360InputProbe.detect(byteArrayOf(0x58, 0x45, 0x58)))
         assertNull(Xbox360InputProbe.detect(bytes("ELF!")))
