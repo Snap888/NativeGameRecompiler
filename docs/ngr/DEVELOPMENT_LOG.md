@@ -1134,9 +1134,13 @@ This is the durable project memory. Update it in every development session.
 ## 2026-11-19 — XDroid360 runtime transfer continuation
 
 - Fixed the missing Android Gradle wiring: `:ngr-xdroid360` is now included by `settings.gradle` and linked from `:app`. This addresses the CI Kotlin unresolved-package failure at the NGR picker.
-- The XDroid360 library now builds its donor CMake graph in launcher-only mode, producing SDL3 and the private Vulkan driver hook while leaving game-specific runtime code to the profile build pipeline.
+- The XDroid360 library compiles the donor's private Vulkan driver hook through an isolated NGR CMake target and reuses WinNative's existing SDL3 AAR (Java glue + libSDL3.so), avoiding a duplicate SDL3 native library. Game-specific runtime code is produced by the DAO/SoD/ME1 profile pipeline.
 - Added an optional, validated toolchain payload stage: `kit.zip`, ARM64 compiler/STFS/Xenos/DXC tools and game profile ZIPs are copied into the library's generated assets/JNI directories. An APK without the payload remains explicitly non-build-capable.
 - Added a dedicated manual/changed-source GitHub Actions workflow to reproduce the pinned LLVM 22, XenonRecomp, STFS, Xenos shaderlib/DXC toolchain, DAO ARM64 runtime profile, and fetch the pinned SoD/ME1 profiles. The resulting artifact is named `ngr-xdroid360-payload`.
 - The normal NGR Android workflow now downloads the latest successful payload when available and passes it into Gradle.
 - NGR Xbox 360 ISO and selected STFS folder inputs now route directly to XDroid360's existing `BuildActivity` / `GameSource` / `BuildService` / `RecipeRunner` pipeline instead of stopping at a placeholder message. Standalone `.xex` files are deliberately not passed as supported input; the donor expects an XISO image or an STFS folder/ZIP.
 - No playable-game claim is made until the toolchain/profile artifact is built and the APK is verified to contain the payload.
+
+- The NGR picker now opens the donor's actual `BuildActivity` for ISO/ZIP or STFS folder input. It places `LauncherActivity` behind the build screen so a completed build returns to the refreshed playable-instance library. A standalone `.xex` is detected but refused as a direct input because the donor expects XISO or an STFS folder/ZIP.
+- The toolchain CI first exposed two runner setup defects (missing Android SDK command-line setup, then an uncreated external CMake workspace). Both were corrected: `setup-android` is explicit, and all /mnt/work build directories are created before LLVM/DXC tablegen builds. A retry is running.
+- The regular APK workflow waits for the successful toolchain artifact and is configured to rebuild after the toolchain workflow completes; artifact lookup is pinned to the integration branch rather than the workflow_run event's default-branch ref.
