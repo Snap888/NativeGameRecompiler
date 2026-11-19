@@ -295,12 +295,7 @@ class NgrRecompilerPickerActivity : Activity() {
                     if (tree != null) {
                         status.text = "Передача папки Xbox 360 в XDroid360: проверка STFS, title ID и профиля…"
                         NgrLogger.info("recompiler.xbox360", "Dispatching selected SAF tree to XDroid360 GameSource/BuildActivity")
-                        runCatching {
-                            com.udarmolota.xdroid360.XDroid360EntryPoint.launchBuild(this, tree, "tree")
-                        }.onFailure {
-                            NgrLogger.error("recompiler.xbox360", "Unable to launch XDroid360 build flow: ${it.message}")
-                            status.text = "Не удалось открыть конвейер Xbox 360: ${it.message}"
-                        }
+                        dispatchXbox360Build(tree, "tree", "выбранная папка")
                     } else {
                         val supported = xbox360.filter { it.second.substringAfterLast('.', "").lowercase() in setOf("iso", "zip") }
                         if (supported.isEmpty()) {
@@ -313,12 +308,7 @@ class NgrRecompilerPickerActivity : Activity() {
                                 val (uri, name, _) = supported[index]
                                 status.text = "Передача $name в XDroid360: проверка XISO/STFS и профиля…"
                                 NgrLogger.info("recompiler.xbox360", "Dispatching $name to XDroid360 BuildActivity")
-                                runCatching {
-                                    com.udarmolota.xdroid360.XDroid360EntryPoint.launchBuild(this, uri, "file")
-                                }.onFailure {
-                                    NgrLogger.error("recompiler.xbox360", "Unable to launch XDroid360 build flow: ${it.message}")
-                                    status.text = "Не удалось открыть конвейер Xbox 360: ${it.message}"
-                                }
+                                dispatchXbox360Build(uri, "file", name)
                             }
                             if (supported.size == 1) launch(0) else AlertDialog.Builder(this)
                                 .setTitle("Выберите игру Xbox 360")
@@ -340,10 +330,40 @@ class NgrRecompilerPickerActivity : Activity() {
         }.start()
     }
 
+    private fun dispatchXbox360Build(uri: Uri, pick: String, label: String) {
+        val ready = runCatching {
+            com.udarmolota.xdroid360.XDroid360EntryPoint.isBuildEnvironmentReady(this)
+        }.getOrDefault(false)
+        if (!ready) {
+            val message = "Интерфейс XDroid360 перенесён, но в APK пока нет комплекта Clang/LLD/XenonRecomp, STFS/Xenos/DXC и игровых профилей. Сборка Xbox 360 станет доступна после успешного завершения workflow NGR XDroid360 Toolchain."
+            NgrLogger.warn("recompiler.xbox360", "Build blocked: compiler kit or title profiles are not packaged")
+            status.text = message
+            AlertDialog.Builder(this)
+                .setTitle("Не установлен комплект рекомпилятора Xbox 360")
+                .setMessage(message)
+                .setPositiveButton("Открыть библиотеку XDroid360") { _, _ ->
+                    com.udarmolota.xdroid360.XDroid360EntryPoint.launch(this)
+                }
+                .setNegativeButton("Закрыть", null)
+                .show()
+            return
+        }
+        NgrLogger.info("recompiler.xbox360", "Launching donor BuildActivity for $label; pick=$pick")
+        runCatching {
+            com.udarmolota.xdroid360.XDroid360EntryPoint.launchBuild(this, uri, pick)
+        }.onFailure {
+            NgrLogger.error("recompiler.xbox360", "Unable to launch XDroid360 build flow: ${it.message}")
+            status.text = "Не удалось открыть конвейер Xbox 360: ${it.message}"
+        }
+    }
+
     private fun persistDetectedProjects(
         detected: List<Triple<Uri, String, NgrRecompilerCatalog.SystemId?>>
     ): Int {
         val store = NgrRecompilerProjectStore(filesDir)
+        val xboxReady = runCatching {
+            com.udarmolota.xdroid360.XDroid360EntryPoint.isBuildEnvironmentReady(this)
+        }.getOrDefault(false)
         var saved = 0
         detected.forEach { (uri, name, system) ->
             val record = when (system) {
@@ -353,8 +373,10 @@ class NgrRecompilerPickerActivity : Activity() {
                     systemId = "XBOX_360",
                     sourceUri = uri.toString(),
                     sourceExtension = name.substringAfterLast('.', "").lowercase().take(16),
-                    status = NgrRecompilerProject.Status.BACKEND_UNAVAILABLE,
-                    detail = "XDroid360 source is pinned, but its BuildService, recipe validation and game runtime are not yet wired into NGR."
+                    status = if (xboxReady) NgrRecompilerProject.Status.METADATA_REQUIRED
+                             else NgrRecompilerProject.Status.BACKEND_UNAVAILABLE,
+                    detail = if (xboxReady) "XDroid360 toolchain and profiles are packaged; title/profile validation is pending."
+                             else "XDroid360 source is integrated, but its compiler kit and game profiles are not packaged in this APK."
                 )
                 NgrRecompilerCatalog.SystemId.N64_ROM -> NgrRecompilerProject(
                     projectId = "n64rom-" + java.util.UUID.nameUUIDFromBytes(uri.toString().toByteArray()).toString(),
