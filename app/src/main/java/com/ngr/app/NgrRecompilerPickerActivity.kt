@@ -15,8 +15,9 @@ import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
 
 /**
- * Unified intake for static game recompilers. Only N64 MIPS ELF is currently executable.
- * Retail N64 ROMs are detected explicitly but are not passed to N64Recomp as ELF inputs.
+ * Unified intake for static game recompilers. N64 MIPS ELF is executable; Xbox 360 inputs
+ * are recognized for XDroid360 title-recipe validation, but its build pipeline is not yet
+ * embedded in this NGR app.
  */
 class NgrRecompilerPickerActivity : Activity() {
     private enum class Mode { AUTO, MANUAL }
@@ -242,7 +243,8 @@ class NgrRecompilerPickerActivity : Activity() {
             val roms = detected.filter { it.third == NgrRecompilerCatalog.SystemId.N64_ROM }
             val xbox360 = detected.filter { it.third == NgrRecompilerCatalog.SystemId.XBOX_360 }
             runOnUiThread {
-                if (selectedMode == Mode.MANUAL && targetSystem != NgrRecompilerCatalog.SystemId.N64_MIPS) {
+                if (selectedMode == Mode.MANUAL && targetSystem != NgrRecompilerCatalog.SystemId.N64_MIPS &&
+                    targetSystem != NgrRecompilerCatalog.SystemId.XBOX_360) {
                     val label = NgrRecompilerCatalog.systems.first { it.id == targetSystem }.label
                     val message = "$label: backend ещё не реализован. Файл выбран, но рекомпиляция пока недоступна."
                     status.text = message
@@ -264,7 +266,7 @@ class NgrRecompilerPickerActivity : Activity() {
                     NgrLogger.warn("recompiler.detect", "N64 ROM detected; current N64Recomp backend requires decompilation ELF")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 } else if (xbox360.isNotEmpty()) {
-                    val message = "Обнаружен контент Xbox 360: ${xbox360.joinToString { it.second }}. Файл распознан (XEX2/STFS), но для сборки необходимы поддерживаемый профиль игры, title runtime и ARM64 toolchain. Пока ни один профиль не прошёл проверку запуска в NGR; ярлык готовой игры не создаётся."
+                    val message = "Обнаружен входной файл Xbox 360: ${xbox360.joinToString { it.second }}. Источник XDroid360 закреплён в NGR (XenonRecomp + STFS/XISO intake + ARM64 toolchain + DAO/SoD runtime profiles). Следующий шаг — подключить его BuildService и GameActivity к NGR. Сейчас файл распознан, но проверка title ID/хеша и сборка ещё не запускаются; ярлык игры не создаётся."
                     status.text = message
                     NgrLogger.info("recompiler.detect", "Xbox 360 source detected; profile/runtime build is not yet enabled")
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -301,6 +303,10 @@ class NgrRecompilerPickerActivity : Activity() {
             }
             if (Xbox360InputProbe.detect(header) != null) {
                 NgrLogger.info("recompiler.detect", "Xbox 360 header detected: ${Xbox360InputProbe.detect(header)}")
+                return@use NgrRecompilerCatalog.SystemId.XBOX_360
+            }
+            if (Xbox360InputProbe.isCandidateFileName(name)) {
+                NgrLogger.info("recompiler.detect", "Xbox 360 container candidate by extension; XDroid360 title validation required: $name")
                 return@use NgrRecompilerCatalog.SystemId.XBOX_360
             }
             if (extension in setOf("xex", "con", "live", "pirs")) {
