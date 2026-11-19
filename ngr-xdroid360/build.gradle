@@ -39,6 +39,8 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.coreKtx
+    // SDL3's Java Activity glue is already shipped by the WinNative host; resolve the same AAR here for compilation.
+    implementation 'org.libsdl.android:SDL3:3.4.16-winnative.2@aar'
 }
 
 def xdroid360DonorDir = layout.projectDirectory.dir("../native/recompilers/XDroid360").asFile.absolutePath
