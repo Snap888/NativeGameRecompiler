@@ -405,3 +405,20 @@ Mark complete only when evidence exists.
 - [ ] Adapt BuildService/RecipeRunner resume, cancellation, progress and game instance lifecycle to NGR.
 - [ ] Add synthetic XEX/STFS/XISO fixtures, recipe validation tests and native build CI.
 - [ ] Enable Xbox 360 catalog availability only after green CI and end-to-end device validation for supported profiles.
+
+
+## Immediate — verify recompiler intake
+- [x] Fix Kotlin worker lambda parse error found in run 44471496862.
+- [x] Add atomic persistent project registry with explicit lifecycle states.
+- [x] Persist Xbox 360 and N64 ROM candidates without creating runnable shortcuts.
+- [x] Add JVM coverage for project-store persistence and validation.
+- [ ] Confirm latest JVM test and Android ARM64 CI run green; inspect APK artifact only after successful build.
+
+## Xbox 360 integration — donor app port
+- [ ] Create isolated Android library/module boundary for XDroid360 Java sources, resources, manifest components and SDL3 Java activity; keep NGR/WinNative launcher as the sole MAIN activity.
+- [ ] Port BuildService/BuildJob/RecipeRunner/Toolchain/GameSource and profile validation, including cancellation/resume and bounded logging.
+- [ ] Port STFS JNI and XISO/ZIP source readers; preserve SAF URI access and copy-to-private-storage behavior.
+- [ ] Integrate on-device toolchain packaging (clang/lld/XenonRecomp/STFS/shaderlib/DXC) with pinned SHA-256 checks and storage preflight.
+- [ ] Integrate DAO/SoD runtime CMake, Xenia Vulkan/native renderer, SDL3 and Xenos shader pipeline as an isolated arm64 target.
+- [ ] Add NGR UI flow to import, validate, build, resume/cancel and launch supported profile instances.
+- [ ] Verify profile compatibility and end-to-end builds on device for each supported title before enabling backend availability.
