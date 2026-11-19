@@ -1212,3 +1212,13 @@ This is the durable project memory. Update it in every development session.
 - [ ] Extract/adapt XenonRecomp + XenonUtils and toolchain packaging without importing XDroid360's duplicate Android launcher.
 - [ ] Port the recipe runner to NGR build jobs and implement the first validated title profile/runtime.
 - [ ] Connect generated ARM64 game library to NGR shortcut store only after link/package validation; keep launch disabled until device verification.
+
+
+## Session 2026-11-19 — N64 ROM detection regression coverage
+- [x] Extract N64 retail-ROM magic detection into a pure Kotlin probe with explicit Z64/V64/N64 byte-order results.
+- [x] Add JVM tests for all three byte orders, short headers, invalid ELF-like data and zero-filled headers.
+- [x] Wire the picker to the tested probe and log the detected byte order and SAF URI scheme.
+- [x] Name the detection worker for easier logcat diagnosis; retain explicit UI feedback that a ROM is recognized but is not a supported N64Recomp ELF input.
+- [ ] Verify JVM tests and ARM64 APK in CI after these changes.
+- [ ] Add a persistent recompiler intake/project list so selected ROMs and unsupported future-system files are not silently lost; show a clear “detected / backend unavailable / metadata required” state without adding a false runnable game shortcut.
+- [ ] Implement ROM + matching decompilation metadata workflow and a supported N64 project build before enabling native launch.
