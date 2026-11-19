@@ -393,3 +393,15 @@ Mark complete only when evidence exists.
 - [ ] Integrate a first title-specific runtime/profile (DAO or State of Decay); arbitrary Xbox 360 XEX/ISO must remain unsupported without a matching profile.
 - [ ] Add NGR Android host adapters for Vulkan surface, audio/XMA, controller input, storage, lifecycle and per-game settings; reuse WinNative services instead of adding duplicate managers.
 - [ ] Compile/link one legally supplied title to ARM64, validate its package, register a shortcut and verify actual launch on device before enabling the backend.
+
+
+## P2 — Xbox 360 / XDroid360 integration
+- [x] Audit and pin XDroid360 source at `f388d11fc207502cd5975899c8adc06600cfe34f` (existing submodule; no duplicate source import).
+- [x] Document the donor pipeline, supported-title boundary, CMake/app integration constraints and license obligations.
+- [x] Recognize ISO/ZIP/XEX/STFS container candidates and test candidate extension matching.
+- [ ] Port donor Android launcher/build UI into an isolated NGR feature without replacing WinNative host activity.
+- [ ] Integrate pinned clang/lld + XenonRecomp + STFS JNI toolchain and hash-verified kit/profile assets.
+- [ ] Integrate DAO/SoD runtime, Xenia Vulkan/native renderer, SDL3 and Xenos shader pipeline for arm64-v8a.
+- [ ] Adapt BuildService/RecipeRunner resume, cancellation, progress and game instance lifecycle to NGR.
+- [ ] Add synthetic XEX/STFS/XISO fixtures, recipe validation tests and native build CI.
+- [ ] Enable Xbox 360 catalog availability only after green CI and end-to-end device validation for supported profiles.
