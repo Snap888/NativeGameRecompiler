@@ -192,6 +192,7 @@ class NgrRecompilerPickerActivity : Activity() {
         if (resultCode != RESULT_OK || data == null) return
         when (requestCode) {
             REQUEST_FILES -> {
+                selectedTreeUri = null
                 val uris = mutableListOf<Uri>()
                 data.data?.let(uris::add)
                 data.clipData?.let { clip ->
