@@ -40,7 +40,7 @@ data class NgrRecompilerProject(
 class NgrRecompilerProjectStore(private val privateRoot: File) {
     data class LoadResult(val projects: List<NgrRecompilerProject>, val errors: List<String>)
 
-    @Synchronized fun upsert(project: NgrRecompilerProject): Result {
+    @Synchronized fun upsert(project: NgrRecompilerProject): kotlin.Result<Unit> {
         val invalid = project.validate()
         if (invalid.isNotEmpty()) return Result.failure(IllegalArgumentException(invalid.joinToString("; ")))
         return runCatching {
