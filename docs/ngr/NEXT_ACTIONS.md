@@ -325,3 +325,13 @@ Mark complete only when evidence exists.
 - [ ] Integrate the XDroid360 native CMake graph (SDL3, XenonUtils, DAO/SoD runtime, Xenia Vulkan, native renderer, XenosRecomp/DXC) as isolated ARM64 targets; audit target-name and SDL conflicts with WinNative before linking.
 - [ ] Add recipe lifecycle UI in NGR: detect ISO/XEX/STFS, profile/title ID matching, free-space preflight, foreground build progress, cancel/retry/resume, structured build logs, and persistent instance records.
 - [ ] Test on physical Adreno hardware with legally supplied Dragon Age: Origins and State of Decay files. Only mark Xbox 360 backend available for verified title profiles.
+
+
+## XDroid360 transfer — next verification gates
+
+- [ ] Run `NGR XDroid360 Toolchain` and fix any upstream script, host dependency, memory/disk, profile or checksum failures.
+- [ ] Verify artifact contains `kit.zip`, six ARM64 tools, and DAO/SoD/ME1 profile ZIPs.
+- [ ] Verify normal NGR CI downloads the payload and that Gradle packages it under `assets/kit.zip`, `assets/games/*.zip`, and `lib/arm64-v8a/*.so`.
+- [ ] Build all NGR Android module native targets and resolve manifest/resource/SDL3 integration conflicts.
+- [ ] Test XISO and STFS tree detection, build progress/cancel/retry, and resulting instance launch on Android Adreno.
+- [ ] Keep support scoped to the donor's actual recipe profiles; do not mark arbitrary Xbox 360 titles as playable.
