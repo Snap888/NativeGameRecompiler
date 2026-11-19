@@ -5,6 +5,10 @@ on:
     branches:
       - integration/winnative-runtime-base
   workflow_dispatch:
+  workflow_run:
+    workflows: ["NGR XDroid360 Toolchain"]
+    types: [completed]
+    branches: [integration/winnative-runtime-base]
 
 permissions:
   contents: read
@@ -16,6 +20,7 @@ concurrency:
 
 jobs:
   android-arm64:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout integrated NGR + WinNative source
