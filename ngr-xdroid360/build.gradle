@@ -21,7 +21,7 @@ android {
         ndk { abiFilters "arm64-v8a" }
         externalNativeBuild {
             cmake {
-                arguments "-DDAO_LAUNCHER_ONLY=ON",
+                arguments "-DXDROID360_SOURCE_ROOT=${xdroid360DonorDir.absolutePath}",
                           "-DANDROID_STL=c++_static",
                           "-DANDROID_PLATFORM=android-29",
                           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
@@ -32,7 +32,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            path file("../native/recompilers/XDroid360/android/app/src/main/cpp/CMakeLists.txt")
+            path file("src/main/cpp/CMakeLists.txt")
             version "3.22.1"
         }
     }
