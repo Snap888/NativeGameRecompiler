@@ -1242,3 +1242,20 @@ This is the durable project memory. Update it in every development session.
 - Source changes committed; Android/JVM CI has not yet run for these commits.
 - Xbox 360 backend remains disabled in the catalog until BuildService, toolchain packaging, runtime CMake and device validation are integrated.
 - No APK is claimed for this stage.
+
+
+## Session 2026-11-19 — CI repair and persistent recompiler intake
+
+### CI diagnosis and repair
+- Run `44471496862` failed at `NgrRecompilerPickerActivity.kt:283` with Kotlin parser error `Expecting ')'`; JVM tests and APK build were skipped.
+- Fixed the worker construction closure from an unmatched lambda close to `Thread({ ... }).apply { ... }.start()`.
+- Follow-up run `44473222874` was superseded while queued; final validation is running on the latest commits below.
+
+### Persistent project intake
+- Added `NgrRecompilerProjectStore`: bounded JSON registry, atomic writes, symlink/path checks, validation, stable per-source project IDs, and explicit states (DETECTED/BACKEND_UNAVAILABLE/METADATA_REQUIRED/COMPILING/READY/FAILED).
+- Added JVM tests for create/update persistence and rejection of unsupported/unsafe records.
+- Xbox 360 and retail N64 ROM candidates are now stored as projects rather than disappearing after a toast. They remain non-launchable until a real backend and title-specific requirements are met.
+- Intake log records project ID, target system, state and persistence failures.
+
+### Current limitation
+- XDroid360's Android BuildService/RecipeRunner/GameActivity and toolchain/runtime CMake graph are still separate from NGR's WinNative application. This session did not falsely mark the Xbox 360 backend ready or package the donor as an unrelated second APK.
