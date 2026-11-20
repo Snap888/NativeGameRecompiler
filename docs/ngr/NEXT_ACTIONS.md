@@ -362,3 +362,12 @@ Mark complete only when evidence exists.
 - [ ] Verify `:ngr-xdroid360:compileDebugJavaWithJavac` passes.
 - [ ] Verify D8 merges without duplicate SDL classes and CMake resolves/links SDL3 Prefab.
 - [ ] Verify APK outputs and artifact upload; do not mark Xbox 360 backend ready until runtime launch is tested.
+
+
+## P0 — Recompiler picker launch crash (2026-11-20)
+- [x] Confirmed Logcat root cause: `ActivityNotFoundException` for `com.ngr.app.NgrRecompilerPickerActivity` from the WinNative hub.
+- [x] Confirmed picker Kotlin source exists in the app module; manifest declaration was missing.
+- [x] Register picker Activity as `exported=false` in the app manifest.
+- [x] Add CI verification that the APK manifest declares the picker and APK DEX contains its class.
+- [ ] Verify Android CI, all expected APK outputs and artifact upload.
+- [ ] Install the resulting build and test the Recompiler menu entry on device; check log viewer and SAF picker flow.

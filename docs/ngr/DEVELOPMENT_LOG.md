@@ -1182,3 +1182,11 @@ This is the durable project memory. Update it in every development session.
 - Root cause: the DEX-collision fix excluded donor `org/libsdl/**` Java sources, but XDroid360 did not declare a compile dependency on `:armsx2`, the module owning WinNative's canonical `org.libsdl.app.SDLActivity` and SDL Java glue. A sibling app dependency does not place those classes on XDroid360's own compile classpath.
 - Added `implementation project(":armsx2")` directly to `:ngr-xdroid360`. This exposes the canonical WinNative SDL Java classes during donor compilation while retaining one namespace owner and the SDL3 Prefab AAR for native CMake.
 - Pending CI validation: XDroid360 Java compile, D8 duplicate check, SDL3 CMake configure/link, APK packaging.
+
+
+## 2026-11-20 — Recompiler picker Activity crash fix
+- Diagnosed the device crash from Logcat: the hub launched explicit component `com.winnative.cmod/com.ngr.app.NgrRecompilerPickerActivity`, but PackageManager could not resolve it and threw `ActivityNotFoundException`.
+- Confirmed the Kotlin Activity exists in the app source set at `app/src/main/java/com/ngr/app/NgrRecompilerPickerActivity.kt`; the app module and source set are included. The app manifest registered NGR MainActivity and N64RecompilerActivity but omitted the picker.
+- Registered `com.ngr.app.NgrRecompilerPickerActivity` as a non-exported app Activity. This directly fixes the component-resolution defect without changing the hub's intent or runtime behavior.
+- Added an Android CI gate that inspects the built APK manifest and DEX for the picker Activity; the build must fail if either registration or class packaging is missing.
+- Pending: run the complete Android workflow, inspect its result and APK artifact, then install on device and verify opening the Recompiler screen.

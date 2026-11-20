@@ -284,6 +284,8 @@
             </intent-filter>
         </receiver>
 
+            <!-- NGR unified game-recompiler intake launched from the WinNative hub. -->
+            <activity android:name="com.ngr.app.NgrRecompilerPickerActivity" android:exported="false" />
             <activity android:name="com.ngr.app.MainActivity" android:exported="false" />
             <activity android:name="com.ngr.app.N64RecompilerActivity" android:exported="false" />
     </application>
