@@ -115,7 +115,63 @@ jobs:
           test -s "$SDL_AAR"
           echo "$SDL_SHA256  $SDL_AAR" | sha256sum --check -
           unzip -Z1 "$SDL_AAR" > /tmp/sdl3-aar-entries.txt
-          ENTRY=$(grep -E '(^|/)(arm64-v8a|android[.]arm64-v8a)/libSDL3[.]so$' /tmp/sdl3-aar-entries.txt | head -n 1 || true)
+          ENTRY=$(grep -E 'libSDL3[.]so
+          if [ -z "$ENTRY" ]; then
+            echo "Vendored official SDL3 3.4.16 AAR has no ARM64 libSDL3.so"
+            grep -i 'libSDL3.*[.]so' /tmp/sdl3-aar-entries.txt || true
+            exit 1
+          fi
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          unzip -p "$SDL_AAR" "$ENTRY" > app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          test -s app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          file app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          echo "Staged verified official SDL3 3.4.16 ARM64 runtime from $ENTRY"
+          
+      - name: Run NGR JVM tests
+        run: ./gradlew --no-daemon -Pxdroid360.toolchain=build/xdroid360/payload :app:testStandardDebugUnitTest
+
+      - name: Build Android ARM64 APK
+        run: ./gradlew --no-daemon -Pxdroid360.toolchain=build/xdroid360/payload assembleStandardDebug
+
+      - name: Verify recompiler picker is registered and packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'com.ngr.app.NgrRecompilerPickerActivity'
+          DEX_FOUND=0
+          while IFS= read -r dex; do
+            if unzip -p "$APK" "$dex" | strings | grep -Fq 'Lcom/ngr/app/NgrRecompilerPickerActivity;'; then DEX_FOUND=1; break; fi
+          done < <(unzip -Z1 "$APK" | grep -E '^classes([0-9]+)?[.]dex')
+          test "$DEX_FOUND" -eq 1 || { echo 'Picker Activity class is missing from APK DEX'; exit 1; }
+          echo "Verified picker Activity in manifest and DEX: $APK"
+
+      - name: Verify XDroid360 DXC runtime dependency is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          unzip -Z1 "$APK" | grep -Fx 'lib/arm64-v8a/libshaderlib.so'
+          unzip -Z1 "$APK" | grep -Fx 'lib/arm64-v8a/libdxcompiler.so'
+          unzip -Z1 "$APK" | grep -Fx 'lib/arm64-v8a/libSDL3.so'
+          READELF="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          unzip -p "$APK" lib/arm64-v8a/libshaderlib.so > /tmp/libshaderlib.so
+          unzip -p "$APK" lib/arm64-v8a/libdxcompiler.so > /tmp/libdxcompiler.so
+          "$READELF" -d /tmp/libshaderlib.so | grep -F 'Shared library: [libdxcompiler.so]'
+          test -s /tmp/libdxcompiler.so
+          echo "Verified SDL3, libdxcompiler.so and libshaderlib.so are packaged in the ARM64 APK."
+
+      - name: Upload NGR WinNative ARM64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGR-WinNative-arm64-debug
+          path: app/build/outputs/apk/standard/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+ /tmp/sdl3-aar-entries.txt | grep -E 'arm64-v8a|android[.]arm64-v8a' | head -n 1 || true)
           if [ -z "$ENTRY" ]; then
             echo "Vendored official SDL3 3.4.16 AAR has no ARM64 libSDL3.so"
             grep -i 'libSDL3.*[.]so' /tmp/sdl3-aar-entries.txt || true
