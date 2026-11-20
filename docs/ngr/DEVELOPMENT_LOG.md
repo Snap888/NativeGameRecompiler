@@ -1264,3 +1264,11 @@ This is the durable project memory. Update it in every development session.
 - Root cause: the vendored SDL3 native-only AAR dependency is resolved by Gradle but its native library is not being emitted into the APK's JNI library directory. The XDroid360 linker invokes lld with an absolute path under the app's extracted nativeLibraryDir, so Prefab-only/native archive content is insufficient.
 - Added a CI staging step that locates the ARM64 `libSDL3.so` entry inside the pinned vendored AAR (supports both conventional `jni/arm64-v8a` and Prefab `android.arm64-v8a` layouts), extracts it to `app/src/main/jniLibs/arm64-v8a/libSDL3.so`, then builds and asserts it in the APK.
 - Fix commit: `e6480cb7dd434a438c5f26f0d152821daa6be34b`. Pending CI confirmation that the AAR contains the expected library and APK packaging succeeds.
+
+
+## 2026-11-20 — SDL3 source correction after CI #133
+- Android run #133 (`44801049297`) failed in the SDL staging step before Gradle/JVM/APK build. All preceding checks passed, including NX2Android pin/license validation, XDroid360 payload download, N64Recomp host-tool build and native ABI tests.
+- Exact archive inspection showed the vendored WinNative AAR contains only `prefab/modules/SDL3-shared/libs/android.arm64-v8a/libSDL3steam.so`; it does **not** contain `libSDL3.so`. The earlier AAR extraction approach was incorrect and is superseded.
+- Replaced that step with a download of the official SDL 3.4.16 Android development package from the upstream SDL release and SHA-256 verification (`e1da8d9298471ea4ab8c6d48a804c0ac5415f35f30fcf7eba61aa7357e165765`). CI extracts the ARM64 `libSDL3.so` to app JNI staging; the final APK assertion remains mandatory.
+- Workflow fix commit: `8fcb838075bcdad67bca9671e0bb811d95a4b06b`.
+- New CI must confirm the official archive layout, extraction, JNI packaging, JVM tests, picker manifest/DEX, DXC dependency and artifact upload. No APK success or device-side linker fix is claimed yet.
