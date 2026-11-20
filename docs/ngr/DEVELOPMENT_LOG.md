@@ -1158,3 +1158,10 @@ This is the durable project memory. Update it in every development session.
 - [x] Build #44708314790 failed at :ngr-xdroid360:compileDebugJavaWithJavac: excluding donor org.libsdl/** left GameActivity without SDLActivity (66 cascading errors); the SDL3 AAR marked compileOnly did not provide the required compile symbols.
 - [x] Restore the donor-pinned SDL3 Java sources and remove the ineffective compileOnly AAR. The app-level duplicate SDL3 AAR remains removed; the next build will reveal whether another DEX-level collision exists.
 - [ ] Verify Java compilation, DEX merge, APK packaging and runtime SDL3 native loading.
+
+
+## 2026-11-20 — Steam Controller Java compile fix
+- CI run [44714192744](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44714192744) passed source checkout, XDroid360 payload download, N64Recomp host build and native ABI tests, then failed Java compilation.
+- Root cause: `SteamControllerBackend.java` imported `org.winnative.steam.SDL` and `HIDDeviceManager`, but the pinned WinNative source tree actually provides these Java bridge classes under `org.love2d.sdl` (`app/src/main/engine/org/love2d/sdl`). This was a stale package reference, not an SDL3 duplicate-class problem.
+- Corrected both imports to `org.love2d.sdl`. This preserves the existing WinNative SDL/HID implementation and does not remove either SDL runtime.
+- Commit: `26f770a8d87ed434e444db12f48e5c0b77655a09`. Awaiting CI verification.
