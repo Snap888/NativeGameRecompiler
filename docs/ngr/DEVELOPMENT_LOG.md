@@ -1272,3 +1272,11 @@ This is the durable project memory. Update it in every development session.
 - Replaced that step with a download of the official SDL 3.4.16 Android development package from the upstream SDL release and SHA-256 verification (`e1da8d9298471ea4ab8c6d48a804c0ac5415f35f30fcf7eba61aa7357e165765`). CI extracts the ARM64 `libSDL3.so` to app JNI staging; the final APK assertion remains mandatory.
 - Workflow fix commit: `8fcb838075bcdad67bca9671e0bb811d95a4b06b`.
 - New CI must confirm the official archive layout, extraction, JNI packaging, JVM tests, picker manifest/DEX, DXC dependency and artifact upload. No APK success or device-side linker fix is claimed yet.
+
+
+## 2026-11-20 — SDL3 packaging source corrected
+- CI #145 (`44804743339`) downloaded SDL 3.4.16's upstream Android development ZIP and verified its SHA-256, but that package did not contain an ARM64 `libSDL3.so` entry at all. The extraction assumption was wrong; Gradle/APK tasks were skipped.
+- Inspected the pinned WinNative source tree and found the unmodified official SDL 3.4.16 Android AAR already vendored at `vendor/maven/org/libsdl/android/SDL3/3.4.16/SDL3-3.4.16.aar` (16,881,733 bytes), alongside the reduced WinNative-specific `3.4.16-winnative.2` AAR (4,820,195 bytes) that lacks the base SDL shared runtime.
+- Replaced the workflow download with extraction from the vendored official AAR, pinned to its repository SHA-256 `03710fc7b49cc070551446841a843840fabf2aaaaa3043cd5739292a55e4e61c`. The app continues to use the WinNative-specific AAR for its intended Java/Prefab integration; the official AAR supplies only the missing ARM64 runtime .so into app JNI staging.
+- Fix commit: `c29569ee83fb0707b5819a43b80bfc608c072eb5`.
+- Awaiting CI confirmation that the archive path matches, ELF packages correctly, JVM tests and APK build pass. No successful APK/device test claimed yet.
