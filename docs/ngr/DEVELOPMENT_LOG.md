@@ -1226,3 +1226,26 @@ This is the durable project memory. Update it in every development session.
 - [x] Updated both workflow pin assertions to the actual reviewed submodule commit; no runtime source was changed in this repair.
 - [ ] Re-run toolchain workflow and confirm source checks pass, payload is generated, then verify Android build downloads and packages that payload.
 - [ ] Install the resulting APK and repeat the DAO shader compilation on device.
+
+
+## Session 2026-11-20 — nx2android import and SDL3 linker repair
+
+### Nintendo Switch source integration
+- Added original MIT upstream `shirai91/nx2android` as a pinned submodule at `native/recompilers/nx2android`, revision `d6980c39410189dc426f007822bc53f96a624171`.
+- The A2redweb Android wrapper is not copied; its separate licensing was not established. The original upstream engine includes its MIT license, porter, Android Vulkan host and title profiles.
+- Added isolated Gradle module `:ngr-switch` and typed contracts for NSP/XCI/NSZ/XCZ input, update/DLC references, firmware URI, per-title profile state, build stages and generated APK/data metadata.
+- Added a readiness probe that distinguishes source checkout, porter, Android host and NDK availability. It does not claim a build can run just because a module exists.
+- Added CI source-pin/license/entrypoint checks. No game images, firmware, prod.keys or proprietary game code are added.
+- This is the first source-import milestone. Android worker/proot isolation, porter dependency/toolchain adaptation, profile/key/firmware UI, APK install, app-owned data transfer and shortcuts/launch remain unimplemented.
+
+### XDroid360 SDL3 linker failure
+- User log showed lld cannot open the absolute SDL3 input at `.../lib/arm64/libSDL3.so` while linking hundreds of PPC object files.
+- NGR already vendored SDL3 AAR but had not included it in the application runtime dependency graph. The XDroid360 CMake comments assumed SDL3 would be supplied by WinNative, but the current app graph did not package the native AAR.
+- Added explicit `org.libsdl.android:SDL3:3.4.16-winnative.2` implementation dependency to the app and a Gradle pre-build check for `jni/arm64-v8a/libSDL3.so` in the resolved AAR.
+- Added final APK CI verification for `lib/arm64-v8a/libSDL3.so` alongside `libshaderlib.so` and `libdxcompiler.so`.
+- Device verification is still required: install the new APK and repeat the exact DAO/Xbox 360 build to prove the absolute path now resolves.
+
+### Baseline CI evidence before these changes
+- Android run #130 `44773381128` passed JVM tests, ARM64 APK build, picker manifest/DEX check, DXC dependency check and artifact upload. Artifact `NGR-WinNative-arm64-debug` ID `14648932281`, SHA-256 `0fb5152a7eea6d9b37c02c88cd5fff8905f41b6bd0e3f1c45e27e4d4e4cc2202`.
+- XDroid360 toolchain run #6 `44773381147` passed and uploaded `ngr-xdroid360-payload` artifact ID `14649296183`.
+- These runs predate the nx2android module and SDL3 dependency commits; the next CI run must validate the new code.
