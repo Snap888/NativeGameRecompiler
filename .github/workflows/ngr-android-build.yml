@@ -115,13 +115,7 @@ jobs:
           DEX_FOUND=0
           while IFS= read -r dex; do
             if unzip -p "$APK" "$dex" | strings | grep -Fq 'Lcom/ngr/app/NgrRecompilerPickerActivity;'; then DEX_FOUND=1; break; fi
-          done < <(unzip -Z1 "$APK" | grep -E '^classes([0-9]+)?\\.dex        uses: actions/upload-artifact@v4
-        with:
-          name: NGR-WinNative-arm64-debug
-          path: app/build/outputs/apk/standard/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
-)
+          done < <(unzip -Z1 "$APK" | grep -E '^classes([0-9]+)?[.]dex')
           test "$DEX_FOUND" -eq 1 || { echo 'Picker Activity class is missing from APK DEX'; exit 1; }
           echo "Verified picker Activity in manifest and DEX: $APK"
 
