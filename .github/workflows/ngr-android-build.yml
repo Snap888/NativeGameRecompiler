@@ -119,6 +119,21 @@ jobs:
           test "$DEX_FOUND" -eq 1 || { echo 'Picker Activity class is missing from APK DEX'; exit 1; }
           echo "Verified picker Activity in manifest and DEX: $APK"
 
+      - name: Verify XDroid360 DXC runtime dependency is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          unzip -Z1 "$APK" | grep -Fx 'lib/arm64-v8a/libshaderlib.so'
+          unzip -Z1 "$APK" | grep -Fx 'lib/arm64-v8a/libdxcompiler.so'
+          READELF="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          unzip -p "$APK" lib/arm64-v8a/libshaderlib.so > /tmp/libshaderlib.so
+          unzip -p "$APK" lib/arm64-v8a/libdxcompiler.so > /tmp/libdxcompiler.so
+          "$READELF" -d /tmp/libshaderlib.so | grep -F 'Shared library: [libdxcompiler.so]'
+          test -s /tmp/libdxcompiler.so
+          echo "Verified libdxcompiler.so is packaged beside its libshaderlib.so consumer."
+
       - name: Upload NGR WinNative ARM64 APK
         uses: actions/upload-artifact@v4
         with:

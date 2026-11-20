@@ -332,6 +332,11 @@ android {
 
     sourceSets {
         main {
+            // XDroid360 executes libshaderlib.so from the app's nativeLibraryDir.
+            // Put its DT_NEEDED dependency libdxcompiler.so in that same app linker
+            // namespace explicitly; relying only on an Android-library jniLibs
+            // transitive merge left DXC absent on affected installed APKs.
+            jniLibs.srcDir(rootProject.file("ngr-xdroid360/build/generated/xdroid360/jniLibs"))
             java.srcDirs = [
                     'src/main/java',  // NGR app sources and compatibility helpers
                     'src/main/app',
@@ -368,6 +373,10 @@ android {
             }
         }
     }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(":ngr-xdroid360:prepareXDroid360Payload")
 }
 
 dependencies {

@@ -1190,3 +1190,21 @@ This is the durable project memory. Update it in every development session.
 - Registered `com.ngr.app.NgrRecompilerPickerActivity` as a non-exported app Activity. This directly fixes the component-resolution defect without changing the hub's intent or runtime behavior.
 - Added an Android CI gate that inspects the built APK manifest and DEX for the picker Activity; the build must fail if either registration or class packaging is missing.
 - Pending: run the complete Android workflow, inspect its result and APK artifact, then install on device and verify opening the Recompiler screen.
+
+
+## Session 2026-11-20 — XDroid360 DXC linker failure
+
+### Device evidence
+- User supplied runtime output from the DAO build:
+  `libshaderlib.so ... shaders.pak ... nfsmw_shaders.nfsp -j 8`.
+- Android linker aborts before shader compilation:
+  `library "libdxcompiler.so" not found: needed by main executable`.
+- This is a native-library packaging/linker-namespace failure, not a shader archive or game-data failure.
+- The pinned XDroid360 toolchain workflow already builds and stages both `libshaderlib.so` and `libdxcompiler.so`; the module Gradle task validates and copies both into generated `jniLibs`. The APK workflow previously verified the picker Activity but did not inspect the final APK for the two runtime libraries or the ELF DT_NEEDED edge.
+- The NGR app now explicitly includes XDroid360 generated JNI libraries in the app source set and orders payload preparation before app preBuild. CI now inspects the final APK and verifies both ARM64 libraries are present and that `libshaderlib.so` declares `libdxcompiler.so` as a dependency.
+- The picker Activity is already declared in `app/src/main/AndroidManifest.xml`; retain the existing manifest/DEX CI gate.
+
+### Validation status
+- Source/workflow change committed separately from any claim of device-side success.
+- Await Android CI. A green APK packaging check proves the dependency is in the APK, but device relaunch is still required to confirm Android linker resolution on hardware.
+- The user's separate earlier ActivityNotFoundException is addressed by the existing manifest registration and CI manifest/DEX assertion; do not conflate it with this DXC linker error.

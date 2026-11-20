@@ -371,3 +371,11 @@ Mark complete only when evidence exists.
 - [x] Add CI verification that the APK manifest declares the picker and APK DEX contains its class.
 - [ ] Verify Android CI, all expected APK outputs and artifact upload.
 - [ ] Install the resulting build and test the Recompiler menu entry on device; check log viewer and SAF picker flow.
+
+
+## XDroid360 DXC runtime linker — 2026-11-20
+- [x] Confirm the device failure is `libshaderlib.so` DT_NEEDED dependency lookup for `libdxcompiler.so`, before shader compilation.
+- [x] Explicitly include generated XDroid360 ARM64 JNI libraries in the app packaging source set and order payload preparation before app preBuild.
+- [x] Add APK-level CI verification for both libraries and the `libshaderlib.so -> libdxcompiler.so` ELF dependency.
+- [ ] Verify the new Android CI run and inspect the produced APK contents.
+- [ ] Install the verified APK on device and repeat the DAO shader build; confirm linker proceeds past library loading.
