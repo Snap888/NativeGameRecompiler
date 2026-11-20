@@ -398,3 +398,22 @@ Mark complete only when evidence exists.
 - [ ] Verify new toolchain run passes source verification and builds/uploads ngr-xdroid360-payload.
 - [ ] Verify Android run passes JVM tests, APK build, manifest/DEX and DXC packaging checks; inspect artifact.
 - [ ] On device, repeat DAO shader build and capture any subsequent compiler/runtime error.
+
+
+## P0 — XDroid360 SDL3 linker input (2026-11-20)
+- [x] Trace `liblld.so: cannot open .../lib/arm64/libSDL3.so` to missing SDL3 runtime packaging in the app dependency graph.
+- [x] Add pinned SDL3 AAR as an explicit app runtime dependency.
+- [x] Add pre-build verification that the resolved AAR contains `jni/arm64-v8a/libSDL3.so`.
+- [x] Add APK CI assertion for `lib/arm64-v8a/libSDL3.so`.
+- [ ] Verify the new CI run and install its APK; repeat the exact Xbox 360 title build and inspect the next linker/runtime result.
+
+## P1 — Nintendo Switch nx2android import
+- [x] Pin original MIT upstream `shirai91/nx2android` at `d6980c39410189dc426f007822bc53f96a624171` as a dedicated submodule.
+- [x] Add isolated `:ngr-switch` module and typed intake/profile/build-output contracts.
+- [x] Add CI checks for the pinned upstream revision, MIT license and Android porter/host source.
+- [ ] Verify Gradle module compilation, full JVM tests and all branded APKs.
+- [ ] Adapt porter execution to an isolated Android worker; do not lower NGR target SDK to the A2redweb workaround.
+- [ ] Implement secure local prod.keys/firmware handling, SAF staging and title-profile matching.
+- [ ] Build the ARM64 Android host and per-game APK/data pack from a profile marked playable upstream.
+- [ ] Implement PackageInstaller confirmation, app-owned data placement, installed-port registry, pinned launcher shortcut and direct launch.
+- [ ] Device-test launch and save data on an Adreno device; keep profile status scoped to actual upstream support.
