@@ -1218,3 +1218,11 @@ This is the durable project memory. Update it in every development session.
 - XDroid360 upstream commit: `6eefb7f738d4e63cb11cb6bb63911f55094e8ada`.
 - NGR pins this exact updated donor revision as a submodule gitlink. APK packaging check remains in place.
 - Validation required: new Android CI green, then on-device DAO build must pass the linker stage. The prior successful APK is not sufficient and should not be used for this test.
+
+
+## CI pin mismatch repair — 2026-11-20
+- [x] Inspected failed Android build run #129 (44771556240) and XDroid360 toolchain run #5 (44771556373).
+- [x] Root cause: both workflow source-verification steps still required XDroid360 commit f388d11fc207502cd5975899c8adc06600cfe34f, while the NGR submodule was intentionally advanced to 6eefb7f738d4e63cb11cb6bb63911f55094e8ada for the LD_LIBRARY_PATH linker fix.
+- [x] Updated both workflow pin assertions to the actual reviewed submodule commit; no runtime source was changed in this repair.
+- [ ] Re-run toolchain workflow and confirm source checks pass, payload is generated, then verify Android build downloads and packages that payload.
+- [ ] Install the resulting APK and repeat the DAO shader compilation on device.

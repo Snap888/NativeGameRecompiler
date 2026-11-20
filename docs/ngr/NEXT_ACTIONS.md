@@ -389,3 +389,12 @@ Mark complete only when evidence exists.
 - [ ] Build new NGR APK using updated XDroid360 submodule pin.
 - [ ] Install that new APK (not the previous artifact) and repeat DAO shader build.
 - [ ] Confirm `CANNOT LINK EXECUTABLE ... libdxcompiler.so not found` is gone; collect the next error if the tool advances further.
+
+
+## P0 — CI stale XDroid360 pin repair (2026-11-20)
+- [x] Diagnose Android run #129 (44771556240): failed at source verification before native/JVM/Gradle build because the workflow expected stale XDroid360 pin f388d11 while checkout resolved 6eefb7f738d4e63cb11cb6bb63911f55094e8ada.
+- [x] Diagnose toolchain run #5 (44771556373): same stale expected pin stopped toolchain before source fetch/build.
+- [x] Update both workflow assertions to 6eefb7f738d4e63cb11cb6bb63911f55094e8ada.
+- [ ] Verify new toolchain run passes source verification and builds/uploads ngr-xdroid360-payload.
+- [ ] Verify Android run passes JVM tests, APK build, manifest/DEX and DXC packaging checks; inspect artifact.
+- [ ] On device, repeat DAO shader build and capture any subsequent compiler/runtime error.

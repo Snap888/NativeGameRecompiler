@@ -63,7 +63,7 @@ jobs:
       - name: Verify pinned XDroid360 recipe and native source graph
         run: |
           set -euo pipefail
-          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "f388d11fc207502cd5975899c8adc06600cfe34f"
+          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "6eefb7f738d4e63cb11cb6bb63911f55094e8ada"
           test -f native/recompilers/XDroid360/toolchain/env.sh
           test -f native/recompilers/XDroid360/toolchain/package.sh
           test -f native/recompilers/XDroid360/android/app/src/main/cpp/CMakeLists.txt

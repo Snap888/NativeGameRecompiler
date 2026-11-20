@@ -75,7 +75,7 @@ jobs:
           test -f native/recompilers/XDroid360/android/runtime/CMakeLists.txt
           test -f native/recompilers/XDroid360/android/app/src/main/java/com/udarmolota/xdroid360/BuildService.java
           test -d native/recompilers/XDroid360/recomp
-          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "f388d11fc207502cd5975899c8adc06600cfe34f"
+          test "$(git -C native/recompilers/XDroid360 rev-parse HEAD)" = "6eefb7f738d4e63cb11cb6bb63911f55094e8ada"
           git -C native/recompilers/XDroid360 submodule status --recursive
 
       - name: Build N64Recomp and RSPRecomp host tools
