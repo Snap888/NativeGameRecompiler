@@ -1208,3 +1208,13 @@ This is the durable project memory. Update it in every development session.
 - Source/workflow change committed separately from any claim of device-side success.
 - Await Android CI. A green APK packaging check proves the dependency is in the APK, but device relaunch is still required to confirm Android linker resolution on hardware.
 - The user's separate earlier ActivityNotFoundException is addressed by the existing manifest registration and CI manifest/DEX assertion; do not conflate it with this DXC linker error.
+
+
+## Follow-up 2026-11-20 — runtime linker search path
+
+- Device repeated the same `libdxcompiler.so not found` failure after the APK packaging check passed.
+- This proves APK presence alone was insufficient: XDroid360 launches `libshaderlib.so` as a child ELF executable using `ProcessBuilder`; Android's linker was not resolving sibling dependencies from the app native-library directory automatically.
+- Fixed upstream XDroid360 `RecipeRunner.exec()` to prepend `ApplicationInfo.nativeLibraryDir` to `LD_LIBRARY_PATH` for every compiler subprocess, preserving any inherited path. `Toolchain.present()` now requires both `libshaderlib.so` and `libdxcompiler.so` so the launcher cannot advertise an incomplete compiler environment.
+- XDroid360 upstream commit: `6eefb7f738d4e63cb11cb6bb63911f55094e8ada`.
+- NGR pins this exact updated donor revision as a submodule gitlink. APK packaging check remains in place.
+- Validation required: new Android CI green, then on-device DAO build must pass the linker stage. The prior successful APK is not sufficient and should not be used for this test.

@@ -379,3 +379,13 @@ Mark complete only when evidence exists.
 - [x] Add APK-level CI verification for both libraries and the `libshaderlib.so -> libdxcompiler.so` ELF dependency.
 - [ ] Verify the new Android CI run and inspect the produced APK contents.
 - [ ] Install the verified APK on device and repeat the DAO shader build; confirm linker proceeds past library loading.
+
+
+## DXC linker runtime path — follow-up
+- [x] Confirmed previous APK did package `libdxcompiler.so`; CI verified it beside `libshaderlib.so` and confirmed ELF DT_NEEDED.
+- [x] Identified missing child-process linker environment as the remaining cause.
+- [x] Updated XDroid360 subprocess environment to set `LD_LIBRARY_PATH` to the app native library directory (preserving inherited entries).
+- [x] Updated toolchain readiness check to require both shader tool and DXC library.
+- [ ] Build new NGR APK using updated XDroid360 submodule pin.
+- [ ] Install that new APK (not the previous artifact) and repeat DAO shader build.
+- [ ] Confirm `CANNOT LINK EXECUTABLE ... libdxcompiler.so not found` is gone; collect the next error if the tool advances further.
