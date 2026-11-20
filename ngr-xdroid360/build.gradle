@@ -44,9 +44,6 @@ android {
     sourceSets {
         main {
             java.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/java"))
-            // WinNative/armsx2 already supplies SDL3 Java classes at runtime. Compile XDroid360
-            // against SDL3, but do not package the donor's duplicate org.libsdl sources.
-            java.exclude("org/libsdl/**")
             res.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/res"))
             assets.srcDir(rootProject.file("native/recompilers/XDroid360/android/app/src/main/assets"))
             assets.srcDir(generatedAssetsDir)
@@ -69,7 +66,6 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.coreKtx
-    compileOnly 'org.libsdl.android:SDL3:3.4.16-winnative.2@aar'
 }
 
 tasks.register("prepareXDroid360Payload") {
