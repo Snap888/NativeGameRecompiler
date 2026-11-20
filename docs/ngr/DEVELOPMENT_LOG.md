@@ -1144,3 +1144,11 @@ This is the durable project memory. Update it in every development session.
 - The NGR picker now opens the donor's actual `BuildActivity` for ISO/ZIP or STFS folder input. It places `LauncherActivity` behind the build screen so a completed build returns to the refreshed playable-instance library. A standalone `.xex` is detected but refused as a direct input because the donor expects XISO or an STFS folder/ZIP.
 - The toolchain CI first exposed two runner setup defects (missing Android SDK command-line setup, then an uncreated external CMake workspace). Both were corrected: `setup-android` is explicit, and all /mnt/work build directories are created before LLVM/DXC tablegen builds. A retry is running.
 - The regular APK workflow waits for the successful toolchain artifact and is configured to rebuild after the toolchain workflow completes; artifact lookup is pinned to the integration branch rather than the workflow_run event's default-branch ref.
+
+
+## CI repair — XDroid360 SDL merge (2026-11-20)
+- [x] Diagnosed Android build #44705769103: JVM tests and native checks passed; D8 failed because `org.libsdl.app.HIDDevice` was packaged by both XDroid360 and the existing WinNative/armsx2 runtime.
+- [x] Removed duplicate SDL Java sources from the XDroid360 module source set; keep SDL3 as compile-only there and use the already packaged WinNative SDL implementation at runtime.
+- [x] Removed the redundant app-level SDL3 AAR dependency so only the existing runtime provider is packaged.
+- [x] Forward the SAF read-grant flag when handing a selected ISO/STFS URI to XDroid360 `BuildActivity`.
+- [ ] Verify the next Android CI run through DEX merge, APK packaging and artifact upload; confirm SDL activity classes resolve from the single runtime provider.
