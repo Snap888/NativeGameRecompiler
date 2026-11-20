@@ -66,6 +66,11 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.coreKtx
+
+    // GameActivity extends WinNative's SDLActivity and uses its SDL surface/thread
+    // bridge. XDroid360's duplicate SDL Java sources are excluded centrally, so
+    // this explicit project dependency supplies the single canonical Java owner.
+    implementation project(":armsx2")
 }
 
 tasks.register("prepareXDroid360Payload") {

@@ -354,3 +354,11 @@ Mark complete only when evidence exists.
 - [ ] Verify `SteamControllerBackendTest` and the complete JVM unit-test suite.
 - [ ] Confirm DEX merge / SDL2+SDL3 packaging without removing either runtime.
 - [ ] Confirm native library packaging and all four branded APK outputs.
+
+
+## CI follow-up — SDL3 compile classpath (2026-11-20)
+- [x] Diagnosed 66 cascading XDroid360 Java errors: donor `GameActivity` could not resolve `org.libsdl.app.SDLActivity` after duplicate SDL Java sources were excluded.
+- [x] Added a direct `:ngr-xdroid360` → `:armsx2` project dependency so WinNative SDL Java glue is on XDroid360's compile classpath.
+- [ ] Verify `:ngr-xdroid360:compileDebugJavaWithJavac` passes.
+- [ ] Verify D8 merges without duplicate SDL classes and CMake resolves/links SDL3 Prefab.
+- [ ] Verify APK outputs and artifact upload; do not mark Xbox 360 backend ready until runtime launch is tested.

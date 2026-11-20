@@ -1175,3 +1175,10 @@ This is the durable project memory. Update it in every development session.
 - No APK produced by this failed run. Next CI must verify unit tests, Android compile, DEX merge, native packaging, and artifact generation.
 
 - Follow-up: removed the stale `SteamWiredPipelineTest` instrumentation test as well; it invoked the same nonexistent package/API and would fail Android-test compilation. This is test cleanup only, not a claim that the wired HID lifecycle is validated.
+
+
+## 2026-11-20 — XDroid360 SDL compile classpath correction
+- CI run [44724481408](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44724481408) passed checkout, XDroid360 payload download, N64Recomp host build, native ABI tests and N64 JNI wiring. It failed at `:ngr-xdroid360:compileDebugJavaWithJavac` with 66 cascading errors.
+- Root cause: the DEX-collision fix excluded donor `org/libsdl/**` Java sources, but XDroid360 did not declare a compile dependency on `:armsx2`, the module owning WinNative's canonical `org.libsdl.app.SDLActivity` and SDL Java glue. A sibling app dependency does not place those classes on XDroid360's own compile classpath.
+- Added `implementation project(":armsx2")` directly to `:ngr-xdroid360`. This exposes the canonical WinNative SDL Java classes during donor compilation while retaining one namespace owner and the SDL3 Prefab AAR for native CMake.
+- Pending CI validation: XDroid360 Java compile, D8 duplicate check, SDL3 CMake configure/link, APK packaging.
