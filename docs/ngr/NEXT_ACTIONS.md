@@ -345,3 +345,12 @@ Mark complete only when evidence exists.
 - [ ] Verify JVM tests and Android compile on the next CI run.
 - [ ] Confirm DEX merge / SDL class packaging after Java compilation succeeds.
 - [ ] Confirm all four branded APK outputs and upload artifact.
+
+
+## Build follow-up — 2026-11-20
+- [x] Correct SteamControllerBackend imports to the actual pinned WinNative package (`org.love2d.sdl`).
+- [x] Remove two stale JVM HID tests that referenced a nonexistent `org.winnative.steam` implementation and APIs not present in the donor source.
+- [ ] Replace the stale Android instrumentation HID test with coverage against the actual `org.love2d.sdl` implementation before running connected tests.
+- [ ] Verify `SteamControllerBackendTest` and the complete JVM unit-test suite.
+- [ ] Confirm DEX merge / SDL2+SDL3 packaging without removing either runtime.
+- [ ] Confirm native library packaging and all four branded APK outputs.
