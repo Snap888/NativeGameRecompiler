@@ -8,3 +8,15 @@ plugins {
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.spotless) apply false
 }
+
+// XDroid360 and WinNative both use SDL3's org.libsdl.app Java namespace.
+// Keep the already-integrated WinNative SDL 3.5 Java glue from :armsx2 as the
+// single owner of that namespace. XDroid360's pinned SDL 3.4 Java copy is
+// excluded; its native SDL3 prefab is supplied by WinNative's native-only AAR.
+gradle.projectsEvaluated {
+    project(":ngr-xdroid360").android.sourceSets.getByName("main").java.exclude("org/libsdl/**")
+    project(":app").dependencies.add(
+        "implementation",
+        "org.libsdl.android:SDL3:3.4.16-winnative.2@aar"
+    )
+}
