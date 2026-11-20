@@ -11,3 +11,7 @@
 [submodule "native/recompilers/XDroid360"]
 	path = native/recompilers/XDroid360
 	url = https://github.com/Snap888/XDroid360.git
+
+[submodule "native/recompilers/nx2android"]
+	path = native/recompilers/nx2android
+	url = https://github.com/shirai91/nx2android.git
