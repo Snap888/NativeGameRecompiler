@@ -421,3 +421,8 @@ Mark complete only when evidence exists.
 - [x] Fix Gradle configuration-cache failure in SDL3 verification: remove script-capturing custom task; retain final APK native-library assertion.
 - [ ] Verify new Android CI run and confirm `lib/arm64-v8a/libSDL3.so` is present in APK.
 - [ ] Install the APK and repeat the Xbox 360 PPC link to confirm lld resolves SDL3 from nativeLibraryDir.
+
+- [x] Diagnose Build #132 failure: SDL3 AAR resolved but its ARM64 .so was not packaged in APK.
+- [x] Stage the ARM64 SDL3 library from the pinned AAR into app/src/main/jniLibs before the Android build.
+- [ ] Verify AAR extraction, APK contains lib/arm64-v8a/libSDL3.so, and linker regression checks pass.
+- [ ] Device-test Xbox 360 PPC link again.
