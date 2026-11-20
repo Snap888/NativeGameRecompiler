@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import org.winnative.steam.HIDDeviceManager;
-import org.winnative.steam.SDL;
+import org.love2d.sdl.HIDDeviceManager;
+import org.love2d.sdl.SDL;
 
 public final class SteamControllerBackend {
   private static final String TAG = "SteamControllerBackend";
