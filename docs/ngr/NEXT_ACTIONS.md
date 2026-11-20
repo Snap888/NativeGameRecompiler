@@ -417,3 +417,7 @@ Mark complete only when evidence exists.
 - [ ] Build the ARM64 Android host and per-game APK/data pack from a profile marked playable upstream.
 - [ ] Implement PackageInstaller confirmation, app-owned data placement, installed-port registry, pinned launcher shortcut and direct launch.
 - [ ] Device-test launch and save data on an Adreno device; keep profile status scoped to actual upstream support.
+
+- [x] Fix Gradle configuration-cache failure in SDL3 verification: remove script-capturing custom task; retain final APK native-library assertion.
+- [ ] Verify new Android CI run and confirm `lib/arm64-v8a/libSDL3.so` is present in APK.
+- [ ] Install the APK and repeat the Xbox 360 PPC link to confirm lld resolves SDL3 from nativeLibraryDir.
