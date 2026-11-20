@@ -435,3 +435,12 @@ Mark complete only when evidence exists.
 - [ ] Verify APK contains `lib/arm64-v8a/libSDL3.so` and its ELF SONAME/DT_NEEDED are correct for XDroid360 lld.
 - [ ] Confirm full JVM suite, picker manifest/DEX, DXC + SDL3 package checks and artifact upload.
 - [ ] Install the APK and repeat Xbox 360 PPC link on device; inspect the next error if any.
+
+
+## P0 — SDL3 runtime packaging follow-up (2026-11-20)
+- [x] Diagnose run #145: upstream SDL development ZIP contains no ARM64 `libSDL3.so` runtime entry.
+- [x] Locate the unmodified official SDL 3.4.16 AAR already vendored in WinNative/NGR and pin its SHA-256.
+- [x] Update CI to extract the missing ARM64 runtime from that AAR without replacing WinNative's reduced integration AAR (commit `c29569ee83fb0707b5819a43b80bfc608c072eb5`).
+- [ ] Confirm the actual AAR entry path and ARM64 ELF identity in CI.
+- [ ] Confirm Gradle tests, APK packaging, picker manifest/DEX and DXC/SDL3 checks.
+- [ ] Device-test Xbox 360 PPC compile/link after installing the artifact.
