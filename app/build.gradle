@@ -382,6 +382,10 @@ tasks.named("preBuild").configure {
 dependencies {
     // Xbox 360 compiler, build service, game library and SDL3/Vulkan launcher from XDroid360.
     implementation project(':ngr-xdroid360')
+    implementation project(':ngr-switch')
+    // XDroid360's lld consumes libSDL3.so by absolute path from nativeLibraryDir.
+    // Keep SDL3 in the host APK's extracted JNI libraries, not just Java compile classpaths.
+    implementation 'org.libsdl.android:SDL3:3.4.16-winnative.2'
     testImplementation 'org.json:json:20240303'
     implementation 'androidx.documentfile:documentfile:1.1.0'
 //    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.14"
@@ -495,4 +499,33 @@ tasks.register("checkKotlinFormatOnly") {
     group = "verification"
     description = "Checks Kotlin formatting only."
     dependsOn("spotlessKotlinCheck")
+}
+
+
+tasks.register("verifySDL3RuntimeAar") {
+    group = "verification"
+    description = "Checks that the pinned SDL3 AAR supplies the ARM64 shared library required by XDroid360."
+    doLast {
+        def runtime = configurations.getByName("standardDebugRuntimeClasspath")
+        def artifact = runtime.resolvedConfiguration.resolvedArtifacts.find {
+            it.moduleVersion.id.group == "org.libsdl.android" &&
+            it.name == "SDL3" &&
+            it.moduleVersion.id.version == "3.4.16-winnative.2"
+        }
+        if (artifact == null) {
+            throw new GradleException("Pinned SDL3 AAR is missing from standardDebugRuntimeClasspath")
+        }
+        def archive = new java.util.zip.ZipFile(artifact.file)
+        try {
+            if (archive.getEntry("jni/arm64-v8a/libSDL3.so") == null) {
+                throw new GradleException("Pinned SDL3 AAR does not contain jni/arm64-v8a/libSDL3.so")
+            }
+        } finally {
+            archive.close()
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("verifySDL3RuntimeAar")
 }
