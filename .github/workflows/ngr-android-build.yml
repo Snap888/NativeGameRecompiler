@@ -106,24 +106,29 @@ jobs:
           grep -q "nativeGenerateN64C" app/src/main/java/com/ngr/app/N64RecompilerActivity.kt
           grep -q "fixed point" native/ngr-runtime/src/n64recomp_bridge.cpp
 
-      - name: Stage SDL3 native runtime library for Android packaging
+      - name: Stage official SDL3 Android ARM64 runtime library
         shell: bash
         run: |
           set -euo pipefail
-          AAR="vendor/maven/org/libsdl/android/SDL3/3.4.16-winnative.2/SDL3-3.4.16-winnative.2.aar"
-          test -s "$AAR"
-          unzip -Z1 "$AAR" > /tmp/sdl3-aar-entries.txt
-          ENTRY=$(grep -E 'libSDL3[.]so$' /tmp/sdl3-aar-entries.txt | grep -E '(^jni/arm64-v8a/|^prefab/modules/.*/libs/android[.]arm64-v8a/)' | head -n 1 || true)
-          if [ -z "$ENTRY" ]; then
-            echo "SDL3 AAR does not contain ARM64 libSDL3.so"
-            grep -i 'sdl3.*[.]so' /tmp/sdl3-aar-entries.txt || true
+          SDL_VERSION="3.4.16"
+          SDL_ARCHIVE="/tmp/SDL3-devel-${SDL_VERSION}-android.zip"
+          SDL_URL="https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-devel-${SDL_VERSION}-android.zip"
+          SDL_SHA256="e1da8d9298471ea4ab8c6d48a804c0ac5415f35f30fcf7eba61aa7357e165765"
+          curl --fail --location --retry 3 --retry-all-errors "${SDL_URL}" --output "${SDL_ARCHIVE}"
+          echo "${SDL_SHA256}  ${SDL_ARCHIVE}" | sha256sum --check -
+          unzip -Z1 "${SDL_ARCHIVE}" > /tmp/sdl3-android-entries.txt
+          ENTRY=$(grep -E '(^|/)arm64-v8a/libSDL3[.]so$' /tmp/sdl3-android-entries.txt | head -n 1 || true)
+          if [ -z "${ENTRY}" ]; then
+            echo "Official SDL3 Android development archive has no ARM64 libSDL3.so"
+            grep -E 'libSDL3[.]so$|arm64-v8a' /tmp/sdl3-android-entries.txt | head -n 80 || true
             exit 1
           fi
           mkdir -p app/src/main/jniLibs/arm64-v8a
-          unzip -p "$AAR" "$ENTRY" > app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          unzip -p "${SDL_ARCHIVE}" "${ENTRY}" > app/src/main/jniLibs/arm64-v8a/libSDL3.so
           test -s app/src/main/jniLibs/arm64-v8a/libSDL3.so
-          echo "Staged $ENTRY as app/src/main/jniLibs/arm64-v8a/libSDL3.so"
-
+          file app/src/main/jniLibs/arm64-v8a/libSDL3.so
+          echo "Staged verified official SDL3 ${SDL_VERSION} ARM64 runtime from ${ENTRY}"
+          
       - name: Run NGR JVM tests
         run: ./gradlew --no-daemon -Pxdroid360.toolchain=build/xdroid360/payload :app:testStandardDebugUnitTest
 
