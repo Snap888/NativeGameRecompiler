@@ -31,7 +31,9 @@ public final class XDroid360EntryPoint {
         Intent launcher = new Intent(context, LauncherActivity.class);
         Intent intent = new Intent(context, BuildActivity.class)
                 .putExtra(BuildActivity.EXTRA_URI, source)
-                .putExtra(BuildActivity.EXTRA_PICK, pick);
+                .putExtra(BuildActivity.EXTRA_PICK, pick)
+                // BuildActivity persists the SAF grant for background compilation.
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         if (!(context instanceof android.app.Activity)) {
             launcher.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
