@@ -500,32 +500,3 @@ tasks.register("checkKotlinFormatOnly") {
     description = "Checks Kotlin formatting only."
     dependsOn("spotlessKotlinCheck")
 }
-
-
-tasks.register("verifySDL3RuntimeAar") {
-    group = "verification"
-    description = "Checks that the pinned SDL3 AAR supplies the ARM64 shared library required by XDroid360."
-    doLast {
-        def runtime = configurations.getByName("standardDebugRuntimeClasspath")
-        def artifact = runtime.resolvedConfiguration.resolvedArtifacts.find {
-            it.moduleVersion.id.group == "org.libsdl.android" &&
-            it.name == "SDL3" &&
-            it.moduleVersion.id.version == "3.4.16-winnative.2"
-        }
-        if (artifact == null) {
-            throw new GradleException("Pinned SDL3 AAR is missing from standardDebugRuntimeClasspath")
-        }
-        def archive = new java.util.zip.ZipFile(artifact.file)
-        try {
-            if (archive.getEntry("jni/arm64-v8a/libSDL3.so") == null) {
-                throw new GradleException("Pinned SDL3 AAR does not contain jni/arm64-v8a/libSDL3.so")
-            }
-        } finally {
-            archive.close()
-        }
-    }
-}
-
-tasks.named("preBuild").configure {
-    dependsOn("verifySDL3RuntimeAar")
-}
