@@ -1152,3 +1152,9 @@ This is the durable project memory. Update it in every development session.
 - [x] Removed the redundant app-level SDL3 AAR dependency so only the existing runtime provider is packaged.
 - [x] Forward the SAF read-grant flag when handing a selected ISO/STFS URI to XDroid360 `BuildActivity`.
 - [ ] Verify the next Android CI run through DEX merge, APK packaging and artifact upload; confirm SDL activity classes resolve from the single runtime provider.
+
+
+## CI follow-up — restore pinned SDL3 Java sources (2026-11-20)
+- [x] Build #44708314790 failed at :ngr-xdroid360:compileDebugJavaWithJavac: excluding donor org.libsdl/** left GameActivity without SDLActivity (66 cascading errors); the SDL3 AAR marked compileOnly did not provide the required compile symbols.
+- [x] Restore the donor-pinned SDL3 Java sources and remove the ineffective compileOnly AAR. The app-level duplicate SDL3 AAR remains removed; the next build will reveal whether another DEX-level collision exists.
+- [ ] Verify Java compilation, DEX merge, APK packaging and runtime SDL3 native loading.
