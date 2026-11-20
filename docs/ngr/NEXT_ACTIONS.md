@@ -338,3 +338,10 @@ Mark complete only when evidence exists.
 - [ ] Verify Java compilation, DEX merge, APK packaging and runtime SDL3 native loading.
 - [ ] Test XISO and STFS tree detection, build progress/cancel/retry, and resulting instance launch on Android Adreno.
 - [ ] Keep support scoped to the donor's actual recipe profiles; do not mark arbitrary Xbox 360 titles as playable.
+
+
+## Build follow-up — 2026-11-20
+- [x] Fix stale Steam Controller Java imports to the package used by the pinned WinNative sources (`org.love2d.sdl`).
+- [ ] Verify JVM tests and Android compile on the next CI run.
+- [ ] Confirm DEX merge / SDL class packaging after Java compilation succeeds.
+- [ ] Confirm all four branded APK outputs and upload artifact.
