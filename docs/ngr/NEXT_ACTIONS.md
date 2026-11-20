@@ -426,3 +426,12 @@ Mark complete only when evidence exists.
 - [x] Stage the ARM64 SDL3 library from the pinned AAR into app/src/main/jniLibs before the Android build.
 - [ ] Verify AAR extraction, APK contains lib/arm64-v8a/libSDL3.so, and linker regression checks pass.
 - [ ] Device-test Xbox 360 PPC link again.
+
+
+## P0 — SDL3 upstream Android runtime packaging (2026-11-20)
+- [x] Inspect failed run #133 (`44801049297`): vendored AAR contains only `libSDL3steam.so`, not the required `libSDL3.so`.
+- [x] Replace invalid AAR extraction with official SDL 3.4.16 Android development archive and pinned SHA-256 verification (workflow commit `8fcb838075bcdad67bca9671e0bb811d95a4b06b`).
+- [ ] Verify official archive contains ARM64 `libSDL3.so` at the expected path; adjust extraction based on actual archive listing if needed.
+- [ ] Verify APK contains `lib/arm64-v8a/libSDL3.so` and its ELF SONAME/DT_NEEDED are correct for XDroid360 lld.
+- [ ] Confirm full JVM suite, picker manifest/DEX, DXC + SDL3 package checks and artifact upload.
+- [ ] Install the APK and repeat Xbox 360 PPC link on device; inspect the next error if any.
