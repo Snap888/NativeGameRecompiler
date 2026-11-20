@@ -1173,3 +1173,5 @@ This is the durable project memory. Update it in every development session.
 - Removed these two stale, non-executable JVM tests rather than weakening or modifying the WinNative HID implementation. The existing `SteamControllerBackendTest` remains and continues to exercise the backend through its fake transport.
 - The separate `SteamWiredPipelineTest` is also a stale instrumentation test targeting the same nonexistent API surface; remove/replace it before enabling instrumentation compilation. A proper wired/Bluetooth HID integration test must be written against the pinned donor classes after their real API and native callback lifecycle are audited.
 - No APK produced by this failed run. Next CI must verify unit tests, Android compile, DEX merge, native packaging, and artifact generation.
+
+- Follow-up: removed the stale `SteamWiredPipelineTest` instrumentation test as well; it invoked the same nonexistent package/API and would fail Android-test compilation. This is test cleanup only, not a claim that the wired HID lifecycle is validated.
