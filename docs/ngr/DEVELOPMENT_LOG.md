@@ -1249,3 +1249,11 @@ This is the durable project memory. Update it in every development session.
 - Android run #130 `44773381128` passed JVM tests, ARM64 APK build, picker manifest/DEX check, DXC dependency check and artifact upload. Artifact `NGR-WinNative-arm64-debug` ID `14648932281`, SHA-256 `0fb5152a7eea6d9b37c02c88cd5fff8905f41b6bd0e3f1c45e27e4d4e4cc2202`.
 - XDroid360 toolchain run #6 `44773381147` passed and uploaded `ngr-xdroid360-payload` artifact ID `14649296183`.
 - These runs predate the nx2android module and SDL3 dependency commits; the next CI run must validate the new code.
+
+
+## 2026-11-20 — SDL3 Gradle configuration-cache failure
+- Investigated NGR Android Build #131 (run `44785578248`): checkout, nx2android pin validation, toolchain download and native ABI tests passed; JVM test task failed before executing tests.
+- Exact cause: the custom `verifySDL3RuntimeAar` Groovy task action accessed the Gradle script/configuration model from a closure, which is incompatible with the enabled configuration cache.
+- Removed the custom preBuild task instead of disabling configuration cache or weakening the final artifact check.
+- Retained SDL3 as an explicit app runtime dependency and retained the CI assertion that the built ARM64 APK must contain `lib/arm64-v8a/libSDL3.so`. The final APK check is the authoritative packaging test.
+- Fix commit: `157f6386eb66d0a199683220b7fdc348f6dcac40`. New CI run is required to validate Gradle tests, APK packaging and the SDL3 assertion.
