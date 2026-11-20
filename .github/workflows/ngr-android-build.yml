@@ -115,7 +115,7 @@ jobs:
           test -s "$SDL_AAR"
           echo "$SDL_SHA256  $SDL_AAR" | sha256sum --check -
           unzip -Z1 "$SDL_AAR" > /tmp/sdl3-aar-entries.txt
-          ENTRY=$(grep -E 'libSDL3[.]so
+          ENTRY=$(grep "libSDL3.so" /tmp/sdl3-aar-entries.txt | grep "arm64" | head -n 1 || true)
           if [ -z "$ENTRY" ]; then
             echo "Vendored official SDL3 3.4.16 AAR has no ARM64 libSDL3.so"
             grep -i 'libSDL3.*[.]so' /tmp/sdl3-aar-entries.txt || true
