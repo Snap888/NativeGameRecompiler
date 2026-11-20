@@ -332,6 +332,7 @@ Mark complete only when evidence exists.
 - [ ] Complete the active `NGR XDroid360 Toolchain` run; verify LLVM host tablegens, Android Clang/LLD, XenonRecomp, STFS, DXC/Xenos shaderlib and DAO profile stages.
 - [ ] Verify artifact contains `kit.zip`, six ARM64 tools, and DAO/SoD/ME1 profile ZIPs.
 - [ ] Verify normal NGR CI downloads the payload and that Gradle packages it under `assets/kit.zip`, `assets/games/*.zip`, and `lib/arm64-v8a/*.so`.
-- [ ] Build the NGR Android module and verify the donor Vulkan hook + existing WinNative SDL3 AAR merge without duplicate native libraries.
+- [x] Diagnose and fix duplicate SDL Java/AAR packaging between XDroid360 and WinNative; XDroid360 now compiles against SDL3 without bundling another copy, and SAF read permission is forwarded to BuildActivity.
+- [ ] Verify the repaired build through DEX merge, APK packaging and artifact upload; confirm runtime SDL class provider and launch on device.
 - [ ] Test XISO and STFS tree detection, build progress/cancel/retry, and resulting instance launch on Android Adreno.
 - [ ] Keep support scoped to the donor's actual recipe profiles; do not mark arbitrary Xbox 360 titles as playable.
