@@ -2,7 +2,7 @@
 
 Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
 
-> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. Xbox 360 source staging and the first in-package Nintendo Switch NativeActivity dispatch scaffold are present; the donor's per-title runtime, extraction/rewrite pipeline and playable title integration are not yet built or verified. Physical-device validation remains pending. NGR is not a general-purpose game recompiler.
+> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. Xbox 360 source intake is implemented but its recompiler/runtime are not. Nintendo Switch now has a desktop-assisted nx2android port adapter, per-title runtime package importer and in-package NativeActivity dispatch path; CI and Android/game validation are still pending. No Switch title is currently certified playable in NGR. NGR is not a general-purpose game recompiler.
 
 ## Project direction
 
@@ -57,7 +57,7 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 
 ## Not implemented yet
 
-Xbox 360 and Nintendo Switch compiler pipelines, console-specific runtimes, title profiles and native game execution are not integrated yet. The new two-target catalog is metadata only. No other console targets are in scope. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
+Xbox 360: the XenonRecomp/Clang pipeline and matching title runtime are not yet connected to NGR. Nintendo Switch: the nx2android desktop-assisted adapter, per-title package importer and NativeActivity dispatch scaffold exist, but the complete pipeline/runtime path is not yet build-verified or device-tested, and no game launch has been proven in NGR. The two-target catalog alone is not evidence of playable support. No other console targets are in scope. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
 
 ## Legal
 
