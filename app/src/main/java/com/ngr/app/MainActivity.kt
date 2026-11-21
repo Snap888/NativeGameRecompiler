@@ -37,6 +37,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var devices: TextView
     private lateinit var inputManager: InputManager
     private lateinit var packageManager: NgrPackPackageManager
+    private lateinit var consoleBuildJobStore: ConsoleBuildJobStore
+    private var pendingConsoleTarget: ConsoleTargetId? = null
     private lateinit var shortcutStore: NgrGameShortcutStore
     private lateinit var shortcutStatus: TextView
     private lateinit var shortcutList: LinearLayout
@@ -55,6 +57,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var profileList: LinearLayout
     private lateinit var packageStatus: TextView
     private lateinit var packageList: LinearLayout
+    private lateinit var consoleBuildJobStatus: TextView
+    private lateinit var consoleBuildJobList: LinearLayout
     private val packageWorker = Executors.newSingleThreadExecutor()
     private val componentWorker = Executors.newSingleThreadExecutor()
 
@@ -64,6 +68,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         private const val REQUEST_GAME_ZIP = 4104
         private const val REQUEST_GAME_FOLDER = 4105
         private const val REQUEST_COMPONENT_CATALOG = 4106
+        private const val REQUEST_CONSOLE_BUILD = 4107
         init { System.loadLibrary("ngr_runtime") }
     }
 
@@ -77,6 +82,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         NgrLogger.info("app", "MainActivity.onCreate")
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
+        consoleBuildJobStore = ConsoleBuildJobStore(File(filesDir, "ngr-runtime"))
         packageWorker.execute {
             val removed = packageManager.cleanupAbandonedFolderStaging()
             if (removed > 0) NgrLogger.info("package.import", "Cleaned $removed abandoned folder import staging directory/directories")
@@ -167,6 +173,25 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(packageStatus)
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
+
+        addSection(root, "CONSOLE RECOMPILERS", "Xbox 360 · Nintendo Switch")
+        val consoleBuildCard = createCard()
+        consoleBuildCard.addView(TextView(this).apply {
+            text = "Queue a game preparation job. Xbox 360 and Switch import metadata is saved securely; compiler workers and playable runtimes are not connected yet."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        consoleBuildCard.addView(secondaryButton("＋  Add Xbox 360 ISO / ZIP") {
+            chooseConsoleSource(ConsoleTargetId.XBOX_360)
+        })
+        consoleBuildCard.addView(secondaryButton("＋  Add Nintendo Switch NSP / XCI") {
+            chooseConsoleSource(ConsoleTargetId.NINTENDO_SWITCH)
+        })
+        consoleBuildJobStatus = mutedText()
+        consoleBuildCard.addView(consoleBuildJobStatus)
+        consoleBuildJobList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        consoleBuildCard.addView(consoleBuildJobList)
+        root.addView(consoleBuildCard, sectionParams())
 
         addSection(root, "GAME SHORTCUTS", "Per-game launch settings")
         val shortcutCard = createCard()
@@ -385,6 +410,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         inputManager.registerInputDeviceListener(this, null)
         refresh()
         refreshPackages()
+        refreshConsoleBuildJobs()
         refreshProfiles()
         refreshPrefixes()
         refreshShortcuts()
@@ -1280,6 +1306,104 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             .setPositiveButton("Close", null)
             .show()
     }
+    private fun chooseConsoleSource(target: ConsoleTargetId) {
+        pendingConsoleTarget = target
+        val title = if (target == ConsoleTargetId.XBOX_360) "Select Xbox 360 ISO or ZIP" else "Select Nintendo Switch NSP, XCI, NSZ or XCZ"
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(Intent.EXTRA_TITLE, title)
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/octet-stream", "application/zip", "application/x-zip-compressed"))
+        }
+        NgrLogger.info("console.recompiler", "Opening source picker for ${target.stableId}")
+        startActivityForResult(intent, REQUEST_CONSOLE_BUILD)
+    }
+
+    private fun queueConsoleBuild(data: Intent) {
+        val target = pendingConsoleTarget ?: return
+        val uri = data.data ?: return
+        val grantFlags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        if ((grantFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION) == 0 ||
+            (data.flags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION) == 0) {
+            Toast.makeText(this, "The selected document provider did not grant persistent read access", Toast.LENGTH_LONG).show()
+            return
+        }
+        val displayName = runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull()?.takeIf { it.isNotBlank() } ?: "selected-game"
+        val job = runCatching {
+            contentResolver.takePersistableUriPermission(uri, grantFlags)
+            ConsoleBuildJob(
+                jobId = UUID.randomUUID().toString().replace("-", ""), targetId = target,
+                sourceUri = uri.toString(), sourceDisplayName = displayName, sourceGrantFlags = grantFlags,
+                profileId = "default", workspaceId = UUID.randomUUID().toString().replace("-", "")
+            )
+        }.getOrElse { error ->
+            NgrLogger.error("console.recompiler", "Unable to persist selected source permission", error)
+            Toast.makeText(this, "Source permission failed: ${error.message}", Toast.LENGTH_LONG).show()
+            return
+        }
+        val result = consoleBuildJobStore.create(job)
+        if (!result.success) {
+            NgrLogger.warn("console.recompiler", "Rejected build job: ${result.error}")
+            Toast.makeText(this, "Job not queued: ${result.error}", Toast.LENGTH_LONG).show()
+            return
+        }
+        NgrLogger.info("console.recompiler", "Queued metadata job id=${job.jobId} target=${target.stableId}")
+        Toast.makeText(this, "Job saved. Compiler worker is not connected yet.", Toast.LENGTH_LONG).show()
+        refreshConsoleBuildJobs()
+    }
+
+    private fun refreshConsoleBuildJobs() {
+        val result = consoleBuildJobStore.loadAll()
+        consoleBuildJobList.removeAllViews()
+        consoleBuildJobStatus.text = buildString {
+            append("${result.jobs.size} console build job(s)")
+            if (result.errors.isNotEmpty()) append(" · ${result.errors.size} invalid record(s)")
+            append("\nQueue persistence is active; compilation has not started.")
+        }
+        if (result.jobs.isEmpty()) {
+            consoleBuildJobList.addView(TextView(this).apply {
+                text = "No Xbox 360 or Nintendo Switch jobs yet."
+                textSize = 12f
+                setTextColor(Color.rgb(143, 155, 174))
+            })
+        }
+        result.jobs.forEach { job ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(7), 0, dp(7))
+            }
+            val detail = TextView(this).apply {
+                text = "${if (job.targetId == ConsoleTargetId.XBOX_360) "Xbox 360" else "Nintendo Switch"} · ${job.sourceDisplayName}\n${job.state} · ${job.stage} · ${job.progressPercent}%"
+                textSize = 12f
+                setTextColor(Color.rgb(210, 220, 234))
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(job.sourceDisplayName)
+                        .setMessage("Target: ${job.targetId.stableId}\nState: ${job.state}\nStage: ${job.stage}\nProgress: ${job.progressPercent}%\nJob ID: ${job.jobId}\n\nThe compiler/runtime worker is not connected yet.")
+                        .setPositiveButton("Close", null).show()
+                }
+            }
+            row.addView(detail, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            if (job.state == ConsoleBuildJobState.QUEUED || job.state == ConsoleBuildJobState.RUNNING) {
+                row.addView(Button(this).apply {
+                    text = "Cancel"
+                    isAllCaps = false
+                    setOnClickListener {
+                        val cancelled = consoleBuildJobStore.requestCancel(job.jobId)
+                        if (!cancelled.success) Toast.makeText(this@MainActivity, cancelled.error, Toast.LENGTH_SHORT).show()
+                        refreshConsoleBuildJobs()
+                    }
+                })
+            }
+            consoleBuildJobList.addView(row)
+        }
+    }
+
     private fun choosePackageArchive() {
         chooseZipDocument(REQUEST_NGRPACK, "Opening NGRPACK document picker")
     }
@@ -1336,6 +1460,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         }
         if (requestCode == REQUEST_GAME_ZIP) {
             if (resultCode == RESULT_OK) data?.data?.let { importOrdinaryGameZip(it) }
+            return
+        }
+        if (requestCode == REQUEST_CONSOLE_BUILD) {
+            if (resultCode == RESULT_OK && data?.data != null) queueConsoleBuild(data)
+            pendingConsoleTarget = null
             return
         }
         if (requestCode != REQUEST_NGRPACK || resultCode != RESULT_OK) return
