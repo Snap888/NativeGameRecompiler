@@ -475,3 +475,17 @@ Mark complete only when evidence exists.
 - [ ] Add per-title gamepad theme/font assets to the in-process NativeActivity.
 - [ ] Physical-device test on Adreno: import, launch, Vulkan, audio, controls, lifecycle, saves and two-title isolation.
 
+
+
+## Nintendo Switch validation checkpoint — 2026-11-21
+- [x] Android CI #585: JVM/native tests, NGR NativeActivity loader compile, ARM64 APK and artifact upload passed (artifact ID 14720757607).
+- [x] Switch smoke #38: sequentially apply all four pinned nx2android patches and compile the patched profile-specific ARM64 NativeActivity runtime (artifact ID 14720643069).
+- [x] Package the donor's per-title controller theme and shared licensed overlay font in each NGR Switch data pack; load them through the NGR per-title data root.
+- [x] Require theme/font assets during import, library enumeration and native launch validation.
+- [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) and add unit tests.
+- [ ] Verify the latest Android CI after copy-budget implementation.
+- [ ] Add a durable install journal and recovery for interrupted two-root runtime/data replacement.
+- [ ] Add a synthetic NativeActivity host and lifecycle forwarding test.
+- [ ] Run the full donor `porter port` pipeline with a user-owned supported title; verify package output and that no game APK is generated.
+- [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, saves and title isolation.
+- [ ] Decide and implement the on-device or companion execution path for Python/.NET/LibHac; desktop-assisted preparation is the current boundary.
