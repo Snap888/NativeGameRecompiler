@@ -19,7 +19,7 @@ An Android application focused on preparing and launching legally obtained Xbox 
 
 The two console runtimes are separate. Wine, Box64 and FEX are not prerequisites for either static-recompilation path. A generated native module is not playable without a matching runtime and title profile.
 
-## Environment Manager requirements
+## Legacy Environment Manager requirements (deferred; not used by the Xbox 360 or Switch runtimes)
 ### Containers and Wine
 - Container/rootfs and Wine prefix lifecycle: create, clone, backup, repair, reset and remove.
 - Versioned Wine/Proton layer catalog with install, update, pin, rollback and compatibility checks.
@@ -84,7 +84,7 @@ The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_
 Xbox 360 and Switch compiler pipelines are not runtime plugins. Graphics-provider and compiler APIs require separate contracts. The header is compiled as C and C++, but host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation.
 
 
-## Translator preset preferences
+## Legacy translator preset preferences (deferred; not used by the console runtimes)
 Environment profile schema v3 stores Box64 and FEX preset choices (Compatibility/Balanced/Performance). v1/v2 documents migrate to FEX Balanced when the field is absent. These fields represent user intent only; a runtime adapter must map them to version-specific Box64/FEX settings after the exact upstream version and supported configuration keys are audited. A saved preset is not proof that a translator is installed, configured or active.
 
 
