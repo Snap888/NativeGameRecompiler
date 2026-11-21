@@ -5,14 +5,17 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import java.security.MessageDigest
 
 class SwitchRuntimeLauncherTest {
+    private val titleId = "0100000000010000"
+
     @Test
     fun runtimePathIsScopedToTitleId() {
         val root = File("/tmp/ngr-test")
         assertEquals(
-            File(root, "switch-ports/0100000000010000/runtime/libdmhost.so"),
-            SwitchRuntimeLauncher.runtimeLibrary(root, "0100000000010000")
+            File(root, "switch-ports/$titleId/runtime/libdmhost.so"),
+            SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
         )
     }
 
@@ -27,24 +30,76 @@ class SwitchRuntimeLauncherTest {
     }
 
     @Test
-    fun validatesExistingRegularRuntime() {
+    fun validatesRuntimeReceiptAndLibraryHash() {
         val root = Files.createTempDirectory("ngr-switch").toFile()
         try {
-            val library = SwitchRuntimeLauncher.runtimeLibrary(root, "0100000000010000")
+            val library = SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
             library.parentFile.mkdirs()
-            library.writeBytes(byteArrayOf(0x7f, 0x45, 0x4c, 0x46))
-            assertEquals(library.canonicalFile, SwitchRuntimeLauncher.validateRuntimeLibrary(root, "0100000000010000"))
+            val bytes = byteArrayOf(0x7f, 0x45, 0x4c, 0x46)
+            library.writeBytes(bytes)
+            val hash = MessageDigest.getInstance("SHA-256").digest(bytes)
+                .joinToString("") { "%02x".format(it) }
+            val packageDir = library.parentFile.parentFile
+            File(packageDir, "runtime-build.json").writeText(
+                """
+                {
+                  "format":"ngr-switch-runtime-build",
+                  "schema_version":1,
+                  "title_id":"$titleId",
+                  "donor_revision":"${SwitchRuntimePackageVerifier.DONOR_REVISION}",
+                  "runtime_library":"runtime/libdmhost.so",
+                  "runtime_sha256":"$hash",
+                  "profile_header_sha256":"${"a".repeat(64)}",
+                  "abi":"arm64-v8a",
+                  "entry_point":"ANativeActivity_onCreate",
+                  "apk_generated":false
+                }
+                """.trimIndent()
+            )
+            assertEquals(library.canonicalFile, SwitchRuntimeLauncher.validateRuntimeLibrary(root, titleId))
         } finally {
             root.deleteRecursively()
         }
     }
 
     @Test
-    fun rejectsMissingRuntime() {
+    fun rejectsMissingRuntimeReceipt() {
         val root = Files.createTempDirectory("ngr-switch-missing").toFile()
         try {
             assertThrows(IllegalArgumentException::class.java) {
-                SwitchRuntimeLauncher.validateRuntimeLibrary(root, "0100000000010000")
+                SwitchRuntimeLauncher.validateRuntimeLibrary(root, titleId)
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsRuntimeHashMismatch() {
+        val root = Files.createTempDirectory("ngr-switch-tampered").toFile()
+        try {
+            val library = SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
+            library.parentFile.mkdirs()
+            library.writeBytes(byteArrayOf(1, 2, 3, 4))
+            val packageDir = library.parentFile.parentFile
+            File(packageDir, "runtime-build.json").writeText(
+                """
+                {
+                  "format":"ngr-switch-runtime-build",
+                  "schema_version":1,
+                  "title_id":"$titleId",
+                  "donor_revision":"${SwitchRuntimePackageVerifier.DONOR_REVISION}",
+                  "runtime_library":"runtime/libdmhost.so",
+                  "runtime_sha256":"${"0".repeat(64)}",
+                  "profile_header_sha256":"${"a".repeat(64)}",
+                  "abi":"arm64-v8a",
+                  "entry_point":"ANativeActivity_onCreate",
+                  "apk_generated":false
+                }
+                """.trimIndent()
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                SwitchRuntimeLauncher.validateRuntimeLibrary(root, titleId)
             }
         } finally {
             root.deleteRecursively()
