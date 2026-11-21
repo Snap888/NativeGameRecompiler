@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           [[ "${{ inputs.title_id }}" =~ ^[0-9A-Fa-f]{16}$ ]] || { echo "title_id must be exactly 16 hexadecimal characters"; exit 2; }
+          echo "TITLE_ID=$(echo "${{ inputs.title_id }}" | tr "[:upper:]" "[:lower:]")" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
 
@@ -42,8 +43,8 @@ jobs:
           git clone --recurse-submodules https://github.com/shirai91/nx2android.git nx2android
           git -C nx2android checkout f32b3d563f0615d0e825747285d4e38d780e4ebb
           git -C nx2android submodule update --init --recursive
-          test -f "nx2android/nxnative/dm/games/${{ inputs.title_id }}/android.tsv" || {
-            echo "No Android profile for title ID ${{ inputs.title_id }} at pinned nx2android revision"
+          test -f "nx2android/nxnative/dm/games/$TITLE_ID/android.tsv" || {
+            echo "No Android profile for title ID $TITLE_ID at pinned nx2android revision"
             exit 3
           }
 
@@ -55,7 +56,7 @@ jobs:
         run: |
           mkdir -p build/switch-runtime
           python nx2android/nxnative/dm/android/build.py \
-            --game "${{ inputs.title_id }}" \
+            --game "$TITLE_ID" \
             --ndk "$ANDROID_NDK_HOME" \
             --out "$PWD/build/switch-runtime" \
             --lib --release --jobs 4
@@ -73,7 +74,7 @@ jobs:
           {
             "schema": 1,
             "target": "nintendo-switch",
-            "title_id": "${{ inputs.title_id }}",
+            "title_id": "$TITLE_ID",
             "runtime": "runtime/libdmhost.so",
             "nx2android_commit": "f32b3d563f0615d0e825747285d4e38d780e4ebb",
             "ndk": "27.2.12479018",
@@ -82,7 +83,7 @@ jobs:
           }
           EOF
           sha256sum build/NGR-Switch-Runtime/runtime/libdmhost.so > build/NGR-Switch-Runtime/SHA256SUMS
-          tar -C build -czf "NGR-Switch-Runtime-${{ inputs.title_id }}.tar.gz" NGR-Switch-Runtime
+          tar -C build -czf "NGR-Switch-Runtime-$TITLE_ID.tar.gz" NGR-Switch-Runtime
 
       - uses: actions/upload-artifact@v4
         with:
