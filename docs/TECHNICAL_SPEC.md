@@ -1,24 +1,23 @@
 # Native Game Recompiler — Technical Specification
 
 ## Objective
-An Android application that manages and launches legally obtained game builds through multiple independent execution paths: Wine compatibility, static recompilation and native ARM64 backends. NGR does not promise universal game compatibility.
+An Android application focused on preparing and launching legally obtained Xbox 360 and Nintendo Switch games through static recompilation and platform-specific native ARM64 runtimes. NGR does not promise universal game compatibility.
 
 ## Runtime layers
 1. Android host: lifecycle, storage, touch/gamepad, display and audio surfaces.
 2. NGR Core (C++20): sessions, capability registry, logging and backend selection.
-3. NGR Environment Manager: containers, Wine/Proton layers, CPU translators, graphics components, drivers and per-game profiles.
-4. Execution backends: Wine compatibility, static recompilation or native ARM64.
-5. Compatibility adapters: Windows/Linux OS APIs, libraries, syscalls and platform services.
-6. Graphics providers: Android system Vulkan first; isolated per-game Turnip provider; DXVK/VKD3D only when compatible.
+3. Console preparation pipelines: separate Xbox 360 and Switch import, inspection, rewrite/recompile, shader and package jobs.
+4. Console-specific execution runtimes: Xbox 360 PPC/XEX/kernel/XAM/Xenos/XMA and Switch Horizon/NSO/NRO/NVN/Maxwell services.
+5. Shared Android providers: system Vulkan first, isolated optional Turnip, audio output, input, storage and diagnostics.
+6. Per-title profile registry: exact title/build IDs, patches, memory layout, shader facts, runtime requirements and compatibility evidence.
 7. Package manager: manifest validation, hashes, install/update/remove and per-game configuration.
-8. Compiler pipeline: binary inspection, lifting/IR, optimization, ARM64 code generation and title-specific runtime services.
+8. Compiler job pipeline: bounded workspaces, cancellation, resume, logs, artifact hashes and source/toolchain provenance.
 
-## Execution modes
-- **Wine compatibility:** Windows PE through a compatible Wine/Proton layer, CPU translation backend and selected graphics stack.
-- **Static recompiled:** generated ARM64 code and NGR title runtime; Wine is not a prerequisite.
-- **Native ARM64:** legally supplied native build or trusted app-integrated backend.
+## Console targets
+- **Xbox 360:** PowerPC Xenon/XEX code is statically recompiled to C++ and built for Android ARM64; requires a matching title runtime and Xenos graphics/audio services. The XDroid360 reference prepares games on-device.
+- **Nintendo Switch:** ARM64 NSO/NRO modules are rewritten for Android host gates; Horizon services are supplied by the Android runtime and NVN is replayed through Vulkan. The nx2android reference currently prepares the APK/data pack on a desktop host.
 
-Imported Windows executables remain data until a compatible execution backend is installed and selected. Importing an EXE does not make it executable through NGR by itself.
+The two console runtimes are separate. Wine, Box64 and FEX are not prerequisites for either static-recompilation path. A generated native module is not playable without a matching runtime and title profile.
 
 ## Environment Manager requirements
 ### Containers and Wine
@@ -63,12 +62,12 @@ The Kotlin package manager currently performs bounded extraction, hash validatio
 ## Milestones
 - Stage 1–3: Android/JNI/C++ shell, Vulkan/input discovery, NGRPACK validation and package management — implemented and CI-built.
 - Stage 4: trusted backend ABI negotiation, registry and lifecycle — pending.
-- Stage 5: WinNative/Winlator runtime and Environment Manager source audit + port map.
-- Stage 6: Wine + Box64 standard x86_64 launch path.
-- Stage 7: FEXCore + ARM64EC path, after matching Wine layer validation.
-- Stage 8: DXVK/VKD3D and isolated Turnip manager.
-- Stage 9: ReShade/shader activation and validated Wayland support.
-- Stage 10: N64/MIPS static recompilation proof of concept with N64Recomp and legal test inputs; expand compiler targets individually.
+- Stage 5: Xbox 360 source audit and XDroid360-based compiler/runtime integration.
+- Stage 6: Nintendo Switch source audit and nx2android-based rewrite/Horizon/NVN Vulkan integration.
+- Stage 7: Shared compiler job manager, per-title profile registry and artifact provenance for these two targets.
+- Stage 8: Android device validation on Adreno; optional Turnip remains isolated and per-title.
+
+No additional console targets are planned in this workstream.
 
 ## Non-functional requirements
 - ARM64 Android is the first host; Qualcomm Adreno is the first GPU target.
@@ -82,8 +81,9 @@ The Kotlin package manager currently performs bounded extraction, hash validatio
 ## Backend plugin ABI v1
 The public C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h` and is ABI 1.0. It is for trusted execution backends only. The exported entry point is `ngr_backend_get_api_v1`; versioned structs use `struct_size`, API tables carry major/minor versions, and strings use explicit UTF-8 pointer/length views. The host API exposes bounded logging, package-handle-relative file access and monotonic time. The lifecycle table defines probe/create/load/start/request_stop/destroy.
 
-N64Recomp is a build-time compiler, not a runtime plugin. Graphics-provider and compiler APIs require separate contracts. The header is compiled as C and C++, but host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation.
+Xbox 360 and Switch compiler pipelines are not runtime plugins. Graphics-provider and compiler APIs require separate contracts. The header is compiled as C and C++, but host loader, ABI negotiation, backend registry binding and conformance tests are not implemented. The ABI is not a sandbox; NGRPACK payloads must never be loaded as plugins. Only trusted app-bundled or separately signature-verified backend libraries may be loaded after trust policy and loader validation.
 
 
 ## Translator preset preferences
 Environment profile schema v3 stores Box64 and FEX preset choices (Compatibility/Balanced/Performance). v1/v2 documents migrate to FEX Balanced when the field is absent. These fields represent user intent only; a runtime adapter must map them to version-specific Box64/FEX settings after the exact upstream version and supported configuration keys are audited. A saved preset is not proof that a translator is installed, configured or active.
+\n\n## Locked console integration scope\n\nOnly Xbox 360 and Nintendo Switch are admitted to the console target registry. See [XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md) for the audited donor architecture, source revisions, licensing boundaries and acceptance criteria. The generic Wine/Box64/FEX and N64 roadmap text from earlier project stages is superseded for active development.\n
