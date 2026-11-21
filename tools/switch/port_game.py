@@ -55,6 +55,15 @@ def copy_tree(source: Path, destination: Path) -> None:
             shutil.copy2(item, target_root / name)
 
 
+def validate_profile_binding(manifest: dict, generated_profile: Path) -> str:
+    if not generated_profile.is_file() or generated_profile.is_symlink():
+        raise SystemExit(f"Generated game_profile.h is missing or unsafe: {generated_profile}")
+    actual_hash = sha256(generated_profile)
+    if str(manifest.get("profile_h", "")).lower() != actual_hash:
+        raise SystemExit("nx2android data pack profile_h does not match the generated game_profile.h")
+    return actual_hash
+
+
 def copy_overlay_assets(donor: Path, title_id: str, data_root: Path) -> None:
     """Copy the pinned donor's title theme and licensed shared overlay font."""
     android_tools = donor / "nxnative/dm/android/tools"
@@ -191,11 +200,7 @@ def main() -> int:
         if not host.is_file():
             raise SystemExit(f"nx2android did not leave the title runtime at {host}")
         generated_profile = source_folder / f"{title_id}_build/android/host/gen/{title_id}/game_profile.h"
-        if not generated_profile.is_file():
-            raise SystemExit(f"Generated game_profile.h is missing: {generated_profile}")
-        profile_hash = sha256(generated_profile)
-        if str(data_manifest.get("profile_h", "")).lower() != profile_hash:
-            raise SystemExit("nx2android data pack profile_h does not match the generated game_profile.h")
+        profile_hash = validate_profile_binding(data_manifest, generated_profile)
 
         temporary = output.with_name(output.name + ".partial")
         if temporary.exists():
