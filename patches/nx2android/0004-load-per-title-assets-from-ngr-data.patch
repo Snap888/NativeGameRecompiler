@@ -1,7 +1,7 @@
 diff --git a/nxnative/dm/android/overlay_theme.c b/nxnative/dm/android/overlay_theme.c
 --- a/nxnative/dm/android/overlay_theme.c
 +++ b/nxnative/dm/android/overlay_theme.c
-@@ -7,6 +7,8 @@
+@@ -7,5 +7,7 @@
  #include <android/asset_manager.h>
 +#include <limits.h>
  #include <pthread.h>
@@ -9,7 +9,7 @@ diff --git a/nxnative/dm/android/overlay_theme.c b/nxnative/dm/android/overlay_t
  #include <stdlib.h>
  #include <string.h>
  #include <zlib.h>
-@@ -12,8 +14,46 @@
+@@ -12,10 +14,50 @@
  __attribute__((weak)) AAssetManager *dm_front_assets(void) { return NULL; }
  
 -static uint8_t *asset(const char *name, size_t *n) {   // the whole asset, NUL-terminated (malloc), NULL when the APK has none
