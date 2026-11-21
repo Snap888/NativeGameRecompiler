@@ -55,10 +55,14 @@ jobs:
           python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py
           python tools/switch/port_game.py --help >/dev/null
           python tools/switch/build_runtime.py --help >/dev/null
-          git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0001-use-ngr-title-data-root.patch"
-          git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0002-ngrn-build-without-per-game-apk.patch"
-          git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0003-use-ngr-per-title-save-and-temp-root.patch"
-          git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0004-load-per-title-assets-from-ngr-data.patch"
+          for patch in \
+            patches/nx2android/0001-use-ngr-title-data-root.patch \
+            patches/nx2android/0002-ngrn-build-without-per-game-apk.patch \
+            patches/nx2android/0003-use-ngr-per-title-save-and-temp-root.patch \
+            patches/nx2android/0004-load-per-title-assets-from-ngr-data.patch; do
+            git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/$patch"
+            git -C "$RUNNER_TEMP/nx2android" apply "$GITHUB_WORKSPACE/$patch"
+          done
 
       - name: Build title-profiled NativeActivity runtime (no APK)
         run: |
