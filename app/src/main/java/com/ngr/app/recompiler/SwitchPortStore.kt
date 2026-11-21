@@ -40,7 +40,14 @@ class SwitchPortStore(private val context: Context) {
                 !File(data, "mods").isDirectory || !File(data, "env.txt").isFile ||
                 !File(data, "assets/overlay/theme.tsv").isFile || !File(data, "assets/font/ui.bin").isFile) return@mapNotNull null
             val manifest = readJson(File(data, "nx2a-data.json")) ?: return@mapNotNull null
-            if (manifest.optString("title_id").uppercase(Locale.ROOT) != id) return@mapNotNull null
+            val receipt = readJson(File(dir, "runtime-build.json")) ?: return@mapNotNull null
+            val profileHash = receipt.optString("profile_header_sha256").lowercase(Locale.ROOT)
+            val manifestHash = receipt.optString("data_manifest_sha256").lowercase(Locale.ROOT)
+            if (manifest.optString("title_id").uppercase(Locale.ROOT) != id ||
+                !Regex("^[0-9a-f]{64}$").matches(profileHash) ||
+                !Regex("^[0-9a-f]{64}$").matches(manifestHash) ||
+                manifest.optString("profile_h").lowercase(Locale.ROOT) != profileHash ||
+                sha256(File(data, "nx2a-data.json")) != manifestHash) return@mapNotNull null
             InstalledSwitchPort(id, manifest.optString("name", "Nintendo Switch game"),
                 manifest.optString("display", manifest.optString("version", "")), runtime, data)
         }.sortedBy { it.name.lowercase(Locale.ROOT) }
@@ -94,9 +101,15 @@ class SwitchPortStore(private val context: Context) {
             runtimeReceipt.optBoolean("apk_generated", true)) throw IOException("Runtime receipt does not match this NGR Switch build")
         val expectedHash = runtimeReceipt.optString("runtime_sha256").lowercase(Locale.ROOT)
         val expectedProfileHash = runtimeReceipt.optString("profile_header_sha256").lowercase(Locale.ROOT)
+        val expectedManifestHash = runtimeReceipt.optString("data_manifest_sha256").lowercase(Locale.ROOT)
         if (!Regex("^[0-9a-f]{64}$").matches(expectedHash) ||
-            !Regex("^[0-9a-f]{64}$").matches(expectedProfileHash)) {
-            throw IOException("Runtime SHA-256/profile receipt is missing")
+            !Regex("^[0-9a-f]{64}$").matches(expectedProfileHash) ||
+            !Regex("^[0-9a-f]{64}$").matches(expectedManifestHash)) {
+            throw IOException("Runtime/profile/data manifest SHA-256 receipt is missing")
+        }
+        if (manifest.optString("profile_h").lowercase(Locale.ROOT) != expectedProfileHash ||
+            sha256Bytes(manifestBytes) != expectedManifestHash) {
+            throw IOException("Switch data pack does not match the compiled game profile or manifest receipt")
         }
         if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
         if (dataDir.findFile("env.txt")?.isFile != true) throw IOException("env.txt is missing")
@@ -265,9 +278,17 @@ class SwitchPortStore(private val context: Context) {
         if (!File(runtimeDir, "runtime/game_profile.h").isFile) {
             throw IOException("Switch game profile header is missing")
         }
-        val manifest = readJson(File(dataDir, "data/nx2a-data.json"))
-            ?: throw IOException("Switch data manifest is missing")
+        val manifestFile = File(dataDir, "data/nx2a-data.json")
+        val manifest = readJson(manifestFile) ?: throw IOException("Switch data manifest is missing")
+        val receipt = readJson(File(runtimeDir, "runtime-build.json"))
+            ?: throw IOException("Switch runtime receipt is missing")
+        val profileHash = receipt.optString("profile_header_sha256").lowercase(Locale.ROOT)
+        val manifestHash = receipt.optString("data_manifest_sha256").lowercase(Locale.ROOT)
         manifest.optString("title_id").uppercase(Locale.ROOT) == titleId &&
+            Regex("^[0-9a-f]{64}$").matches(profileHash) &&
+            Regex("^[0-9a-f]{64}$").matches(manifestHash) &&
+            manifest.optString("profile_h").lowercase(Locale.ROOT) == profileHash &&
+            sha256(manifestFile) == manifestHash &&
             File(dataDir, "data/mods").isDirectory &&
             File(dataDir, "data/env.txt").isFile &&
             File(dataDir, "data/assets/overlay/theme.tsv").isFile &&
@@ -336,6 +357,9 @@ class SwitchPortStore(private val context: Context) {
         }
         return total
     }
+
+    private fun sha256Bytes(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
