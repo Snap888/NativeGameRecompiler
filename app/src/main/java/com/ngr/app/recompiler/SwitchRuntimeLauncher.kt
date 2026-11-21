@@ -18,7 +18,7 @@ object SwitchRuntimeLauncher {
 
     fun runtimeLibrary(filesDir: File, titleId: String): File {
         require(TITLE_ID.matches(titleId)) { "Invalid Switch title ID" }
-        return File(filesDir, "switch-ports/$titleId/runtime/libdmhost.so")
+        return File(filesDir, "switch-ports/${titleId.uppercase()}/runtime/libdmhost.so")
     }
 
     @Throws(IOException::class)
