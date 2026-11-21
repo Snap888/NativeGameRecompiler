@@ -118,12 +118,17 @@ bool validate_game_root(ANativeActivity* activity, const std::string& path, cons
     if (!realpath(activity->externalDataPath, external) || !realpath(path.c_str(), game)) return false;
     const std::string expected = std::string(external) + "/switch-ports/" + title_id + "/data";
     if (expected != game) return false;
-    struct stat d {}, manifest {}, mods {}, env {};
+    struct stat d {}, manifest {}, mods {}, env {}, assets {}, overlay {}, theme {}, font_dir {}, font {};
     const std::string base(game);
-    return stat(game, &d) == 0 && S_ISDIR(d.st_mode) &&
-           stat((base + "/nx2a-data.json").c_str(), &manifest) == 0 && S_ISREG(manifest.st_mode) &&
-           stat((base + "/mods").c_str(), &mods) == 0 && S_ISDIR(mods.st_mode) &&
-           stat((base + "/env.txt").c_str(), &env) == 0 && S_ISREG(env.st_mode);
+    return lstat(game, &d) == 0 && S_ISDIR(d.st_mode) &&
+           lstat((base + "/nx2a-data.json").c_str(), &manifest) == 0 && S_ISREG(manifest.st_mode) &&
+           lstat((base + "/mods").c_str(), &mods) == 0 && S_ISDIR(mods.st_mode) &&
+           lstat((base + "/env.txt").c_str(), &env) == 0 && S_ISREG(env.st_mode) &&
+           lstat((base + "/assets").c_str(), &assets) == 0 && S_ISDIR(assets.st_mode) &&
+           lstat((base + "/assets/overlay").c_str(), &overlay) == 0 && S_ISDIR(overlay.st_mode) &&
+           lstat((base + "/assets/overlay/theme.tsv").c_str(), &theme) == 0 && S_ISREG(theme.st_mode) &&
+           lstat((base + "/assets/font").c_str(), &font_dir) == 0 && S_ISDIR(font_dir.st_mode) &&
+           lstat((base + "/assets/font/ui.bin").c_str(), &font) == 0 && S_ISREG(font.st_mode);
 }
 }  // namespace
 
