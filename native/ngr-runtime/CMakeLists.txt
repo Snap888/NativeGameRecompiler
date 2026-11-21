@@ -8,3 +8,10 @@ find_library(android-lib android)
 find_library(log-lib log)
 find_library(vulkan-lib vulkan)
 target_link_libraries(ngr_runtime PRIVATE ${android-lib} ${log-lib} ${vulkan-lib})
+
+# nx2android's per-title libdmhost.so is a NativeActivity. This in-package loader
+# selects a verified game runtime from NGR's private switch-ports directory.
+add_library(ngr_switch_loader SHARED src/switch_activity_loader.cpp)
+target_compile_features(ngr_switch_loader PRIVATE cxx_std_20)
+target_compile_options(ngr_switch_loader PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(ngr_switch_loader PRIVATE ${android-lib} ${log-lib} dl)
