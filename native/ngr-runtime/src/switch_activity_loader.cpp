@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <sys/stat.h>
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -13,14 +12,14 @@
 namespace {
 constexpr const char* kTag = "NGRSwitchLoader";
 constexpr const char* kLibraryExtra = "com.ngr.app.SWITCH_RUNTIME_LIBRARY";
+constexpr const char* kGameRootExtra = "com.ngr.app.SWITCH_GAME_ROOT";
+constexpr const char* kTitleIdExtra = "com.ngr.app.SWITCH_TITLE_ID";
 constexpr const char* kPortsDirectory = "/switch-ports/";
 constexpr const char* kRuntimeSuffix = "/runtime/libdmhost.so";
-
 using RuntimeEntry = void (*)(ANativeActivity*, void*, size_t);
+void* g_runtime_handle = nullptr;
 
-void log_error(const char* message) {
-    __android_log_write(ANDROID_LOG_ERROR, kTag, message);
-}
+void log_error(const char* message) { __android_log_write(ANDROID_LOG_ERROR, kTag, message); }
 
 std::string java_string(JNIEnv* env, jstring value) {
     if (!value) return {};
@@ -39,10 +38,7 @@ void finish_activity(ANativeActivity* activity) {
     if (state == JNI_EDETACHED) {
         if (activity->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return;
         attached = true;
-    } else if (state != JNI_OK) {
-        return;
-    }
-
+    } else if (state != JNI_OK) return;
     jclass cls = env->GetObjectClass(activity->clazz);
     jmethodID finish = cls ? env->GetMethodID(cls, "finish", "()V") : nullptr;
     if (finish) env->CallVoidMethod(activity->clazz, finish);
@@ -51,20 +47,16 @@ void finish_activity(ANativeActivity* activity) {
     if (attached) activity->vm->DetachCurrentThread();
 }
 
-bool read_runtime_path(ANativeActivity* activity, std::string* files_dir, std::string* library_path) {
-    if (!activity || !activity->vm || !activity->clazz || !files_dir || !library_path) return false;
+bool read_launch_args(ANativeActivity* activity, std::string* files_dir,
+                      std::string* library_path, std::string* game_root, std::string* title_id) {
+    if (!activity || !activity->vm || !activity->clazz) return false;
     JNIEnv* env = nullptr;
     if (activity->vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return false;
-
     jclass activity_class = env->GetObjectClass(activity->clazz);
     if (!activity_class) return false;
     jmethodID get_intent = env->GetMethodID(activity_class, "getIntent", "()Landroid/content/Intent;");
     jmethodID get_files_dir = env->GetMethodID(activity_class, "getFilesDir", "()Ljava/io/File;");
-    if (!get_intent || !get_files_dir) {
-        env->DeleteLocalRef(activity_class);
-        return false;
-    }
-
+    if (!get_intent || !get_files_dir) { env->DeleteLocalRef(activity_class); return false; }
     jobject intent = env->CallObjectMethod(activity->clazz, get_intent);
     jobject files = env->CallObjectMethod(activity->clazz, get_files_dir);
     if (env->ExceptionCheck() || !intent || !files) {
@@ -74,78 +66,81 @@ bool read_runtime_path(ANativeActivity* activity, std::string* files_dir, std::s
         env->DeleteLocalRef(activity_class);
         return false;
     }
-
     jclass intent_class = env->GetObjectClass(intent);
     jclass file_class = env->GetObjectClass(files);
-    jmethodID get_string_extra = intent_class
-        ? env->GetMethodID(intent_class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;")
-        : nullptr;
-    jmethodID get_absolute_path = file_class
-        ? env->GetMethodID(file_class, "getAbsolutePath", "()Ljava/lang/String;")
-        : nullptr;
-
-    jstring key = env->NewStringUTF(kLibraryExtra);
-    jstring path = (get_string_extra && key)
-        ? static_cast<jstring>(env->CallObjectMethod(intent, get_string_extra, key))
-        : nullptr;
-    jstring root = get_absolute_path
-        ? static_cast<jstring>(env->CallObjectMethod(files, get_absolute_path))
-        : nullptr;
-
+    jmethodID get_extra = intent_class ? env->GetMethodID(intent_class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;") : nullptr;
+    jmethodID get_path = file_class ? env->GetMethodID(file_class, "getAbsolutePath", "()Ljava/lang/String;") : nullptr;
+    jstring k1 = env->NewStringUTF(kLibraryExtra);
+    jstring k2 = env->NewStringUTF(kGameRootExtra);
+    jstring k3 = env->NewStringUTF(kTitleIdExtra);
+    jstring v1 = get_extra ? static_cast<jstring>(env->CallObjectMethod(intent, get_extra, k1)) : nullptr;
+    jstring v2 = get_extra ? static_cast<jstring>(env->CallObjectMethod(intent, get_extra, k2)) : nullptr;
+    jstring v3 = get_extra ? static_cast<jstring>(env->CallObjectMethod(intent, get_extra, k3)) : nullptr;
+    jstring root = get_path ? static_cast<jstring>(env->CallObjectMethod(files, get_path)) : nullptr;
     if (!env->ExceptionCheck()) {
-        *library_path = java_string(env, path);
+        *library_path = java_string(env, v1);
+        *game_root = java_string(env, v2);
+        *title_id = java_string(env, v3);
         *files_dir = java_string(env, root);
-    } else {
-        env->ExceptionClear();
+    } else env->ExceptionClear();
+    for (jobject value : {static_cast<jobject>(k1), static_cast<jobject>(k2), static_cast<jobject>(k3),
+                          static_cast<jobject>(v1), static_cast<jobject>(v2), static_cast<jobject>(v3),
+                          static_cast<jobject>(root), intent_class, file_class}) {
+        if (value) env->DeleteLocalRef(value);
     }
-
-    if (key) env->DeleteLocalRef(key);
-    if (path) env->DeleteLocalRef(path);
-    if (root) env->DeleteLocalRef(root);
-    if (intent_class) env->DeleteLocalRef(intent_class);
-    if (file_class) env->DeleteLocalRef(file_class);
     env->DeleteLocalRef(intent);
     env->DeleteLocalRef(files);
     env->DeleteLocalRef(activity_class);
-    return !files_dir->empty() && !library_path->empty();
+    return !files_dir->empty() && !library_path->empty() && !game_root->empty() && !title_id->empty();
 }
 
-bool validate_runtime_path(const std::string& files_dir, const std::string& requested) {
-    if (files_dir.empty() || requested.empty() || requested.find('\0') != std::string::npos) return false;
-    const std::string prefix = files_dir + kPortsDirectory;
-    if (requested.compare(0, prefix.size(), prefix) != 0) return false;
-    if (requested.size() <= std::strlen(kRuntimeSuffix) ||
-        requested.compare(requested.size() - std::strlen(kRuntimeSuffix),
-                          std::strlen(kRuntimeSuffix), kRuntimeSuffix) != 0) return false;
+bool safe_title_id(const std::string& id) {
+    if (id.size() != 16) return false;
+    for (char c : id) if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) return false;
+    return true;
+}
 
-    char canonical_root[PATH_MAX] = {};
-    char canonical_library[PATH_MAX] = {};
-    if (!realpath(files_dir.c_str(), canonical_root) ||
-        !realpath(requested.c_str(), canonical_library)) return false;
-
-    const std::string root(canonical_root);
-    const std::string library(canonical_library);
-    const std::string canonical_prefix = root + kPortsDirectory;
-    if (library.compare(0, canonical_prefix.size(), canonical_prefix) != 0) return false;
-
+bool validate_runtime(const std::string& files_dir, const std::string& path, const std::string& title_id) {
+    if (!safe_title_id(title_id) || files_dir.empty() || path.empty()) return false;
+    const std::string prefix = files_dir + kPortsDirectory + title_id + kRuntimeSuffix;
+    if (path != prefix) return false;
+    char root[PATH_MAX] = {}, library[PATH_MAX] = {};
+    if (!realpath(files_dir.c_str(), root) || !realpath(path.c_str(), library)) return false;
+    const std::string allowed = std::string(root) + kPortsDirectory + title_id + kRuntimeSuffix;
     struct stat info {};
-    return stat(canonical_library, &info) == 0 && S_ISREG(info.st_mode);
+    return allowed == library && stat(library, &info) == 0 && S_ISREG(info.st_mode) && info.st_size > 0;
 }
 
-void* g_runtime_handle = nullptr;
+bool validate_game_root(ANativeActivity* activity, const std::string& path, const std::string& title_id) {
+    if (!activity || !activity->externalDataPath || !safe_title_id(title_id)) return false;
+    char external[PATH_MAX] = {}, game[PATH_MAX] = {};
+    if (!realpath(activity->externalDataPath, external) || !realpath(path.c_str(), game)) return false;
+    const std::string expected = std::string(external) + "/switch-ports/" + title_id + "/data";
+    if (expected != game) return false;
+    struct stat d {}, manifest {}, mods {}, env {};
+    const std::string base(game);
+    return stat(game, &d) == 0 && S_ISDIR(d.st_mode) &&
+           stat((base + "/nx2a-data.json").c_str(), &manifest) == 0 && S_ISREG(manifest.st_mode) &&
+           stat((base + "/mods").c_str(), &mods) == 0 && S_ISDIR(mods.st_mode) &&
+           stat((base + "/env.txt").c_str(), &env) == 0 && S_ISREG(env.st_mode);
+}
 }  // namespace
 
 extern "C" __attribute__((visibility("default")))
 void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size_t saved_state_size) {
-    std::string files_dir;
-    std::string library_path;
-    if (!read_runtime_path(activity, &files_dir, &library_path) ||
-        !validate_runtime_path(files_dir, library_path)) {
-        log_error("Missing or unsafe per-game runtime library path. Expected a prepared NGR switch-port runtime.");
+    std::string files_dir, library_path, game_root, title_id;
+    if (!read_launch_args(activity, &files_dir, &library_path, &game_root, &title_id) ||
+        !validate_runtime(files_dir, library_path, title_id) ||
+        !validate_game_root(activity, game_root, title_id)) {
+        log_error("Missing or unsafe per-title Switch runtime/data pack.");
         finish_activity(activity);
         return;
     }
-
+    if (setenv("NGR_SWITCH_GAME_ROOT", game_root.c_str(), 1) != 0) {
+        log_error("Unable to set per-title Switch data root.");
+        finish_activity(activity);
+        return;
+    }
     g_runtime_handle = dlopen(library_path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!g_runtime_handle) {
         const char* error = dlerror();
@@ -153,20 +148,16 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
         finish_activity(activity);
         return;
     }
-
     dlerror();
     auto entry = reinterpret_cast<RuntimeEntry>(dlsym(g_runtime_handle, "ANativeActivity_onCreate"));
-    const char* symbol_error = dlerror();
-    if (!entry || symbol_error) {
-        __android_log_print(ANDROID_LOG_ERROR, kTag, "Runtime entry point missing: %s",
-                            symbol_error ? symbol_error : "ANativeActivity_onCreate");
+    const char* error = dlerror();
+    if (!entry || error) {
+        __android_log_print(ANDROID_LOG_ERROR, kTag, "Runtime entry point missing: %s", error ? error : "unknown error");
         dlclose(g_runtime_handle);
         g_runtime_handle = nullptr;
         finish_activity(activity);
         return;
     }
-
-    __android_log_print(ANDROID_LOG_INFO, kTag, "Forwarding NativeActivity lifecycle to prepared runtime: %s",
-                        library_path.c_str());
+    __android_log_print(ANDROID_LOG_INFO, kTag, "Starting Switch title %s from %s", title_id.c_str(), game_root.c_str());
     entry(activity, saved_state, saved_state_size);
 }
