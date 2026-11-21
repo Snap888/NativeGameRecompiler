@@ -73,7 +73,8 @@ Mark complete only when evidence exists.
 - [x] Compile the target catalog in isolation with kotlinc and run runtime assertions (two-target exclusivity, file detection, key requirement).
 - [ ] Run full Gradle JVM tests and arm64-v8a APK CI for the target catalog.
 - [x] Implement compiler job contract separately from execution Backend ABI v1 (progress, cancel, process-death recovery, bounded/redacted logs, quotas).
-- [ ] Connect the job store to SAF import UI and a real worker/foreground service.
+- [x] Connect the job store to the SAF import UI with persistent read grants and a visible cancellable queue.
+- [ ] Implement a real worker/foreground service; queue records do not yet invoke compiler tools.
 - [ ] Add immutable source/toolchain/profile fingerprints and per-title profile validation.
 - [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
 - [ ] Xbox 360: build Android-hosted XenonRecomp + Clang/LLD in CI; validate a non-copyrighted PPC fixture.
@@ -364,7 +365,7 @@ Mark complete only when evidence exists.
 - [x] Add bounded per-job logs with control-character cleanup and redaction for key/password/token assignments.
 - [x] Add JVM regression tests for both targets, URI/path validation, state transitions, recovery, log redaction and corrupt metadata.
 - [x] Full Gradle JVM tests and arm64-v8a APK CI passed in run #467 (44914879736) at a83cb286057b40cda4f5ccd59a1d71246c0ce0cb; artifact NGR-arm64-debug ID 14711137187.
-- [ ] Connect SAF permission acquisition and job creation to the Android import UI.
+- [x] Connect SAF permission acquisition and job creation to the Android import UI; file extensions are validated against the selected console.
 - [ ] Implement the actual Xbox 360 worker and synthetic PPC fixture; the job manager does not execute compiler tools.
 
 
@@ -373,3 +374,10 @@ Mark complete only when evidence exists.
 - [x] Artifact NGR-arm64-debug, ID 14711137187, downloaded and inspected. ZIP SHA-256: ca754e23c03f9d433a90155494b0630d1856a61417ba421c6c9d5ff51b37b60e.
 - [x] Extracted APK SHA-256: bd0a984bdd7c0a27c45f9785a949810fdbcae3372a8c74fadc882b381725ed4b; APK contains lib/arm64-v8a/libngr_runtime.so.
 - [ ] Install and smoke-test this APK on the target Snapdragon/Adreno device.
+
+
+### Console build queue UI CI verification — 2026-11-21
+- [x] Actions run #470 (44915313963) passed native ABI conformance, backend registry, full JVM unit tests, ARM64 debug APK build and artifact upload at commit 36d464ba65be57e4896612535d905f771cf08f07.
+- [x] Artifact NGR-arm64-debug, ID 14711342035. ZIP SHA-256: c9758a075144fd4f3406dbbeb81f907f37800b5c92bbb96ba0cccfbf95aae29b.
+- [x] Extracted APK SHA-256: a01790c140a4a8ab7755bb86306617d58bc5052c47a904503ffa7b98aa2078e2; contains lib/arm64-v8a/libngr_runtime.so.
+- [ ] Install the queue UI APK on Snapdragon/Adreno hardware and test SAF grants across app restarts.

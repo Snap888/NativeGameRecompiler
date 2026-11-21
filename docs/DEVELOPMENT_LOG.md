@@ -1230,3 +1230,15 @@ This is the durable project memory. Update it in every development session.
 - Extracted app-debug.apk size: 2,518,991 bytes; SHA-256: bd0a984bdd7c0a27c45f9785a949810fdbcae3372a8c74fadc882b381725ed4b.
 - APK inspection confirms lib/arm64-v8a/libngr_runtime.so is present.
 - This verifies CI build/package contents only. Device installation, SAF persistence and actual console compilation/runtime remain unverified.
+
+
+### Console build queue UI and CI — 2026-11-21
+- Added a CONSOLE RECOMPILERS section with separate Xbox 360 and Nintendo Switch source pickers.
+- Uses ACTION_OPEN_DOCUMENT and takePersistableUriPermission; persists only the content URI and granted read/write flags, display name and job metadata. No game content or keys are copied into the job record.
+- Added visible queue rows with target, source name, state, stage, progress and a cancel action for queued/running jobs. UI explicitly states that compilation has not started because workers are not yet connected.
+- Added source extension checks against the two-target catalog: Xbox 360 ISO/ZIP; Switch NSP/XCI/NSZ/XCZ.
+- CI run #469 (44915277180) failed at Kotlin compilation because MainActivity was missing imports for ConsoleBuildJobStore and ConsoleTargetId. This was diagnosed from the job log and corrected in commit 36d464ba65be57e4896612535d905f771cf08f07.
+- Corrected commit passed Actions run #470 (44915313963): native ABI conformance, backend registry, all JVM tests, ARM64 APK build and artifact upload.
+- Artifact NGR-arm64-debug ID 14711342035; ZIP SHA-256 c9758a075144fd4f3406dbbeb81f907f37800b5c92bbb96ba0cccfbf95aae29b; APK SHA-256 a01790c140a4a8ab7755bb86306617d58bc5052c47a904503ffa7b98aa2078e2.
+- APK contains lib/arm64-v8a/libngr_runtime.so. Device install and SAF permission persistence across process death remain unverified.
+- This is a queue UI, not an operational recompiler: XenonRecomp/Clang/LLD worker, Switch preparation adapter, title runtime and gameplay are not yet integrated.
