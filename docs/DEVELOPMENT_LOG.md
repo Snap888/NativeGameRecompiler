@@ -1358,3 +1358,29 @@ This is the durable project memory. Update it in every development session.
 4. Vendor/pin nxnative core and dependency revisions with a complete license/SBOM inventory.
 5. Wire donor extraction, NSO rewrite, shader translator and per-title host build into a resumable preparation adapter.
 6. Build and device-test one profile-matched Switch title on Adreno; only then expose a playable status.
+
+
+## Session 2026-11-21 — embedded nx2android Switch runtime
+
+### Architecture correction
+- Rejected the donor's per-game APK as the NGR distribution model. NGR remains the only installed app; each Switch title gets a private runtime shared object and data pack.
+- Audited nx2android at commit f32b3d563f0615d0e825747285d4e38d780e4ebb. Confirmed build.py produces a title-profile-specific libdmhost.so NativeActivity, while porter/datapack.py produces a separate data directory (mods, RomFS, optional DLC/system data, shaders.dmsv, env.txt, settings.txt, nx2a-data.json).
+- Added an NGR NativeActivity loader library. It validates title ID, runtime path and data root, sets NGR_SWITCH_GAME_ROOT, dlopens the title-specific libdmhost.so and forwards ANativeActivity_onCreate.
+- Added a fail-closed patcher for nx2android front_android.c so its g_root can point at NGR's per-title data directory. This is essential: donor's default path is the app-wide externalDataPath and would cause different games to overwrite one another.
+- Added SwitchRuntimeLauncher, an installed-port store/importer, a Switch library UI section and launch buttons. Prepared port import expects runtime/libdmhost.so, runtime-manifest.json and data/nx2a-data.json plus mods/ and env.txt. It checks AArch64 ELF64 and runtime SHA-256 before installing into internal/external app-specific storage.
+- Added a manual GitHub Actions workflow to build the pinned nx2android runtime for a selected Android title profile with NDK r27c.
+- Added docs/SWITCH_IN_PROCESS_RUNTIME.md and updated licensing provenance.
+
+### Not yet verified
+- No build has yet run after these changes. NativeActivity loader C++ and Kotlin importer require Android CI/JVM validation.
+- The manual runtime workflow has not yet been run for a known supported title ID; toolchain/profile availability and ELF dependencies remain unverified.
+- The raw NSP/XCI intake worker still only stages source bytes. The complete LibHac extraction, NSO rewrite, shader pipeline and data-pack generation are not yet integrated into NGR.
+- No physical-device Switch runtime launch has been performed. Do not label the current app a playable Switch recompiler.
+- The donor APK's per-title gamepad theme/font assets still need an NGR per-title asset-loading solution.
+
+### Next actions
+1. Run Android/JVM/native CI immediately and fix all compile/test errors in the new loader, manifest and importer.
+2. Run the manual runtime workflow for a title with a verified nx2android Android profile; inspect ELF NEEDED entries, 16 KiB alignment and artifact hash.
+3. Build a prepared port bundle format (runtime + data pack + runtime manifest) from nx2android's existing porter output; do not include keys, firmware or game dumps in CI.
+4. Integrate the actual nx2android porter preparation workflow and choose a supported on-device/desktop companion execution model for Python/.NET/LibHac.
+5. Device-test import, launch, lifecycle, Vulkan, audio, controller input, saves, suspend/resume and isolation between two title IDs.
