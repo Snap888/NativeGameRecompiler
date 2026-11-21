@@ -1,6 +1,6 @@
 # Xbox 360 compiler toolchain — first Android ARM64 stage
 
-Status: the reproducible build script and CI workflow are committed; a successful output is recorded only after Actions completes.
+Status: reproducible Android ARM64 build passed in Actions run 44915893900. Artifact NGR-Xbox360-XenonRecomp-arm64 ID 14712235777.
 
 ## What this stage builds
 

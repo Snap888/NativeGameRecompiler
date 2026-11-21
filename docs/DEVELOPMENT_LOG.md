@@ -1250,3 +1250,12 @@ This is the durable project memory. Update it in every development session.
 - Added an isolated GitHub Actions workflow and artifact containing the compiler, corresponding patched source archive, patch script, GPL-2.0 text, MIT notices, provenance and hashes.
 - This stage intentionally excludes Clang/LLD, Xenos shader compilation, the GPL-3.0 native renderer and all title runtimes. A XenonRecomp executable only emits PPC-derived C++ and cannot launch a game by itself.
 - CI result pending; no compiler binary or playable Xbox 360 support is claimed yet.
+
+
+### XenonRecomp Android ARM64 toolchain CI result — 2026-11-21
+- Actions workflow Xbox 360 XenonRecomp ARM64 run 44915893900 completed successfully.
+- Built from XenonRecomp commit ddd128bcca99fe8bfbb99bea583c972351fa6ace with XDroid360 patch commit bfbaa874323181191228ca20a7775f1725ee287a; patch SHA-256 checked.
+- Artifact NGR-Xbox360-XenonRecomp-arm64 ID 14712235777; archive SHA-256 09b6e6964fa96c3c5d86b8769e27ddd166912a864f400f9495495115cb2be352.
+- Binary SHA-256 1ae719f34b888fc15d113e700ec4e695ef826ecf0b2399cfb733bfe474390fe2; source archive SHA-256 31af71f8eed4858551099c879d94778c5b1e10ba209651fda3baac751cc0d024.
+- ELF inspection confirms AArch64, Android API 29 and 16 KB page compatibility. DT_NEEDED is limited to libm.so, libdl.so and libc.so.
+- This is a real PPC-to-C++ compiler executable, not a game runtime. Synthetic PPC fixture, Android Clang/LLD and title-specific runtime integration remain pending.

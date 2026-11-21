@@ -386,5 +386,13 @@ Mark complete only when evidence exists.
 ### Xbox 360 compiler toolchain build — 2026-11-21
 - [x] Pin XenonRecomp source commit and XDroid360 patch commit + SHA-256 in a reproducible Android arm64 build script.
 - [x] Add an isolated GitHub Actions workflow that builds the Android API 29 / arm64-v8a / 16 KB-page executable and uploads its corresponding source and license materials.
-- [ ] Verify the XenonRecomp Android cross-build and artifact contents in Actions.
+- [x] Verify the XenonRecomp Android cross-build and artifact contents in Actions run #1 (44915893900); artifact NGR-Xbox360-XenonRecomp-arm64 ID 14712235777.
 - [ ] Build the Android Clang/LLD kit and run a synthetic PPC-to-ARM64 fixture; XenonRecomp alone is not a playable runtime.
+
+
+### XenonRecomp Android ARM64 build verified — 2026-11-21
+- Actions run 44915893900 passed. Artifact ID 14712235777 contains the AArch64 Android 29 executable, patched corresponding source archive, MIT notices, GPL-2.0 text, provenance and SHA-256 manifest.
+- XenonRecomp executable SHA-256: 1ae719f34b888fc15d113e700ec4e695ef826ecf0b2399cfb733bfe474390fe2.
+- Source archive SHA-256: 31af71f8eed4858551099c879d94778c5b1e10ba209651fda3baac751cc0d024.
+- ELF: AArch64, Android API 29, NDK r27d, dynamically linked only against libm.so, libdl.so and libc.so; 16 KB page compatibility enabled.
+- [ ] Run a synthetic PPC fixture through XenonRecomp and compile its generated C++ with Android Clang/LLD.
