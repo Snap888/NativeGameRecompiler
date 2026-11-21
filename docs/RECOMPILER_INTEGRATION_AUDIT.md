@@ -243,7 +243,7 @@ Proposed source layout (new files; adapt names to existing package conventions):
   - android_input_provider.cpp
   - android_storage_provider.cpp
 
-The exact package path for Kotlin should be reconciled with the existing app package before implementation. This document proposes boundaries, not a claim that these files already exist.
+The existing Android namespace is `com.ngr.app` (app/build.gradle.kts); Kotlin additions should therefore use `com.ngr.app.recompiler` unless the app package is deliberately reorganized. The proposed native paths are new and do not currently exist. This document proposes boundaries, not a claim that these files already exist.
 
 ## Compiler execution model: required decision
 
