@@ -23,7 +23,7 @@ NGR must not install the donor's generated per-title APK. The donor APK is only 
 
 ## NGR changes
 
-1. ngr_switch_loader is a small NativeActivity library shipped in the NGR APK. Android starts this activity; it validates a title-specific runtime path and game-data root, sets NGR_SWITCH_GAME_ROOT, loads the title's libdmhost.so from NGR private storage and forwards ANativeActivity_onCreate.
+1. ngr_switch_loader is a small NativeActivity library shipped in the NGR APK. Android starts this activity in the dedicated :switch_runtime process. This matters because nx2android intentionally calls _exit(0) from onDestroy to reset its process-global runtime state; isolating it prevents the game exit from killing NGR's main launcher process. The loader validates a title-specific runtime path and game-data root, sets NGR_SWITCH_GAME_ROOT, loads the title's libdmhost.so from NGR private storage and forwards ANativeActivity_onCreate.
 2. SwitchRuntimeLauncher selects the per-title runtime and data directories. The runtime is stored under files/switch-ports/<TITLE_ID>/runtime/libdmhost.so; the large data pack is stored under getExternalFilesDir(null)/switch-ports/<TITLE_ID>/data/.
 3. tools/switch/apply_nx2android_patch.py applies a fail-closed, exact-match patch to the pinned donor's front_android.c. It makes the donor host use NGR's per-title data directory instead of assuming one game at the root of a standalone app's external files directory.
 4. .github/workflows/switch-runtime.yml can build the title-specific runtime for an Android profile and upload it as an artifact. It does not yet run the complete NSP/XCI extraction and rewrite pipeline.
