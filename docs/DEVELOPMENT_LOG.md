@@ -1185,7 +1185,8 @@ This is the durable project memory. Update it in every development session.
 
 ### Validation status
 - Source and documentation changes committed to main.
-- Isolated Kotlin compiler check passed for the new target catalog (`kotlinc` + runtime assertions: exactly two targets, extension detection, Switch key requirement).\n- Full Gradle JVM test suite and Android arm64-v8a CI have not yet been run/verified for the new target catalog.
+- Isolated Kotlin compiler check passed for the new target catalog (`kotlinc` + runtime assertions: exactly two targets, extension detection, Switch key requirement).
+- Full Gradle JVM test suite and Android arm64-v8a CI have not yet been run/verified for the new target catalog.
 - No donor runtime/compiler source has been copied into NGR yet.
 - No APK artifact or playable-game result is claimed.
 - No physical-device validation is claimed.
