@@ -56,6 +56,7 @@ class SwitchRuntimeLauncherTest {
                   "profile_header":"runtime/game_profile.h",
                   "vulkan_driver":"system",
                   "profile_header_sha256":"$profileHash",
+                  "data_manifest_sha256":"${"b".repeat(64)}",
                   "abi":"arm64-v8a",
                   "entry_point":"ANativeActivity_onCreate",
                   "apk_generated":false
@@ -77,6 +78,31 @@ class SwitchRuntimeLauncherTest {
             }
         } finally {
             root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsDataPackBuiltAgainstDifferentProfile() {
+        val externalRoot = Files.createTempDirectory("ngr-switch-profile-binding").toFile()
+        try {
+            val data = File(externalRoot, "switch-ports/$titleId/data")
+            File(data, "mods").mkdirs()
+            File(data, "assets/overlay").mkdirs()
+            File(data, "assets/font").mkdirs()
+            val manifest = File(data, "nx2a-data.json")
+            manifest.writeText("""{"title_id":"$titleId","profile_h":"${"a".repeat(64)}"}""")
+            File(data, "env.txt").writeText("DM_ROOT=/unused")
+            File(data, "assets/overlay/theme.tsv").writeText("theme")
+            File(data, "assets/font/ui.bin").writeBytes(byteArrayOf(1))
+            val manifestHash = MessageDigest.getInstance("SHA-256").digest(manifest.readBytes())
+                .joinToString("") { "%02x".format(it) }
+            assertThrows(IllegalArgumentException::class.java) {
+                SwitchRuntimeLauncher.validateGameDataRoot(
+                    externalRoot, titleId, "b".repeat(64), manifestHash
+                )
+            }
+        } finally {
+            externalRoot.deleteRecursively()
         }
     }
 
@@ -123,6 +149,7 @@ class SwitchRuntimeLauncherTest {
                   "profile_header":"runtime/game_profile.h",
                   "vulkan_driver":"system",
                   "profile_header_sha256":"${"0".repeat(64)}",
+                  "data_manifest_sha256":"${"b".repeat(64)}",
                   "abi":"arm64-v8a",
                   "entry_point":"ANativeActivity_onCreate",
                   "apk_generated":false
@@ -161,6 +188,7 @@ class SwitchRuntimeLauncherTest {
                   "profile_header":"runtime/game_profile.h",
                   "vulkan_driver":"system",
                   "profile_header_sha256":"$profileHash",
+                  "data_manifest_sha256":"${"b".repeat(64)}",
                   "abi":"arm64-v8a",
                   "entry_point":"ANativeActivity_onCreate",
                   "apk_generated":false
