@@ -1517,3 +1517,13 @@ This is the durable project memory. Update it in every development session.
 ### Nested font-license staging smoke
 - Switch smoke #51 [44940546014](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44940546014), commit `84f465a3062b8937fe442d4984c791081d14bee1`, passed after asserting both root `OFL.txt` and nested `LICENSES/**/*.txt` are preserved. Artifact ID `14721795180`, SHA-256 `f1f3d8e3f6becbbf3ed5b8cbb7be90e5496c78cd9810f33aac036617854d68a5`.
 - This validates asset/license staging only; it does not run a real `porter port` with a game dump.
+
+
+## Session 2026-11-21 — bind the data pack to its compiled game profile
+
+- Donor `nx2a-data.json` contains `profile_h`; the adapter now refuses to package a data pack unless that hash matches the generated `game_profile.h`.
+- The runtime receipt now includes `data_manifest_sha256`. The SAF importer verifies the exact manifest bytes and `profile_h`; the installed-library scan and crash-recovery validator repeat those checks; the launch path verifies title ID, `profile_h` and manifest SHA-256 against the internal runtime receipt.
+- Added Kotlin regression tests for a wrong title ID, mismatched profile hash and mismatched data-manifest hash. Added Python unit tests for valid/missing/mismatched/symlinked generated profile headers.
+- Switch smoke #58 [44941082552](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44941082552), commit `3b0a4bea4d1f72e5e25ddc628c8958ed03202d5c`, passed: Python adapter unit tests, donor CLI contract, per-title theme/font/license staging and patched ARM64 host build. Artifact ID `14720649995`, SHA-256 `4b9c1459331f3f1409629b81ed6dd86be5f64bbf33e393dd6cdf9c99491ca505`.
+- Android CI #655 [44941093823] is building the Kotlin profile/manifest binding changes; do not mark those latest Kotlin tests green until the run completes.
+- This still does not replace a full real-title port test. The CI data/profile fixtures are synthetic.
