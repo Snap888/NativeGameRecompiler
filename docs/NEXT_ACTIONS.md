@@ -454,3 +454,22 @@ Mark complete only when evidence exists.
 
 - [ ] Check CI triggered by commit `3b44bee839cc93db3c02ed43445c01071a6adbfe`; confirm both Android loader build and donor runtime smoke build.
 - [ ] If donor smoke build fails, inspect exact NDK/toolchain or donor dependency error and fix adapter/workflow.
+
+
+## Nintendo Switch — embedded nx2android runtime
+
+- [x] Audit nx2android NativeActivity, per-title libdmhost.so build and separate data-pack output at pinned commit f32b3d563f0615d0e825747285d4e38d780e4ebb.
+- [x] Add NGR NativeActivity loader target and register the embedded activity in NGR's manifest.
+- [x] Add fail-closed nx2android patcher to select a separate NGR data root for each title ID.
+- [x] Add per-title runtime/data path validation and in-process launch intent.
+- [x] Add prepared-port folder importer with ELF64/AArch64 and SHA-256 validation, staging and rollback.
+- [x] Add Switch library UI with import and launch actions (same NGR APK; no separate game APK).
+- [x] Add manual workflow to build a pinned title-specific libdmhost.so for an nx2android Android profile.
+- [ ] Run Android Gradle, JVM and native CI after the integration commits; fix every failure.
+- [ ] Run switch-runtime workflow for a known supported Android profile and verify the artifact.
+- [ ] Add an nx2android port-bundle packager (runtime + data pack + manifest + required per-title assets).
+- [ ] Integrate the actual NSP/XCI -> LibHac extraction -> NSO rewrite -> shader translation -> data pack pipeline.
+- [ ] Decide and implement on-device or supported companion execution for Python/.NET/LibHac dependencies.
+- [ ] Add per-title gamepad theme/font assets to the in-process NativeActivity.
+- [ ] Physical-device test on Adreno: import, launch, Vulkan, audio, controls, lifecycle, saves and two-title isolation.
+
