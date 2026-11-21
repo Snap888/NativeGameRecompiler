@@ -53,6 +53,9 @@ object SwitchRuntimePackageVerifier {
         require(manifest.optString("profile_header") == "runtime/game_profile.h") {
             "Unexpected Switch game profile header path"
         }
+        require(manifest.optString("vulkan_driver") == "system") {
+            "This NGR build only accepts Switch packages using the system Vulkan driver"
+        }
         val expectedHash = manifest.optString("runtime_sha256")
         val profileHash = manifest.optString("profile_header_sha256")
         require(HASH.matches(expectedHash) && HASH.matches(profileHash)) { "Invalid Switch runtime hash receipt" }
