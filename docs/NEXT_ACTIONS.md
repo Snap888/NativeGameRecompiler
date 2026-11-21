@@ -478,14 +478,15 @@ Mark complete only when evidence exists.
 
 
 ## Nintendo Switch validation checkpoint — 2026-11-21
-- [x] Android CI #613: current NativeActivity loader with donor onDestroy forwarding, Kotlin/JVM tests, native CMake build and ARM64 APK passed (artifact ID 14721162062).
+- [x] Android CI #621: current NativeActivity loader with donor onDestroy forwarding, Kotlin/JVM tests, native CMake build, package receipt/profile-header validation and ARM64 APK passed (artifact ID 14721064183).
 - [x] Switch smoke #45: all four donor patches applied, title-profiled ARM64 host compiled, and per-title theme/font staging verified (artifact ID 14721390437).
+- [x] Switch smoke #48: repeat patched title-host build and asset-staging verification after adding the explicit system Vulkan receipt mode (artifact ID 14721480591).
 - [x] Add SHA-256 verification for both `libdmhost.so` and the generated `game_profile.h`.
 - [x] Add journaled two-root install recovery and move recovery/library scans off the UI thread.
 - [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) with unit tests.
 - [x] Reject collisions when donor theme/font assets are merged into the game data pack.
 - [x] Explicitly force `--vulkan-driver system` in the desktop adapter and validate that mode in the runtime receipt; optional custom Turnip/adrenotools libraries are not bundled.
-- [ ] Verify latest Android CI after the system-driver receipt, packaging collision checks and stream-safety changes.
+- [x] Verify Android CI after the system-driver receipt, packaging collision checks and stream-safety changes (#621, artifact ID 14721064183).
 - [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
 - [ ] Run the full donor `porter port` adapter with a user-owned supported title; verify data pack, assets, profile header and no-APK receipt.
 - [ ] Import and launch on a physical Adreno device; verify Vulkan, sound, input, pause/resume, saves and title isolation.
