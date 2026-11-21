@@ -56,3 +56,24 @@ Before adding a component to the production catalog:
 4. Record modifications and build provenance.
 5. Verify redistribution rights for the actual archive, not just upstream source.
 6. Add a CI check that rejects missing license/source/hash metadata.
+
+## Static recompiler audit additions — 2026-11-21
+
+The following root-repository findings were checked during the source audit. They are preliminary; inspect the exact pinned commit, submodules and redistributed binary contents before vendoring or shipping.
+
+| Component | Observed root license / terms | NGR gate |
+|---|---|---|
+| XenonRecomp | MIT | Retain LICENSE.md and audit thirdparty/submodules. |
+| ReXGlue SDK | BSD-3-Clause-style terms; LICENSE also contains explicit Xenia-derived copyright/notice language | Preserve both notices and review Xenia-derived files and all submodules; do not label the SDK MIT. |
+| XboxXBERecomp | MIT reported by GitHub repository metadata | Verify root license at pinned commit; retain notices for Zydis, toml++, Dear ImGui, SDL3 and fetched dependencies. |
+| N64Recomp | MIT | Audit recursive submodules and their licenses. |
+| N64ModernRuntime | GPL-3.0 | Do not link/vendor into the MIT NGR application without an explicit distribution/relicensing decision and corresponding-source compliance plan. |
+| SCDA-XBERecomp-android | Project states MIT; dependencies retain their own licenses | Review Android fork diff and every dependency; upstream project license does not cover all dependencies. |
+| UnleashedRecomp-Android | Must verify pinned repository LICENSE and all bundled thirdparty components | Do not copy Android-specific code before per-file and dependency review. |
+| RT64 | Separate project license; inspect pinned revision | Required renderer candidate for N64; review Android support and dependency licenses separately. |
+
+ReXGlue's license is not MIT. Its LICENSE includes a BSD-3-Clause-style grant and explicit Xenia-derived copyright/notice language. Preserve the full upstream license text and any applicable Xenia notices.
+
+The N64Recomp compiler (MIT) and N64ModernRuntime (GPL-3.0) are separate projects with different licenses. The runtime's license must not be inferred from the compiler's license.
+
+No third-party source was copied into NGR during the audit.
