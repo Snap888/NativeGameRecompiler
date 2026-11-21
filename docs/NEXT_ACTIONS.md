@@ -471,7 +471,7 @@ Mark complete only when evidence exists.
 - [x] Bound SAF data-pack copy size/depth and add interrupted two-root install journal/recovery.
 - [x] Run Android ARM64/JVM/native CI and patched donor runtime smoke builds successfully (see validation checkpoint below).
 - [ ] Run the full `porter port` adapter with a user-owned supported title and keys; verify no game APK is generated.
-- [ ] Confirm Switch smoke #50/#51 preserves root and nested font license notices; the latest workflow is running.
+- [x] Switch smoke #51 confirms root and nested font license notices are preserved (artifact ID 14721795180).
 - [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
 - [ ] Integrate optional Turnip/adrenotools dependencies with NGR's component/driver runtime; current ports explicitly use the Android system Vulkan driver.
 - [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, pause/resume, saves and two-title isolation.
