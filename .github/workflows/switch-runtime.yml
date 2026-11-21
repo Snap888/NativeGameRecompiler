@@ -43,7 +43,7 @@ jobs:
           git clone --recurse-submodules https://github.com/shirai91/nx2android.git nx2android
           git -C nx2android checkout f32b3d563f0615d0e825747285d4e38d780e4ebb
           git -C nx2android submodule update --init --recursive
-          test -f "nx2android/nxnative/dm/games/$TITLE_ID/android.tsv" || {
+          test -f "nx2android/nxnative/dm/games/${TITLE_ID^^}/android.tsv" || {
             echo "No Android profile for title ID $TITLE_ID at pinned nx2android revision"
             exit 3
           }
@@ -54,36 +54,24 @@ jobs:
       - name: Build title-specific Android NativeActivity runtime
         shell: bash
         run: |
-          mkdir -p build/switch-runtime
-          python nx2android/nxnative/dm/android/build.py \
-            --game "$TITLE_ID" \
+          mkdir -p "build/switch-port/$TITLE_ID"
+          python tools/switch/build_runtime.py \
+            --nx2android "$PWD/nx2android" \
+            --title-id "$TITLE_ID" \
             --ndk "$ANDROID_NDK_HOME" \
-            --out "$PWD/build/switch-runtime" \
-            --lib --release --jobs 4
-          test -s build/switch-runtime/libdmhost.so
-          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h build/switch-runtime/libdmhost.so
-          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -d build/switch-runtime/libdmhost.so
+            --package-dir "$PWD/build/switch-port/$TITLE_ID" \
+            --jobs 4
+          test -s "build/switch-port/$TITLE_ID/runtime/libdmhost.so"
+          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h "build/switch-port/$TITLE_ID/runtime/libdmhost.so"
+          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -d "build/switch-port/$TITLE_ID/runtime/libdmhost.so"
 
       - name: Assemble NGR runtime component
         shell: bash
         run: |
           mkdir -p build/NGR-Switch-Runtime/runtime
-          cp build/switch-runtime/libdmhost.so build/NGR-Switch-Runtime/runtime/
+          cp "build/switch-port/$TITLE_ID/runtime/libdmhost.so" build/NGR-Switch-Runtime/runtime/
+          cp "build/switch-port/$TITLE_ID/runtime-build.json" build/NGR-Switch-Runtime/
           cp nx2android/nxnative/LICENSE build/NGR-Switch-Runtime/NX2ANDROID-LICENSE
-          RUNTIME_SHA=$(sha256sum build/NGR-Switch-Runtime/runtime/libdmhost.so | cut -d ' ' -f1)
-          cat > build/NGR-Switch-Runtime/runtime-manifest.json <<EOF
-          {
-            "schema": 1,
-            "target": "nintendo-switch",
-            "title_id": "$TITLE_ID",
-            "runtime": "runtime/libdmhost.so",
-            "sha256": "$RUNTIME_SHA",
-            "nx2android_commit": "f32b3d563f0615d0e825747285d4e38d780e4ebb",
-            "ndk": "27.2.12479018",
-            "api": 31,
-            "license": "MIT with third-party notices retained in upstream source"
-          }
-          EOF
           sha256sum build/NGR-Switch-Runtime/runtime/libdmhost.so > build/NGR-Switch-Runtime/SHA256SUMS
           tar -C build -czf "NGR-Switch-Runtime-$TITLE_ID.tar.gz" NGR-Switch-Runtime
 
