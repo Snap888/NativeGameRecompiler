@@ -93,6 +93,8 @@ def main() -> int:
          donor / "porter/pipeline.py", "NGR_NO_APK"),
         (ngr / "patches/nx2android/0003-use-ngr-per-title-save-and-temp-root.patch",
          donor / "nxnative/dm/android/front_android.c", "NGR_SWITCH_PRIVATE_ROOT"),
+        (ngr / "patches/nx2android/0004-load-per-title-assets-from-ngr-data.patch",
+         donor / "nxnative/dm/android/overlay_theme.c", "NGR_SWITCH_GAME_ROOT/assets"),
     ]
     for patch, target, marker in patches:
         if not patch.is_file():
@@ -163,6 +165,30 @@ def main() -> int:
         runtime_dir.mkdir()
         shutil.copyfile(host, runtime_dir / "libdmhost.so")
         copy_tree(data_source, temporary / "data")
+
+        # The donor APK normally carries a per-title controller theme and a shared
+        # overlay font. NGR has one APK, so keep those assets in this title's data pack.
+        android_tools = donor / "nxnative/dm/android/tools"
+        sys.path.insert(0, str(android_tools))
+        try:
+            import android_profile
+            theme_source = android_profile.theme(title_id)
+        except Exception as error:
+            raise SystemExit(f"Unable to resolve the donor gamepad theme: {error}") from error
+        if not theme_source.is_dir():
+            raise SystemExit(f"Donor gamepad theme directory is missing: {theme_source}")
+        copy_tree(theme_source, temporary / "data/assets/overlay")
+
+        font_source = donor / "nxnative/dm/third_party/fusion-pixel-font"
+        font_file = font_source / "fusion-pixel-12px-proportional-zh_tw.nxpf"
+        if not font_file.is_file():
+            raise SystemExit(f"Donor overlay font is missing: {font_file}")
+        font_target = temporary / "data/assets/font"
+        font_target.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(font_file, font_target / "ui.bin")
+        for notice in font_source.glob("*.txt"):
+            if notice.is_file() and not notice.is_symlink():
+                shutil.copy2(notice, font_target / notice.name)
 
         # nx2android writes absolute paths rooted at its package's files folder.
         # In NGR, each title's pack lives one level below that folder.
