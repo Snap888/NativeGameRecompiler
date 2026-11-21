@@ -18,6 +18,7 @@ object SwitchRuntimePackageVerifier {
         val packageDir = File(root, "switch-ports/${titleId.uppercase()}")
         val runtime = SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
         val receipt = File(packageDir, "runtime-build.json")
+        val profileHeader = File(packageDir, "runtime/game_profile.h")
         val portsRoot = File(root, "switch-ports").canonicalFile
         val prefix = portsRoot.path + File.separator
 
@@ -29,7 +30,12 @@ object SwitchRuntimePackageVerifier {
         require(receipt.canonicalFile == receipt && receipt.isFile && receipt.length() in 2..65536) {
             "Switch runtime build receipt is missing or unsafe"
         }
-        require(!Files.isSymbolicLink(runtime.toPath()) && !Files.isSymbolicLink(receipt.toPath())) {
+        require(profileHeader.canonicalFile == profileHeader && profileHeader.isFile &&
+            profileHeader.length() in 1..(4L * 1024 * 1024)) {
+            "Switch generated game profile header is missing or unsafe"
+        }
+        require(!Files.isSymbolicLink(runtime.toPath()) && !Files.isSymbolicLink(receipt.toPath()) &&
+            !Files.isSymbolicLink(profileHeader.toPath())) {
             "Switch runtime files must not be symbolic links"
         }
 
@@ -44,14 +50,22 @@ object SwitchRuntimePackageVerifier {
         require(manifest.optString("entry_point") == "ANativeActivity_onCreate") { "Switch runtime entry point mismatch" }
         require(!manifest.optBoolean("apk_generated", true)) { "Per-game APK output is not accepted by NGR" }
 
+        require(manifest.optString("profile_header") == "runtime/game_profile.h") {
+            "Unexpected Switch game profile header path"
+        }
         val expectedHash = manifest.optString("runtime_sha256")
         val profileHash = manifest.optString("profile_header_sha256")
         require(HASH.matches(expectedHash) && HASH.matches(profileHash)) { "Invalid Switch runtime hash receipt" }
         val actualHash = sha256(runtime)
+        val actualProfileHash = sha256(profileHeader)
         require(MessageDigest.isEqual(
             expectedHash.lowercase().toByteArray(Charsets.US_ASCII),
             actualHash.toByteArray(Charsets.US_ASCII)
         )) { "Switch runtime library hash mismatch" }
+        require(MessageDigest.isEqual(
+            profileHash.lowercase().toByteArray(Charsets.US_ASCII),
+            actualProfileHash.toByteArray(Charsets.US_ASCII)
+        )) { "Switch game profile header hash mismatch" }
         return runtime
     }
 
