@@ -200,7 +200,14 @@ class SwitchPortStore(private val context: Context) {
         val ids: Set<String> = entries.mapNotNull { entry ->
             pattern.matchEntire(entry.name)?.groupValues?.get(1)
         }.toSet()
-        ids.forEach { id -> recoverInterruptedInstall(internalRoot, externalRoot, id) }
+        var firstFailure: IOException? = null
+        ids.forEach { id ->
+            runCatching { recoverInterruptedInstall(internalRoot, externalRoot, id) }
+                .onFailure { error ->
+                    if (firstFailure == null) firstFailure = IOException("Unable to recover Switch title $id", error)
+                }
+        }
+        firstFailure?.let { throw it }
     }
 
     private fun recoverInterruptedInstall(internalRoot: File, externalRoot: File, titleId: String) {
@@ -218,6 +225,12 @@ class SwitchPortStore(private val context: Context) {
             it.optInt("schema_version") == 1 && it.optString("title_id") == titleId
         }
         val phase = validState?.optString("phase").orEmpty()
+        val knownPhases = setOf("prepared", "runtime_backed_up", "backed_up", "runtime_installed", "installed")
+        if (journal.exists() && (validState == null || phase !in knownPhases)) {
+            // Preserve unknown/future journal formats; only discard incomplete staging data.
+            deleteTree(runtimeTemp); deleteTree(dataTemp); deleteTree(journalTemp)
+            return
+        }
 
         if (phase == "installed" && isValidInstalledPair(runtime, data, titleId)) {
             deleteTree(runtimeBackup); deleteTree(dataBackup)
@@ -241,7 +254,7 @@ class SwitchPortStore(private val context: Context) {
         }
 
         deleteTree(runtimeTemp); deleteTree(dataTemp); deleteTree(journalTemp)
-        if (state != null) journal.delete()
+        if (journal.exists() && validState != null) journal.delete()
     }
 
     private fun isValidInstalledPair(runtimeDir: File, dataDir: File, titleId: String): Boolean = runCatching {
