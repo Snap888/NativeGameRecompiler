@@ -83,7 +83,7 @@ python tools/switch/port_game.py \
   --source-folder /path/to/your-own-switch-dump-folder \
   --keys /path/to/your-own/prod.keys \
   --nx2a-home /path/to/nx2android-config \
-  --output /path/to/output/MySwitchPort \\
+  --output /path/to/output/MySwitchPort \
   --vulkan-driver system
 ```
 
