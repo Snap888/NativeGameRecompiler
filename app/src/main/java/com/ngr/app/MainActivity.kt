@@ -212,7 +212,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         addSection(root, "CONSOLE RECOMPILERS", "Xbox 360 · Nintendo Switch")
         val consoleBuildCard = createCard()
         consoleBuildCard.addView(TextView(this).apply {
-            text = "Xbox 360 and Switch source intake is available. Switch ports can be imported into the built-in runtime; automatic NSP/XCI extraction and recompilation are still being integrated."
+            text = "Xbox 360 and Switch source intake is available. Prepared Switch ports can be imported into the built-in runtime. The nx2android extraction and recompilation toolchain still runs on a desktop; NGR does not yet compile NSP/XCI files on-device."
             textSize = 13f
             setTextColor(Color.rgb(163, 174, 191))
         })
