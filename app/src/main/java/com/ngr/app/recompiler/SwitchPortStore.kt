@@ -25,10 +25,12 @@ class SwitchPortStore(private val context: Context) {
     private val maxManifestBytes = 64 * 1024
     private val maxRuntimeBytes = 512L * 1024 * 1024
 
+    @Synchronized
     fun listInstalled(): List<InstalledSwitchPort> {
         val internal = File(context.filesDir, "switch-ports")
         val external = context.getExternalFilesDir(null)?.let { File(it, "switch-ports") } ?: return emptyList()
         if (!internal.isDirectory || !external.isDirectory) return emptyList()
+        recoverInterruptedInstalls(internal, external)
         return internal.listFiles().orEmpty().mapNotNull { dir ->
             val id = dir.name.uppercase(Locale.ROOT)
             if (!titlePattern.matches(id)) return@mapNotNull null
@@ -45,6 +47,7 @@ class SwitchPortStore(private val context: Context) {
     }
 
     @Throws(IOException::class)
+    @Synchronized
     fun installFromTree(treeUri: Uri): InstalledSwitchPort {
         val tree = DocumentFile.fromTreeUri(context, treeUri) ?: throw IOException("Selected folder is unavailable")
         if (!tree.isDirectory) throw IOException("Select a prepared Switch port folder")
@@ -96,6 +99,7 @@ class SwitchPortStore(private val context: Context) {
         val externalRoot = File(externalBase, "switch-ports")
         internalRoot.mkdirs(); externalRoot.mkdirs()
         requireSafeDirectory(internalRoot); requireSafeDirectory(externalRoot)
+        recoverInterruptedInstalls(internalRoot, externalRoot)
 
         val runtimeTemp = File(internalRoot, ".$titleId.partial")
         val dataTemp = File(externalRoot, ".$titleId.partial")
@@ -120,30 +124,117 @@ class SwitchPortStore(private val context: Context) {
             val oldData = File(externalRoot, titleId)
             val runtimeBackup = File(internalRoot, ".$titleId.backup")
             val dataBackup = File(externalRoot, ".$titleId.backup")
+            val journal = File(internalRoot, ".$titleId.install.json")
             deleteTree(runtimeBackup); deleteTree(dataBackup)
-            if (oldRuntime.exists() && !oldRuntime.renameTo(runtimeBackup)) throw IOException("Unable to stage existing runtime")
+            writeInstallJournal(journal, titleId, "prepared")
+            if (oldRuntime.exists() && !oldRuntime.renameTo(runtimeBackup)) {
+                throw IOException("Unable to stage existing runtime")
+            }
+            writeInstallJournal(journal, titleId, "runtime_backed_up")
             if (oldData.exists() && !oldData.renameTo(dataBackup)) {
-                if (runtimeBackup.exists()) runtimeBackup.renameTo(oldRuntime)
                 throw IOException("Unable to stage existing data pack")
             }
-            val runtimeMoved = runtimeTemp.renameTo(oldRuntime)
-            val dataMoved = runtimeMoved && dataTemp.renameTo(oldData)
-            if (!dataMoved) {
-                if (runtimeMoved) deleteTree(oldRuntime)
-                if (runtimeBackup.exists()) runtimeBackup.renameTo(oldRuntime)
-                if (dataBackup.exists()) dataBackup.renameTo(oldData)
-                throw IOException("Unable to install Switch port")
+            writeInstallJournal(journal, titleId, "backed_up")
+            if (!runtimeTemp.renameTo(oldRuntime)) throw IOException("Unable to install Switch runtime")
+            writeInstallJournal(journal, titleId, "runtime_installed")
+            if (!dataTemp.renameTo(oldData)) throw IOException("Unable to install Switch data pack")
+            writeInstallJournal(journal, titleId, "installed")
+            if (!isValidInstalledPair(oldRuntime, oldData, titleId)) {
+                throw IOException("Installed Switch package failed final validation")
             }
             deleteTree(runtimeBackup); deleteTree(dataBackup)
+            if (!journal.delete() && journal.exists()) throw IOException("Unable to finalize Switch install journal")
             return InstalledSwitchPort(titleId, checked.optString("name", "Nintendo Switch game"),
                 checked.optString("display", checked.optString("version", "")),
                 File(oldRuntime, "runtime/libdmhost.so"), File(oldData, "data"))
         } catch (t: Throwable) {
             deleteTree(runtimeTemp); deleteTree(dataTemp)
+            runCatching { recoverInterruptedInstall(internalRoot, externalRoot, titleId) }
             if (t is IOException) throw t
             throw IOException(t.message ?: "Switch port import failed", t)
         }
     }
+
+    private fun writeInstallJournal(journal: File, titleId: String, phase: String) {
+        val temp = File(journal.parentFile, journal.name + ".tmp")
+        val bytes = JSONObject().put("schema_version", 1).put("title_id", titleId)
+            .put("phase", phase).toString().toByteArray(Charsets.UTF_8)
+        FileOutputStream(temp).use { output ->
+            output.write(bytes)
+            output.fd.sync()
+        }
+        try {
+            java.nio.file.Files.move(
+                temp.toPath(), journal.toPath(),
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
+        } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+            if (!temp.renameTo(journal)) throw IOException("Unable to persist Switch install journal")
+        } catch (t: Throwable) {
+            temp.delete()
+            throw IOException("Unable to persist Switch install journal", t)
+        }
+    }
+
+    private fun recoverInterruptedInstalls(internalRoot: File, externalRoot: File) {
+        val pattern = Regex("^\\.([0-9A-F]{16})\\.(install\\.json|partial|backup)$")
+        val ids = (internalRoot.listFiles().orEmpty() + externalRoot.listFiles().orEmpty())
+            .mapNotNull { pattern.matchEntire(it.name)?.groupValues?.get(1) }
+            .toSet()
+        ids.forEach { id -> recoverInterruptedInstall(internalRoot, externalRoot, id) }
+    }
+
+    private fun recoverInterruptedInstall(internalRoot: File, externalRoot: File, titleId: String) {
+        if (!titlePattern.matches(titleId)) return
+        val runtime = File(internalRoot, titleId)
+        val data = File(externalRoot, titleId)
+        val runtimeBackup = File(internalRoot, ".$titleId.backup")
+        val dataBackup = File(externalRoot, ".$titleId.backup")
+        val runtimeTemp = File(internalRoot, ".$titleId.partial")
+        val dataTemp = File(externalRoot, ".$titleId.partial")
+        val journal = File(internalRoot, ".$titleId.install.json")
+        val journalTemp = File(internalRoot, ".$titleId.install.json.tmp")
+        val state = readJson(journal)
+        val phase = if (state?.optInt("schema_version") == 1 &&
+            state.optString("title_id") == titleId) state.optString("phase") else ""
+
+        if (phase == "installed" && isValidInstalledPair(runtime, data, titleId)) {
+            deleteTree(runtimeBackup); deleteTree(dataBackup)
+            deleteTree(runtimeTemp); deleteTree(dataTemp); deleteTree(journalTemp)
+            journal.delete()
+            return
+        }
+
+        val rollbackPhases = setOf("backed_up", "runtime_installed", "installed")
+        if (runtimeBackup.exists()) {
+            deleteTree(runtime)
+            if (!runtimeBackup.renameTo(runtime)) throw IOException("Unable to recover previous Switch runtime")
+        } else if (phase in rollbackPhases) {
+            deleteTree(runtime)
+        }
+        if (dataBackup.exists()) {
+            deleteTree(data)
+            if (!dataBackup.renameTo(data)) throw IOException("Unable to recover previous Switch data pack")
+        } else if (phase in rollbackPhases) {
+            deleteTree(data)
+        }
+
+        deleteTree(runtimeTemp); deleteTree(dataTemp); deleteTree(journalTemp)
+        if (state != null) journal.delete()
+    }
+
+    private fun isValidInstalledPair(runtimeDir: File, dataDir: File, titleId: String): Boolean = runCatching {
+        val runtime = File(runtimeDir, "runtime/libdmhost.so")
+        validateElf64Arm64(runtime)
+        val manifest = readJson(File(dataDir, "data/nx2a-data.json"))
+            ?: throw IOException("Switch data manifest is missing")
+        manifest.optString("title_id").uppercase(Locale.ROOT) == titleId &&
+            File(dataDir, "data/mods").isDirectory &&
+            File(dataDir, "data/env.txt").isFile &&
+            File(dataDir, "data/assets/overlay/theme.tsv").isFile &&
+            File(dataDir, "data/assets/font/ui.bin").isFile
+    }.getOrDefault(false)
 
     private fun copyTree(
         source: DocumentFile,
