@@ -42,9 +42,24 @@ def run(command: list[str], *, cwd: Path, env: dict[str, str]) -> str:
 
 
 def copy_tree(source: Path, destination: Path) -> None:
-    if not source.is_dir():
-        raise SystemExit(f"Expected donor data pack directory: {source}")
-    shutil.copytree(source, destination, symlinks=False)
+    if not source.is_dir() or source.is_symlink():
+        raise SystemExit(f"Expected a regular donor data-pack directory: {source}")
+    destination.mkdir(parents=True)
+    for root, directories, files in os.walk(source, followlinks=False):
+        base = Path(root)
+        relative = base.relative_to(source)
+        target_root = destination / relative
+        target_root.mkdir(parents=True, exist_ok=True)
+        for name in list(directories):
+            item = base / name
+            if item.is_symlink() or not item.is_dir():
+                raise SystemExit(f"Unsafe directory in donor data pack: {item}")
+            (target_root / name).mkdir(exist_ok=True)
+        for name in files:
+            item = base / name
+            if item.is_symlink() or not item.is_file():
+                raise SystemExit(f"Unsafe file in donor data pack: {item}")
+            shutil.copy2(item, target_root / name)
 
 
 def main() -> int:
@@ -79,6 +94,10 @@ def main() -> int:
     keys = args.keys.resolve(strict=True)
     nx2a_home = args.nx2a_home.resolve(strict=True)
     output = args.output.resolve()
+    if output.exists():
+        parser.error("--output must not already exist; use a new destination to avoid replacing a previous port")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    donor_output = Path(tempfile.mkdtemp(prefix="ngr-nx2a-output-"))
     patch = ngr / "patches/nx2android/0002-ngrn-build-without-per-game-apk.patch"
     if not patch.is_file():
         raise SystemExit(f"NGR no-APK patch is missing: {patch}")
@@ -116,10 +135,12 @@ def main() -> int:
     if args.experimental:
         command += ["--experimental"]
 
-    run(command, cwd=donor, env=env)
+    try:
+        run(command[:command.index("--out") + 1] + [str(donor_output)] + command[command.index("--out") + 2:],
+            cwd=donor, env=env)
 
-    packs = []
-    for candidate in output.glob("*-data"):
+        packs = []
+        for candidate in donor_output.glob("*-data"):
         manifest = candidate / "nx2a-data.json"
         if manifest.is_file():
             try:
@@ -128,25 +149,24 @@ def main() -> int:
                 continue
             if TITLE_ID.fullmatch(str(data.get("title_id", ""))):
                 packs.append((candidate, data))
-    if len(packs) != 1:
-        raise SystemExit(f"Expected exactly one nx2android data pack, found {len(packs)}")
-    data_source, data_manifest = packs[0]
-    title_id = str(data_manifest["title_id"]).upper()
+        if len(packs) != 1:
+            raise SystemExit(f"Expected exactly one nx2android data pack, found {len(packs)}")
+        data_source, data_manifest = packs[0]
+        title_id = str(data_manifest["title_id"]).upper()
 
-    host = source_folder / f"{title_id}_build/android/host/libdmhost.so"
-    if not host.is_file():
+        host = source_folder / f"{title_id}_build/android/host/libdmhost.so"
+        if not host.is_file():
         # The donor's --debug option is not used here, but preserve a useful
         # diagnostic if a future pinned profile changes the host output name.
-        raise SystemExit(f"nx2android did not leave the title runtime at {host}")
-    generated_profile = source_folder / f"{title_id}_build/android/host/gen/{title_id}/game_profile.h"
-    if not generated_profile.is_file():
-        raise SystemExit(f"Generated game_profile.h is missing: {generated_profile}")
+            raise SystemExit(f"nx2android did not leave the title runtime at {host}")
+        generated_profile = source_folder / f"{title_id}_build/android/host/gen/{title_id}/game_profile.h"
+        if not generated_profile.is_file():
+            raise SystemExit(f"Generated game_profile.h is missing: {generated_profile}")
 
-    temporary = output / f".ngr-switch-{title_id}.partial"
-    if temporary.exists():
-        shutil.rmtree(temporary)
-    temporary.mkdir(parents=True)
-    try:
+        temporary = output.with_name(output.name + ".partial")
+        if temporary.exists():
+            shutil.rmtree(temporary)
+        temporary.mkdir(parents=True)
         runtime_dir = temporary / "runtime"
         runtime_dir.mkdir()
         shutil.copyfile(host, runtime_dir / "libdmhost.so")
@@ -174,13 +194,12 @@ def main() -> int:
         (temporary / "runtime-build.json").write_text(
             json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
         )
-        if output.exists():
-            raise SystemExit(f"Refusing to overwrite existing output folder: {output}")
-        output.parent.mkdir(parents=True, exist_ok=True)
         temporary.rename(output)
     except BaseException:
-        shutil.rmtree(temporary, ignore_errors=True)
+        shutil.rmtree(output.with_name(output.name + ".partial"), ignore_errors=True)
         raise
+    finally:
+        shutil.rmtree(donor_output, ignore_errors=True)
 
     print(json.dumps({"result": "NGR_SWITCH_PORT_PACKAGE", "title_id": title_id,
                       "name": data_manifest.get("name", title_id),
