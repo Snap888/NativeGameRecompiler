@@ -1500,6 +1500,6 @@ This is the durable project memory. Update it in every development session.
 
 ### Current validation boundary
 - Android APK compilation, JVM tests, donor patch application, profile-specific ARM64 host compilation and theme/font staging are CI-verified.
-- Latest Android CI after the system-driver receipt and copy-stream changes is still running at this checkpoint; check the newest Actions run before reporting that exact revision green.
+- Android CI run #621 [44940042307](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44940042307), commit `7f36140b42636ba806719a9bc230e23cc8b3b025`, passed after the system-driver receipt, profile-header verifier/tests, copy-stream hardening, journal recovery and NativeActivity teardown changes. Artifact `NGR-arm64-debug` ID `14721064183`, SHA-256 `321a8cebae4afb447ade1e479dded7effb6740e8e31ce5a1a89d4d99486ba4af`. A later run triggered by documentation-only commits is not needed to establish this code checkpoint.
 - No full NSP/XCI port has been run with a real user-owned dump/keys. No Switch title has been imported or launched on a physical Android device.
 - The desktop adapter uses the donor's real extraction/rewrite/shader/host/data pipeline but is not an on-device Python/.NET/LibHac toolchain.
