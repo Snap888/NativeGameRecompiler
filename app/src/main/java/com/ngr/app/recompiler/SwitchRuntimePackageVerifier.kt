@@ -7,7 +7,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.security.MessageDigest
 
-/** Verifies the build receipt emitted by tools/switch/build_runtime.py before loading native code. */
+/** Verifies the no-APK port receipt emitted by tools/switch/port_game.py before loading native code. */
 object SwitchRuntimePackageVerifier {
     const val DONOR_REVISION = "f32b3d563f0615d0e825747285d4e38d780e4ebb"
     private val HASH = Regex("^[a-fA-F0-9]{64}$")
