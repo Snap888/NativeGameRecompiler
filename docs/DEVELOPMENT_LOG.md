@@ -1152,3 +1152,47 @@ This is the durable project memory. Update it in every development session.
 - Decide the GPL runtime boundary before integrating N64ModernRuntime.
 - Compare XenonRecomp and ReXGlue with a non-copyrighted PPC fixture before selecting an Xbox 360 codegen backend.
 
+
+
+## Session 2026-11-21 — Scope reset: Xbox 360 + Nintendo Switch
+
+### User decision
+- Active console scope is now restricted to Xbox 360 and Nintendo Switch only.
+- The selected foundations are the writable Snap888/XDroid360 fork and shirai91/nx2android.
+- N64, Original Xbox, PlayStation, Xbox One, Switch 2 and generic PC/EXE recompilation are excluded from this workstream.
+
+### Source audit
+- XDroid360 fork commit inspected: 6eefb7f738d4e63cb11cb6bb63911f55094e8ada.
+- Inspected XDroid360 Android app Gradle configuration, RecipeRunner, on-device toolchain build script, submodule declaration and NOTICE.
+- Confirmed Xbox 360 reference path: user-owned ISO/ZIP → title recipe → XenonRecomp PPC-to-C++ → Android Clang/LLD → title-specific runtime + Xenos Vulkan or Xenia Vulkan graphics path.
+- Confirmed the donor does not provide one universal finished Xbox 360 runtime: DAORecomp, SoDRecomp and ME1Recomp are title-specific.
+- nx2android commit inspected: 828ded46adb11722591c4353a2ba88175640d250.
+- Inspected nx2android architecture/research, porter CLI, NSO/NRO rewriter, Android runtime build, installation guide, nxnative README and MIT license.
+- Critical Switch finding: nx2android currently performs preparation on Windows/macOS/Linux and produces an Android APK + game data pack; it is not an Android on-device importer/compiler. Android execution is native ARM64 through Horizon host services and NVN-to-Vulkan.
+- Detailed findings: docs/XBOX360_SWITCH_INTEGRATION_PLAN.md.
+
+### Code added
+- Added app/src/main/java/com/ngr/app/recompiler/ConsoleRecompilerTargets.kt with exactly two typed targets.
+- Xbox 360 metadata records PowerPC Xenon, arm64-v8a, on-device preparation reference, ISO/ZIP input and title-specific runtime reference.
+- Switch metadata records ARM64 NSO/NRO rewriting, arm64-v8a, desktop-assisted preparation reference, NSP/XCI/NSZ/XCZ input and user-provided key requirement.
+- Both targets are explicitly RESEARCHED_NOT_INTEGRATED. This catalog is not a compiler implementation or compatibility claim.
+- Added ConsoleRecompilerTargetsTest.kt covering target exclusivity, input formats, preparation modes and key requirement.
+
+### Project documents updated
+- README.md, docs/TECHNICAL_SPEC.md and docs/NEXT_ACTIONS.md now prioritize Xbox 360 + Switch only.
+- Earlier N64 roadmap is superseded. Generic Wine/Box64/FEX work is legacy/deferred while this console workstream is active.
+- License/provenance review is being extended for both donor stacks.
+
+### Validation status
+- Source and documentation changes committed to main.
+- JVM tests and Android arm64-v8a CI have not yet been run for the new target catalog.
+- No donor runtime/compiler source has been copied into NGR yet.
+- No APK artifact or playable-game result is claimed.
+- No physical-device validation is claimed.
+
+### Next actions
+1. Run JVM tests and arm64-v8a APK CI.
+2. Define compiler job ABI and per-title profile/fingerprint models.
+3. Start Xbox 360 vertical slice: pin dependencies, build Android XenonRecomp/Clang/LLD and validate a synthetic PPC fixture.
+4. Start Switch vertical slice: pin dependencies, build desktop preparation tools, validate NSO/NRO rewrite fixture, then build Android Horizon/NVN Vulkan runtime.
+5. Decide whether Switch preparation remains desktop-assisted initially or is ported to Android after host/toolchain feasibility tests.
