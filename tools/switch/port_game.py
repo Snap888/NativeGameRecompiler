@@ -91,6 +91,8 @@ def main() -> int:
          donor / "nxnative/dm/android/front_android.c", "NGR_SWITCH_GAME_ROOT"),
         (ngr / "patches/nx2android/0002-ngrn-build-without-per-game-apk.patch",
          donor / "porter/pipeline.py", "NGR_NO_APK"),
+        (ngr / "patches/nx2android/0003-use-ngr-per-title-save-and-temp-root.patch",
+         donor / "nxnative/dm/android/front_android.c", "NGR_SWITCH_PRIVATE_ROOT"),
     ]
     for patch, target, marker in patches:
         if not patch.is_file():
