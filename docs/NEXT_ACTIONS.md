@@ -483,6 +483,8 @@ Mark complete only when evidence exists.
 - [x] Switch smoke #45: all four donor patches applied, title-profiled ARM64 host compiled, and per-title theme/font staging verified (artifact ID 14721390437).
 - [x] Switch smoke #48: repeat patched title-host build and asset-staging verification after adding the explicit system Vulkan receipt mode (artifact ID 14721480591).
 - [x] Switch smoke #49: verify the exact donor `porter port` CLI options used by NGR (`--keys`, `--out`, `--version`, `--language`, `--experimental`, `--package`, `--jobs`, `--vulkan-driver`) (artifact ID 14721481165).
+- [x] Switch smoke #58: Python profile-binding unit tests, exact donor CLI contract, nested theme/font/license staging and patched ARM64 host build passed (artifact ID 14720649995).
+- [x] Bind `nx2a-data.json` to the generated `game_profile.h` through `profile_h` and `data_manifest_sha256`; verify at import, library enumeration, recovery and launch.
 - [x] Add SHA-256 verification for both `libdmhost.so` and the generated `game_profile.h`.
 - [x] Add journaled two-root install recovery and move recovery/library scans off the UI thread.
 - [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) with unit tests.
