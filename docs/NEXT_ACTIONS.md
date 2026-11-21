@@ -490,7 +490,7 @@ Mark complete only when evidence exists.
 - [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) with unit tests.
 - [x] Reject collisions when donor theme/font assets are merged into the game data pack.
 - [x] Explicitly force `--vulkan-driver system` in the desktop adapter and validate that mode in the runtime receipt; optional custom Turnip/adrenotools libraries are not bundled.
-- [x] Verify Android CI after the system-driver receipt, packaging collision checks and stream-safety changes (#621, artifact ID 14721064183).
+- [x] Verify Android CI after the system-driver receipt, packaging collision checks, stream safety and data-manifest/profile binding (#660, artifact ID 14721149150).
 - [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
 - [ ] Run the full donor `porter port` adapter with a user-owned supported title; verify data pack, assets, profile header and no-APK receipt.
 - [ ] Import and launch on a physical Adreno device; verify Vulkan, sound, input, pause/resume, saves and title isolation.
