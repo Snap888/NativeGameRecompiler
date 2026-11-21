@@ -1512,3 +1512,8 @@ This is the durable project memory. Update it in every development session.
 - The font staging helper was aligned with donor `ui_font_assets()`: it now copies all nested `*.txt` notices (including the `LICENSES/` subtree) without flattening paths. Smoke #50/#51 are running to verify the nested-license assertion against the pinned donor.
 - Current main at this log update is `84f465a3062b8937fe442d4984c791081d14bee1`. The APK from #630 contains the current Android app code; subsequent changes are to the desktop preparation helper/smoke assertion and documentation, not the APK's Kotlin/native sources.
 - Still no real NSP/XCI port, imported game or physical-device launch. The smoke artifact is a profile-only native host and does not contain copyrighted game data.
+
+
+### Nested font-license staging smoke
+- Switch smoke #51 [44940546014](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44940546014), commit `84f465a3062b8937fe442d4984c791081d14bee1`, passed after asserting both root `OFL.txt` and nested `LICENSES/**/*.txt` are preserved. Artifact ID `14721795180`, SHA-256 `f1f3d8e3f6becbbf3ed5b8cbb7be90e5496c78cd9810f33aac036617854d68a5`.
+- This validates asset/license staging only; it does not run a real `porter port` with a game dump.
