@@ -50,15 +50,19 @@ object SwitchRuntimePackageVerifier {
         require(manifest.optString("entry_point") == "ANativeActivity_onCreate") { "Switch runtime entry point mismatch" }
         require(!manifest.optBoolean("apk_generated", true)) { "Per-game APK output is not accepted by NGR" }
 
-        require(manifest.optString("profile_header") == "runtime/game_profile.h") {
-            "Unexpected Switch game profile header path"
+        require(manifest.optString("profile_header") == "runtime/game_profile.h" &&
+            manifest.optString("data_manifest") == "data/nx2a-data.json") {
+            "Unexpected Switch profile/data manifest path"
         }
         require(manifest.optString("vulkan_driver") == "system") {
             "This NGR build only accepts Switch packages using the system Vulkan driver"
         }
         val expectedHash = manifest.optString("runtime_sha256")
         val profileHash = manifest.optString("profile_header_sha256")
-        require(HASH.matches(expectedHash) && HASH.matches(profileHash)) { "Invalid Switch runtime hash receipt" }
+        val dataManifestHash = manifest.optString("data_manifest_sha256")
+        require(HASH.matches(expectedHash) && HASH.matches(profileHash) && HASH.matches(dataManifestHash)) {
+            "Invalid Switch runtime/profile/data manifest hash receipt"
+        }
         val actualHash = sha256(runtime)
         val actualProfileHash = sha256(profileHeader)
         require(MessageDigest.isEqual(
