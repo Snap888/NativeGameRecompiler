@@ -316,6 +316,12 @@ This is the durable project memory. Update it in every development session.
 - Added valid PE test fixture bytes and stricter PE signature validation; common architecture detection is based on PE machine / ELF e_machine.
 - Latest verification commit at log time: `0f3e20d810dbb6598a2da6695d3f7368ca940a24`; Actions run #102 is in progress. Do not claim this stage build-green until the run finishes successfully.
 
+
+- Added `tools/switch/build_runtime.py`: pins nx2android revision `f32b3d563f0615d0e825747285d4e38d780e4ebb`, invokes its actual `dm/android/build.py` for a matching title profile, checks the AArch64 NativeActivity entry point and places `libdmhost.so` in NGR's per-title runtime folder. It never calls the donor APK writer.
+- Added `SwitchRuntimePackageVerifier.kt`: checks the pinned donor revision, title ID, ABI, entry point, non-APK marker and runtime SHA-256 before the launcher opens the library. The profile-header hash is required in the receipt; full package/profile validation remains a separate installer responsibility.
+- Added a dedicated GitHub Actions smoke workflow that fetches the pinned donor checkout and builds a profile-only runtime for compile/link validation. Its artifact is not a playable game and contains no commercial game files.
+- CI for the new runtime build and Android NativeActivity loader is pending; do not call this stage build-verified until both workflows pass.
+
 ### Current limitations
 - The builder selects a deterministic likely entry point automatically; a user-facing chooser for multiple executable candidates remains to be implemented.
 - Only ZIP and folders are supported in this stage. 7z/TAR are not implemented.
