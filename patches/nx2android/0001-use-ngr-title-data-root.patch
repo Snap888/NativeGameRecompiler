@@ -1,0 +1,14 @@
+diff --git a/nxnative/dm/android/front_android.c b/nxnative/dm/android/front_android.c
+--- a/nxnative/dm/android/front_android.c
++++ b/nxnative/dm/android/front_android.c
+@@ -1405,7 +1405,10 @@
+     if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+     if (activity_class) (*env)->DeleteLocalRef(env, activity_class);
+-    snprintf(g_root, sizeof g_root, "%s", act->externalDataPath ? act->externalDataPath : act->internalDataPath);
++    // NGR runs several title-specific ports inside one application package.
++    // The in-process launcher validates this directory before loading this host.
++    const char *ngr_game_root = getenv("NGR_SWITCH_GAME_ROOT");
++    snprintf(g_root, sizeof g_root, "%s",
++             (ngr_game_root && ngr_game_root[0]) ? ngr_game_root :
++             (act->externalDataPath ? act->externalDataPath : act->internalDataPath));
+     char p[700];
