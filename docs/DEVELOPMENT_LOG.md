@@ -1414,3 +1414,9 @@ This is the durable project memory. Update it in every development session.
 3. Run `port_game.py` against a legal test dump/profile with the user's keys and inspect the package inventory, runtime ELF dependencies, profile hash and data manifest.
 4. Import that package through NGR, test lifecycle/surface recreation/audio/input/saves and verify two title IDs do not share data.
 5. Launch a supported title on Adreno before calling the Switch pipeline playable.
+
+### Follow-up hardening — per-title state isolation
+- Added `0003-use-ngr-per-title-save-and-temp-root.patch` and applied it from `port_game.py`: donor save and temporary directories now resolve beneath `files/switch-ports/<TITLE_ID>/`, not one shared app-wide directory.
+- Updated the NativeActivity dispatcher to validate the private title directory and set both `NGR_SWITCH_GAME_ROOT` and `NGR_SWITCH_PRIVATE_ROOT` before loading the donor runtime.
+- Updated the Switch smoke workflow to check all three pinned donor patches.
+- Still awaiting Actions verification; the new patches and NativeActivity forwarding remain unverified until CI and device tests pass.
