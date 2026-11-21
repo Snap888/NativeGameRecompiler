@@ -271,3 +271,38 @@ A successful APK build or a successful code-generation run alone is not a playab
 - nx2android research: https://github.com/shirai91/nx2android/blob/main/RESEARCH.md
 - XenonRecomp: https://github.com/hedge-dev/XenonRecomp
 - XDroid360 DAORecomp submodule: https://github.com/udarmolota/Dragon-Age-Origins-Recomp-Android
+
+
+## 11. Exact toolchain facts and NGR compatibility gaps
+
+### XDroid360 toolchain pins observed in toolchain/env.sh
+- Android NDK: 27.3.13750724 (NDK r27d).
+- LLVM/Clang/LLD: 22.1.8; the toolchain script pins the LLVM source tarball SHA-256.
+- XenonRecomp:  hedge-dev/XenonRecomp commit ddd128bcca99fe8bfbb99bea583c972351fa6ace.
+- XenonRecomp Android patch: udarmolota/Dragon-Age-Origins-Recomp-Android commit bfbaa874323181191228ca20a7775f1725ee287a; patch SHA-256 55d637e3157206a8267e25d24823448bc956f2a1955ddbc389a15f511e1812e6.
+- SDL: commit 829a65d769d935c4852f8159e964312c0957260a (SDL 3.4.18).
+- DirectXShaderCompiler: commit 01b62ad47db7dee3dd33f90e7339cf9e860b3f93 (1.9.2609).
+- Android app build config: NDK r27d, minSdk 29, arm64-v8a; native linker targets include 16 KB max page size.
+- Android tool package includes clang, lld, XenonRecomp, STFS extractor, shaderlib and DXC, plus a game-agnostic NDK/sysroot/header kit and separately packaged game profiles.
+
+NGR currently declares NDK 27.2.12479018, CMake 3.22.1 and minSdk 26. This differs from the donor's NDK r27d and minSdk 29. Do not silently mix their sysroots or prebuilt libraries. The Xbox compiler/toolchain should initially build in a pinned isolated CI environment; decide deliberately whether NGR upgrades its NDK/minSdk or carries a separately versioned toolchain kit. Validate 16 KB page-size alignment for every shipped native executable/library.
+
+### nx2android toolchain facts observed
+- Python 3.11+ for porter and rewrite/shader tools.
+- .NET SDK 10 for nx_extract (LibHac) and shader translation build tooling.
+- Android NDK r27c for the ARM64 Android host build.
+- Android platform-tools/ADB for optional installation from the desktop host.
+- The documented preparation host is Windows, macOS Apple Silicon or recent Linux x64/ARM64, with approximately 30 GB free space.
+- The installation guide requires user-owned Switch dumps and user-provided prod.keys; it lists Adreno and Xclipse GPUs and excludes Mali/PowerVR for the inspected build.
+- nxnative's Android host build script targets arm64 Android and has a separate host binary and libdmhost.so output. The custom APK writer is distinct from the desktop GUI/porter.
+
+NGR must keep the Switch preparation-host toolchain separate from the Android runtime toolchain. The initial Switch milestone should use desktop-assisted preparation or CI to generate a test package, then validate the Android runtime. A full on-device port pipeline is a separate feasibility project, not a checkbox to turn on.
+
+## 12. Immediate implementation sequence after this audit
+
+1. Verify the new NGR Kotlin catalog with the full Gradle test task and Android APK CI.
+2. Implement a compiler-job contract with source URI/SAF grant, platform ID, profile/build fingerprint, workspace quota, progress, cancellation, resumable step records, and structured log reference. Keep this contract separate from execution Backend ABI v1.
+3. Implement the Xbox recipe reader/job persistence in NGR using the donor's recipe schema as a reference, but use a new NGR schema with strict validation and no shell execution.
+4. Pin the XenonRecomp source + patch and build the tool for Android arm64 in CI. First validate only a synthetic PPC fixture; do not yet bundle a game runtime.
+5. In parallel, add a Switch desktop-preparation adapter contract and synthetic NSO/NRO rewrite test. Then build and validate the Android Horizon/NVN host.
+6. Only after the two vertical slices run, add end-user import cards and game-library entries for the two platforms.
