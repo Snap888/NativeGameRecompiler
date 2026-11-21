@@ -55,6 +55,31 @@ def copy_tree(source: Path, destination: Path) -> None:
             shutil.copy2(item, target_root / name)
 
 
+def copy_overlay_assets(donor: Path, title_id: str, data_root: Path) -> None:
+    """Copy the pinned donor's title theme and licensed shared overlay font."""
+    android_tools = donor / "nxnative/dm/android/tools"
+    sys.path.insert(0, str(android_tools))
+    try:
+        import android_profile
+        theme_source = android_profile.theme(title_id)
+    except Exception as error:
+        raise SystemExit(f"Unable to resolve the donor gamepad theme: {error}") from error
+    if not theme_source.is_dir():
+        raise SystemExit(f"Donor gamepad theme directory is missing: {theme_source}")
+    copy_tree(theme_source, data_root / "assets/overlay")
+
+    font_source = donor / "nxnative/dm/third_party/fusion-pixel-font"
+    font_file = font_source / "fusion-pixel-12px-proportional-zh_tw.nxpf"
+    if not font_file.is_file() or font_file.is_symlink():
+        raise SystemExit(f"Donor overlay font is missing or unsafe: {font_file}")
+    font_target = data_root / "assets/font"
+    font_target.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(font_file, font_target / "ui.bin")
+    for notice in font_source.glob("*.txt"):
+        if notice.is_file() and not notice.is_symlink():
+            shutil.copy2(notice, font_target / notice.name)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nx2android", required=True, type=Path)
@@ -169,27 +194,7 @@ def main() -> int:
 
         # The donor APK normally carries a per-title controller theme and a shared
         # overlay font. NGR has one APK, so keep those assets in this title's data pack.
-        android_tools = donor / "nxnative/dm/android/tools"
-        sys.path.insert(0, str(android_tools))
-        try:
-            import android_profile
-            theme_source = android_profile.theme(title_id)
-        except Exception as error:
-            raise SystemExit(f"Unable to resolve the donor gamepad theme: {error}") from error
-        if not theme_source.is_dir():
-            raise SystemExit(f"Donor gamepad theme directory is missing: {theme_source}")
-        copy_tree(theme_source, temporary / "data/assets/overlay")
-
-        font_source = donor / "nxnative/dm/third_party/fusion-pixel-font"
-        font_file = font_source / "fusion-pixel-12px-proportional-zh_tw.nxpf"
-        if not font_file.is_file():
-            raise SystemExit(f"Donor overlay font is missing: {font_file}")
-        font_target = temporary / "data/assets/font"
-        font_target.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(font_file, font_target / "ui.bin")
-        for notice in font_source.glob("*.txt"):
-            if notice.is_file() and not notice.is_symlink():
-                shutil.copy2(notice, font_target / notice.name)
+        copy_overlay_assets(donor, title_id, temporary / "data")
 
         # nx2android writes absolute paths rooted at its package's files folder.
         # In NGR, each title's pack lives one level below that folder.
