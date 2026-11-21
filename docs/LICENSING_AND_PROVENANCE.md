@@ -77,3 +77,33 @@ ReXGlue's license is not MIT. Its LICENSE includes a BSD-3-Clause-style grant an
 The N64Recomp compiler (MIT) and N64ModernRuntime (GPL-3.0) are separate projects with different licenses. The runtime's license must not be inferred from the compiler's license.
 
 No third-party source was copied into NGR during the audit.
+
+
+## Xbox 360 + Nintendo Switch donor review — 2026-11-21
+
+### XDroid360 (user fork)
+Source: https://github.com/Snap888/XDroid360  
+Inspected commit: 6eefb7f738d4e63cb11cb6bb63911f55094e8ada
+
+The donor's root launcher/source is MIT, but the complete application/toolchain is multi-license:
+- native-renderer is GPL-3.0.
+- The patched XenonRecomp executable is documented by donor NOTICE as GPL-2.0-or-later as a whole because its disassembler contains GNU binutils-derived code; XenonRecomp's own code is MIT.
+- DAORecomp is MIT except Xenia-derived portions; Xenia is BSD-3-Clause.
+- ReXGlue renderer host layer is BSD-3-Clause.
+- LLVM is Apache-2.0 with LLVM exception.
+- SDL3 is zlib; DXC and shader dependencies retain their own licenses.
+- FFmpeg, Turnip, liblinkernsbypass, AndroidX and all bundled toolchain files require exact version/file-level notice retention.
+
+The donor's NOTICE.md is the starting point for its exact bundle. Do not describe the full XDroid360 APK or all its native libraries as MIT. Any NGR distribution linking the GPL-3.0 renderer or GPL-2.0-or-later compiler component needs an explicit compliance/source-offer plan and a deliberate NGR distribution-license decision.
+
+### nx2android / nxnative
+Source: https://github.com/shirai91/nx2android  
+Inspected commit: 828ded46adb11722591c4353a2ba88175640d250
+
+- nxnative/LICENSE is MIT.
+- nx2android README states MIT for the tool; third-party code retains its own license.
+- The dependency inventory includes LibHac, Ryujinx shader translator, SPIRV-Cross, glslang, deko3d-derived texture logic, libvpx, zstd, Capstone, LZ4, fontTools and Vulkan headers.
+- Each dependency and nested license must be pinned and recorded; the nxnative MIT license does not relicense third-party code.
+- User-owned prod.keys, title keys, firmware and game data must never be committed, bundled, uploaded or emitted in logs.
+
+No donor code was copied during this scope reset. The new NGR target catalog contains only metadata.
