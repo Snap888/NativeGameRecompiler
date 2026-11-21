@@ -30,7 +30,6 @@ class SwitchPortStore(private val context: Context) {
         val internal = File(context.filesDir, "switch-ports")
         val external = context.getExternalFilesDir(null)?.let { File(it, "switch-ports") } ?: return emptyList()
         if (!internal.isDirectory || !external.isDirectory) return emptyList()
-        recoverInterruptedInstalls(internal, external)
         return internal.listFiles().orEmpty().mapNotNull { dir ->
             val id = dir.name.uppercase(Locale.ROOT)
             if (!titlePattern.matches(id)) return@mapNotNull null
@@ -47,6 +46,14 @@ class SwitchPortStore(private val context: Context) {
     }
 
     @Throws(IOException::class)
+    @Synchronized
+    fun recoverInterruptedInstalls() {
+        val internal = File(context.filesDir, "switch-ports")
+        val external = context.getExternalFilesDir(null)?.let { File(it, "switch-ports") } ?: return
+        if (!internal.isDirectory || !external.isDirectory) return
+        recoverInterruptedInstalls(internal, external)
+    }
+
     @Synchronized
     fun installFromTree(treeUri: Uri): InstalledSwitchPort {
         val tree = DocumentFile.fromTreeUri(context, treeUri) ?: throw IOException("Selected folder is unavailable")
