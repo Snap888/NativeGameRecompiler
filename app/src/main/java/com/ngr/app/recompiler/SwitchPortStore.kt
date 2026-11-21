@@ -95,6 +95,7 @@ class SwitchPortStore(private val context: Context) {
             runtimeReceipt.optString("donor_revision") != SwitchRuntimePackageVerifier.DONOR_REVISION ||
             runtimeReceipt.optString("runtime_library") != "runtime/libdmhost.so" ||
             runtimeReceipt.optString("profile_header") != "runtime/game_profile.h" ||
+            runtimeReceipt.optString("data_manifest") != "data/nx2a-data.json" ||
             runtimeReceipt.optString("vulkan_driver") != "system" ||
             runtimeReceipt.optString("abi") != "arm64-v8a" ||
             runtimeReceipt.optString("entry_point") != "ANativeActivity_onCreate" ||
