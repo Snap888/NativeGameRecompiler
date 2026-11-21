@@ -450,6 +450,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         refresh()
         refreshPackages()
         refreshConsoleBuildJobs()
+        refreshSwitchPorts()
         refreshProfiles()
         refreshPrefixes()
         refreshShortcuts()
