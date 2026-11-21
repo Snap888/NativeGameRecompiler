@@ -472,7 +472,8 @@ Mark complete only when evidence exists.
 - [x] Run Android ARM64/JVM/native CI and patched donor runtime smoke builds successfully (see validation checkpoint below).
 - [ ] Run the full `porter port` adapter with a user-owned supported title and keys; verify no game APK is generated.
 - [x] Switch smoke #51 confirms root and nested font license notices are preserved (artifact ID 14721795180).
-- [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
+- [x] Add host-testable Switch lifecycle helper with donor-first callback, one-time unload and re-entrant teardown tests.
+- [ ] Add a full Android NativeActivity fixture/device test for surface, pause/resume and lifecycle forwarding.
 - [ ] Integrate optional Turnip/adrenotools dependencies with NGR's component/driver runtime; current ports explicitly use the Android system Vulkan driver.
 - [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, pause/resume, saves and two-title isolation.
 - [ ] Decide and implement on-device or companion execution for Python/.NET/LibHac; desktop-assisted preparation is the current boundary.
