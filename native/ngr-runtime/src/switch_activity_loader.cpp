@@ -18,7 +18,18 @@ constexpr const char* kTitleIdExtra = "com.ngr.app.SWITCH_TITLE_ID";
 constexpr const char* kPortsDirectory = "/switch-ports/";
 constexpr const char* kRuntimeSuffix = "/runtime/libdmhost.so";
 using RuntimeEntry = void (*)(ANativeActivity*, void*, size_t);
+using RuntimeOnDestroy = void (*)(ANativeActivity*);
 void* g_runtime_handle = nullptr;
+RuntimeOnDestroy g_runtime_on_destroy = nullptr;
+
+void on_runtime_destroy(ANativeActivity* activity) {
+    RuntimeOnDestroy callback = g_runtime_on_destroy;
+    g_runtime_on_destroy = nullptr;
+    if (callback) callback(activity);
+    void* handle = g_runtime_handle;
+    g_runtime_handle = nullptr;
+    if (handle) dlclose(handle);
+}
 
 void log_error(const char* message) { __android_log_write(ANDROID_LOG_ERROR, kTag, message); }
 
@@ -156,6 +167,11 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
         finish_activity(activity);
         return;
     }
+    if (g_runtime_handle) {
+        log_error("A Switch runtime is already active in this process.");
+        finish_activity(activity);
+        return;
+    }
     g_runtime_handle = dlopen(library_path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!g_runtime_handle) {
         const char* error = dlerror();
@@ -175,4 +191,10 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
     }
     __android_log_print(ANDROID_LOG_INFO, kTag, "Starting Switch title %s from %s", title_id.c_str(), game_root.c_str());
     entry(activity, saved_state, saved_state_size);
+    if (activity->callbacks) {
+        g_runtime_on_destroy = activity->callbacks->onDestroy;
+        activity->callbacks->onDestroy = on_runtime_destroy;
+    } else {
+        log_error("NativeActivity callback table is unavailable; runtime library will remain loaded until process exit.");
+    }
 }
