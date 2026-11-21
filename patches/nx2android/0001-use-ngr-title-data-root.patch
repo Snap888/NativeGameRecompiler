@@ -1,7 +1,7 @@
 diff --git a/nxnative/dm/android/front_android.c b/nxnative/dm/android/front_android.c
 --- a/nxnative/dm/android/front_android.c
 +++ b/nxnative/dm/android/front_android.c
-@@ -1405,7 +1405,10 @@
+@@ -1405,4 +1405,9 @@
      if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
      if (activity_class) (*env)->DeleteLocalRef(env, activity_class);
 -    snprintf(g_root, sizeof g_root, "%s", act->externalDataPath ? act->externalDataPath : act->internalDataPath);
