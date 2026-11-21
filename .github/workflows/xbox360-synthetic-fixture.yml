@@ -20,6 +20,14 @@ jobs:
       - name: Install host tools
         run: sudo apt-get update && sudo apt-get install -y git curl python3 ninja-build cmake clang
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android NDK r27d
+        run: sdkmanager "ndk;27.3.13750724"
+
       - name: Fetch pinned XenonRecomp and XDroid360 patch
         shell: bash
         run: |
@@ -58,4 +66,9 @@ jobs:
           grep -q 'PPC_FUNC_IMPL(__imp___xstart)' "$FIXTURE/out/ppc_recomp.0.cpp"
           clang++ -std=c++17 -I"$FIXTURE/out" -I"$SRC/XenonUtils" -I"$SRC/thirdparty/simde" -c "$FIXTURE/out/ppc_recomp.0.cpp" -o "$FIXTURE/out/ppc_recomp.o"
           clang++ -std=c++17 -I"$FIXTURE/out" -I"$SRC/XenonUtils" -I"$SRC/thirdparty/simde" -c "$FIXTURE/out/ppc_func_mapping.cpp" -o "$FIXTURE/out/ppc_func_mapping.o"
-          echo "Synthetic XEX2 -> PPC C++ translation and host compilation passed."
+          NDK="$ANDROID_HOME/ndk/27.3.13750724"
+          NDK_BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          "$NDK_BIN/aarch64-linux-android29-clang++" -std=c++17 -fPIC -I"$FIXTURE/out" -I"$SRC/XenonUtils" -I"$SRC/thirdparty/simde" -c "$FIXTURE/out/ppc_recomp.0.cpp" -o "$FIXTURE/out/ppc_recomp.android.o"
+          "$NDK_BIN/llvm-readelf" -h "$FIXTURE/out/ppc_recomp.android.o" > "$FIXTURE/out/ppc_recomp.android.elf.txt"
+          grep -q AArch64 "$FIXTURE/out/ppc_recomp.android.elf.txt"
+          echo "Synthetic XEX2 -> PPC C++ translation, host compile and Android arm64 compile passed."
