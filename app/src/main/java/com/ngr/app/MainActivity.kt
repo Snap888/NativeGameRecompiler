@@ -24,6 +24,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import androidx.work.WorkInfo
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -31,6 +34,7 @@ import androidx.work.workDataOf
 import com.ngr.app.recompiler.ConsoleBuildJob
 import com.ngr.app.recompiler.ConsoleBuildJobState
 import com.ngr.app.recompiler.ConsoleBuildJobStore
+import com.ngr.app.recompiler.ConsoleSourceStagingWorker
 import com.ngr.app.recompiler.ConsoleTargetId
 import java.io.File
 import java.io.FileOutputStream
@@ -67,6 +71,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var packageList: LinearLayout
     private lateinit var consoleBuildJobStatus: TextView
     private lateinit var consoleBuildJobList: LinearLayout
+    private var consoleWorkLiveData: LiveData<List<WorkInfo>>? = null
+    private var consoleWorkObserver: Observer<List<WorkInfo>>? = null
     private val packageWorker = Executors.newSingleThreadExecutor()
     private val componentWorker = Executors.newSingleThreadExecutor()
 
@@ -329,8 +335,10 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(diagnostics, sectionParams())
 
         setContentView(scroll)
-        WorkManager.getInstance(this).getWorkInfosByTagLiveData(ConsoleSourceStagingWorker.WORK_TAG)
-            .observe(this) { refreshConsoleBuildJobs() }
+        consoleWorkLiveData = WorkManager.getInstance(this)
+            .getWorkInfosByTagLiveData(ConsoleSourceStagingWorker.WORK_TAG)
+        consoleWorkObserver = Observer { if (::consoleBuildJobList.isInitialized) refreshConsoleBuildJobs() }
+        consoleWorkObserver?.let { consoleWorkLiveData?.observeForever(it) }
         refresh()
     }
 
@@ -435,6 +443,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     override fun onDestroy() {
         NgrLogger.info("app", "MainActivity.onDestroy")
+        consoleWorkObserver?.let { consoleWorkLiveData?.removeObserver(it) }
         packageWorker.shutdownNow()
         componentWorker.shutdownNow()
         super.onDestroy()
