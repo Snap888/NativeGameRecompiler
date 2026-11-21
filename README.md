@@ -2,7 +2,7 @@
 
 Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
 
-> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. Xbox 360 source intake is implemented but its recompiler/runtime are not. Nintendo Switch now has a desktop-assisted nx2android port adapter, per-title runtime package importer and in-package NativeActivity dispatch path; CI and Android/game validation are still pending. No Switch title is currently certified playable in NGR. NGR is not a general-purpose game recompiler.
+> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. Xbox 360 source intake is implemented but its recompiler/runtime are not. Nintendo Switch has a desktop-assisted nx2android port adapter, per-title runtime/data importer, hashed profile receipt and in-package NativeActivity dispatcher; Android ARM64 APK and patched donor-host CI smoke builds pass. Physical-device launch and actual game testing remain pending. Switch ports currently use the Android system Vulkan driver; custom Turnip integration is not implemented. No Switch title is certified playable in NGR. NGR is not a general-purpose game recompiler.
 
 ## Project direction
 
