@@ -56,4 +56,6 @@ jobs:
           test -s "$FIXTURE/out/ppc_recomp.0.cpp"
           grep -q 'PPC_EXTERN_FUNC(_xstart)' "$FIXTURE/out/ppc_recomp_shared.h"
           grep -q 'PPC_FUNC_IMPL(__imp___xstart)' "$FIXTURE/out/ppc_recomp.0.cpp"
-          echo "Synthetic XEX2 -> PPC C++ translation passed."
+          clang++ -std=c++17 -I"$FIXTURE/out" -I"$SRC/XenonUtils" -I"$SRC/thirdparty/simde" -c "$FIXTURE/out/ppc_recomp.0.cpp" -o "$FIXTURE/out/ppc_recomp.o"
+          clang++ -std=c++17 -I"$FIXTURE/out" -I"$SRC/XenonUtils" -I"$SRC/thirdparty/simde" -c "$FIXTURE/out/ppc_func_mapping.cpp" -o "$FIXTURE/out/ppc_func_mapping.o"
+          echo "Synthetic XEX2 -> PPC C++ translation and host compilation passed."
