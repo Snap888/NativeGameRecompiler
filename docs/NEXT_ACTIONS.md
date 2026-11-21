@@ -431,3 +431,16 @@ Mark complete only when evidence exists.
 - [x] Extracted APK SHA-256 d581caae4745d5252e17190842d847842e5bb53ff7105af0f6ca2a4535a1f762; includes lib/arm64-v8a/libngr_runtime.so and WorkManager runtime metadata.
 - [x] Run #484 (44917991394) passed all native/JVM tests, ARM64 APK build and artifact upload at commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85. Artifact ID 14712008705; ZIP SHA-256 068bfaa3e551f9c7623f331d41e537bd9f59f4e2d8349675210b246c56e35f79; APK SHA-256 93feb3b6efd730dbbd59a29810480380fb0e18595fd5eb3f912d428fa5d37087.
 - [ ] Physical-device test on Snapdragon/Adreno: SAF persistent grant, multi-GB source copy, notification, cancellation, restart and low-storage behavior.
+
+ 
+## Nintendo Switch embedded runtime — 2026-11-21
+- [x] Audit the current nx2android host build and APK writer: the reusable per-title runtime output is `libdmhost.so`; APK generation is a packaging wrapper, not the runtime itself.
+- [x] Add the first in-package NativeActivity loader and register it in the NGR manifest.
+- [x] Add Kotlin launch/path validation for per-title runtime libraries stored under NGR private files.
+- [x] Add JVM tests for title ID and runtime path validation.
+- [ ] Verify the new CMake target and NativeActivity manifest in Android CI.
+- [ ] Add a synthetic `libdmhost.so` fixture to verify NativeActivity lifecycle forwarding.
+- [ ] Add a signed/hash-verified Switch Port Package manifest and atomic installer.
+- [ ] Pin/vendor nxnative and all required dependency/submodule revisions; generate SPDX/SBOM and preserve notices.
+- [ ] Integrate nx2android extraction, NSO rewrite, shader translation and title-specific host build; start with desktop/CI-assisted preparation.
+- [ ] Launch a profile-matched game through NGR's embedded runtime on a physical Adreno device.
