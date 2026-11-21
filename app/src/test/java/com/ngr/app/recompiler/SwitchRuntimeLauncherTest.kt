@@ -40,6 +40,10 @@ class SwitchRuntimeLauncherTest {
             val hash = MessageDigest.getInstance("SHA-256").digest(bytes)
                 .joinToString("") { "%02x".format(it) }
             val packageDir = library.parentFile.parentFile
+            val profile = File(packageDir, "runtime/game_profile.h")
+            profile.writeText("synthetic profile header")
+            val profileHash = MessageDigest.getInstance("SHA-256").digest(profile.readBytes())
+                .joinToString("") { "%02x".format(it) }
             File(packageDir, "runtime-build.json").writeText(
                 """
                 {
@@ -49,7 +53,8 @@ class SwitchRuntimeLauncherTest {
                   "donor_revision":"${SwitchRuntimePackageVerifier.DONOR_REVISION}",
                   "runtime_library":"runtime/libdmhost.so",
                   "runtime_sha256":"$hash",
-                  "profile_header_sha256":"${"a".repeat(64)}",
+                  "profile_header":"runtime/game_profile.h",
+                  "profile_header_sha256":"$profileHash",
                   "abi":"arm64-v8a",
                   "entry_point":"ANativeActivity_onCreate",
                   "apk_generated":false
@@ -82,6 +87,10 @@ class SwitchRuntimeLauncherTest {
             library.parentFile.mkdirs()
             library.writeBytes(byteArrayOf(1, 2, 3, 4))
             val packageDir = library.parentFile.parentFile
+            val profile = File(packageDir, "runtime/game_profile.h")
+            profile.writeText("synthetic profile header")
+            val profileHash = MessageDigest.getInstance("SHA-256").digest(profile.readBytes())
+                .joinToString("") { "%02x".format(it) }
             File(packageDir, "runtime-build.json").writeText(
                 """
                 {
@@ -91,7 +100,8 @@ class SwitchRuntimeLauncherTest {
                   "donor_revision":"${SwitchRuntimePackageVerifier.DONOR_REVISION}",
                   "runtime_library":"runtime/libdmhost.so",
                   "runtime_sha256":"${"0".repeat(64)}",
-                  "profile_header_sha256":"${"a".repeat(64)}",
+                  "profile_header":"runtime/game_profile.h",
+                  "profile_header_sha256":"$profileHash",
                   "abi":"arm64-v8a",
                   "entry_point":"ANativeActivity_onCreate",
                   "apk_generated":false
