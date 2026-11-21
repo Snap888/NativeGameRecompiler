@@ -1,0 +1,194 @@
+package com.ngr.app.recompiler
+
+import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
+import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.Locale
+
+data class InstalledSwitchPort(
+    val titleId: String,
+    val name: String,
+    val version: String,
+    val runtimeFile: File,
+    val dataRoot: File
+)
+
+/** Imports a prepared nx2android port folder into NGR without installing another APK. */
+class SwitchPortStore(private val context: Context) {
+    private val titlePattern = Regex("^[0-9A-F]{16}$")
+    private val maxFiles = 250_000
+    private val maxManifestBytes = 64 * 1024
+    private val maxRuntimeBytes = 512L * 1024 * 1024
+
+    fun listInstalled(): List<InstalledSwitchPort> {
+        val internal = File(context.filesDir, "switch-ports")
+        val external = context.getExternalFilesDir(null)?.let { File(it, "switch-ports") } ?: return emptyList()
+        if (!internal.isDirectory || !external.isDirectory) return emptyList()
+        return internal.listFiles().orEmpty().mapNotNull { dir ->
+            val id = dir.name.uppercase(Locale.ROOT)
+            if (!titlePattern.matches(id)) return@mapNotNull null
+            val runtime = File(dir, "runtime/libdmhost.so")
+            val data = File(external, "$id/data")
+            if (!runtime.isFile || !data.isDirectory || !File(data, "nx2a-data.json").isFile ||
+                !File(data, "mods").isDirectory || !File(data, "env.txt").isFile) return@mapNotNull null
+            val manifest = readJson(File(data, "nx2a-data.json")) ?: return@mapNotNull null
+            if (manifest.optString("title_id").uppercase(Locale.ROOT) != id) return@mapNotNull null
+            InstalledSwitchPort(id, manifest.optString("name", "Nintendo Switch game"),
+                manifest.optString("display", manifest.optString("version", "")), runtime, data)
+        }.sortedBy { it.name.lowercase(Locale.ROOT) }
+    }
+
+    @Throws(IOException::class)
+    fun installFromTree(treeUri: Uri): InstalledSwitchPort {
+        val tree = DocumentFile.fromTreeUri(context, treeUri) ?: throw IOException("Selected folder is unavailable")
+        if (!tree.isDirectory) throw IOException("Select a prepared Switch port folder")
+        val runtimeDir = tree.findFile("runtime")?.takeIf { it.isDirectory }
+            ?: throw IOException("runtime/ folder is missing")
+        val dataDir = tree.findFile("data")?.takeIf { it.isDirectory }
+            ?: throw IOException("data/ folder is missing")
+        val runtimeDoc = runtimeDir.findFile("libdmhost.so")?.takeIf { it.isFile }
+            ?: throw IOException("runtime/libdmhost.so is missing")
+        val manifestDoc = dataDir.findFile("nx2a-data.json")?.takeIf { it.isFile }
+            ?: throw IOException("data/nx2a-data.json is missing")
+
+        val manifestBytes = context.contentResolver.openInputStream(manifestDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
+            ?: throw IOException("Unable to read nx2a-data.json")
+        val manifest = runCatching { JSONObject(String(manifestBytes, Charsets.UTF_8)) }
+            .getOrElse { throw IOException("Invalid nx2a-data.json", it) }
+        val titleId = manifest.optString("title_id").uppercase(Locale.ROOT)
+        if (!titlePattern.matches(titleId)) throw IOException("Data pack has an invalid title_id")
+        if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
+        if (dataDir.findFile("env.txt")?.isFile != true) throw IOException("env.txt is missing")
+
+        val internalRoot = File(context.filesDir, "switch-ports")
+        val externalBase = context.getExternalFilesDir(null) ?: throw IOException("External app storage is unavailable")
+        val externalRoot = File(externalBase, "switch-ports")
+        internalRoot.mkdirs(); externalRoot.mkdirs()
+        requireSafeDirectory(internalRoot); requireSafeDirectory(externalRoot)
+
+        val runtimeTemp = File(internalRoot, ".$titleId.partial")
+        val dataTemp = File(externalRoot, ".$titleId.partial")
+        deleteTree(runtimeTemp); deleteTree(dataTemp)
+        runtimeTemp.mkdirs(); dataTemp.mkdirs()
+        try {
+            val runtimeOut = File(runtimeTemp, "runtime/libdmhost.so")
+            runtimeOut.parentFile?.mkdirs()
+            copyDocument(runtimeDoc, runtimeOut, maxRuntimeBytes)
+            validateElf64Arm64(runtimeOut)
+
+            val dataOut = File(dataTemp, "data")
+            val copiedFiles = copyTree(dataDir, dataOut, 0, maxFiles)
+            if (copiedFiles > maxFiles) throw IOException("Port contains too many files")
+            val checked = readJson(File(dataOut, "nx2a-data.json")) ?: throw IOException("Copied data manifest is invalid")
+            if (checked.optString("title_id").uppercase(Locale.ROOT) != titleId) throw IOException("Title ID changed while importing")
+
+            val oldRuntime = File(internalRoot, titleId)
+            val oldData = File(externalRoot, titleId)
+            val runtimeBackup = File(internalRoot, ".$titleId.backup")
+            val dataBackup = File(externalRoot, ".$titleId.backup")
+            deleteTree(runtimeBackup); deleteTree(dataBackup)
+            if (oldRuntime.exists() && !oldRuntime.renameTo(runtimeBackup)) throw IOException("Unable to stage existing runtime")
+            if (oldData.exists() && !oldData.renameTo(dataBackup)) {
+                if (runtimeBackup.exists()) runtimeBackup.renameTo(oldRuntime)
+                throw IOException("Unable to stage existing data pack")
+            }
+            val runtimeMoved = runtimeTemp.renameTo(oldRuntime)
+            val dataMoved = runtimeMoved && dataTemp.renameTo(oldData)
+            if (!dataMoved) {
+                if (runtimeMoved) deleteTree(oldRuntime)
+                if (runtimeBackup.exists()) runtimeBackup.renameTo(oldRuntime)
+                if (dataBackup.exists()) dataBackup.renameTo(oldData)
+                throw IOException("Unable to install Switch port")
+            }
+            deleteTree(runtimeBackup); deleteTree(dataBackup)
+            return InstalledSwitchPort(titleId, checked.optString("name", "Nintendo Switch game"),
+                checked.optString("display", checked.optString("version", "")),
+                File(oldRuntime, "runtime/libdmhost.so"), File(oldData, "data"))
+        } catch (t: Throwable) {
+            deleteTree(runtimeTemp); deleteTree(dataTemp)
+            if (t is IOException) throw t
+            throw IOException(t.message ?: "Switch port import failed", t)
+        }
+    }
+
+    private fun copyTree(source: DocumentFile, destination: File, currentFiles: Int, max: Int): Int {
+        if (!source.isDirectory) throw IOException("Data pack root is not a folder")
+        if (!destination.mkdirs() && !destination.isDirectory) throw IOException("Unable to create data directory")
+        var count = currentFiles
+        for (child in source.listFiles()) {
+            val name = child.name ?: throw IOException("Unnamed item in data pack")
+            if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
+                name.contains('\\') || name.any { it.code < 0x20 }) throw IOException("Unsafe data-pack path")
+            val target = File(destination, name)
+            if (child.isDirectory) {
+                count = copyTree(child, target, count, max)
+            } else if (child.isFile) {
+                count++
+                if (count > max) throw IOException("Port contains too many files")
+                copyDocument(child, target, Long.MAX_VALUE)
+            }
+        }
+        return count
+    }
+
+    private fun copyDocument(document: DocumentFile, target: File, maxBytes: Long): Long {
+        val input = context.contentResolver.openInputStream(document.uri) ?: throw IOException("Unable to open " + document.name)
+        var total = 0L
+        target.parentFile?.mkdirs()
+        FileOutputStream(target).use { output ->
+            input.use { stream ->
+                val buffer = ByteArray(1024 * 1024)
+                while (true) {
+                    val n = stream.read(buffer)
+                    if (n < 0) break
+                    total += n
+                    if (total > maxBytes) throw IOException("File exceeds permitted size")
+                    output.write(buffer, 0, n)
+                }
+                output.fd.sync()
+            }
+        }
+        if (total == 0L) throw IOException("Empty file: " + document.name)
+        return total
+    }
+
+    private fun validateElf64Arm64(file: File) {
+        val header = file.inputStream().use { it.readNBytes(20) }
+        if (header.size < 20 || header[0] != 0x7f.toByte() || header[1] != 'E'.code.toByte() ||
+            header[2] != 'L'.code.toByte() || header[3] != 'F'.code.toByte() ||
+            header[4] != 2.toByte() || header[5] != 1.toByte()) throw IOException("Runtime is not a little-endian ELF64 library")
+        val machine = (header[18].toInt() and 0xff) or ((header[19].toInt() and 0xff) shl 8)
+        if (machine != 183) throw IOException("Runtime ELF is not AArch64")
+    }
+
+    private fun readJson(file: File): JSONObject? = runCatching {
+        if (!file.isFile || file.length() !in 1..maxManifestBytes.toLong()) return null
+        JSONObject(file.readText(Charsets.UTF_8))
+    }.getOrNull()
+
+    private fun requireSafeDirectory(file: File) {
+        if (java.nio.file.Files.isSymbolicLink(file.toPath()) || !file.isDirectory) throw IOException("Unsafe Switch storage directory")
+    }
+
+    private fun deleteTree(file: File) {
+        if (!file.exists()) return
+        if (file.isDirectory && !java.nio.file.Files.isSymbolicLink(file.toPath())) file.listFiles().orEmpty().forEach(::deleteTree)
+        file.delete()
+    }
+
+    private fun java.io.InputStream.readBytesBounded(limit: Int): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val n = read(buffer)
+            if (n < 0) break
+            if (out.size() + n > limit) throw IOException("Manifest is too large")
+            out.write(buffer, 0, n)
+        }
+        return out.toByteArray()
+    }
+}
