@@ -160,7 +160,7 @@ class SwitchPortStore(private val context: Context) {
         for (child in source.listFiles()) {
             val name = child.name ?: throw IOException("Unnamed item in data pack")
             if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
-                name.contains('\\\\') || name.any { it.code < 0x20 }) throw IOException("Unsafe data-pack path")
+                name.contains('\\') || name.any { it.code < 0x20 }) throw IOException("Unsafe data-pack path")
             val target = File(destination, name)
             if (target.exists() || java.nio.file.Files.isSymbolicLink(target.toPath())) {
                 throw IOException("Duplicate or unsafe data-pack entry: $name")
