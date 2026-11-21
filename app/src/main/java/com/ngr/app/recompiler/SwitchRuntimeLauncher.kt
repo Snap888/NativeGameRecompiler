@@ -39,7 +39,7 @@ object SwitchRuntimeLauncher {
         require(canonical == expected) { "Runtime library must not resolve through a symbolic link" }
         require(!Files.isSymbolicLink(expected.toPath())) { "Runtime library must not be a symbolic link" }
         require(expected.isFile && expected.length() > 0L) { "Switch runtime library is missing" }
-        return expected
+        return SwitchRuntimePackageVerifier.verify(root, titleId)
     }
 
     @Throws(IOException::class)
