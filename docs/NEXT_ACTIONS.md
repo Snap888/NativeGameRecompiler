@@ -451,3 +451,6 @@ Mark complete only when evidence exists.
 - [ ] Pin/vendor nxnative and all required dependency/submodule revisions; generate SPDX/SBOM and preserve notices.
 - [ ] Integrate nx2android extraction, NSO rewrite, shader translation and title-specific host build; start with desktop/CI-assisted preparation.
 - [ ] Launch a profile-matched game through NGR's embedded runtime on a physical Adreno device.
+
+- [ ] Check CI triggered by commit `3b44bee839cc93db3c02ed43445c01071a6adbfe`; confirm both Android loader build and donor runtime smoke build.
+- [ ] If donor smoke build fails, inspect exact NDK/toolchain or donor dependency error and fix adapter/workflow.
