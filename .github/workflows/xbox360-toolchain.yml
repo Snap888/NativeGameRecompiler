@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "toolchains/xbox360/**"
+      - "toolchains/xbox360/build_xenonrecomp_android.sh"
       - ".github/workflows/xbox360-toolchain.yml"
 
 permissions:

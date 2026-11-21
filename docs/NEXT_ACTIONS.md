@@ -403,3 +403,9 @@ Mark complete only when evidence exists.
 - [x] Add isolated 180-minute GitHub Actions workflow; first build result pending.
 - [ ] Verify Clang/LLD Android cross-build, 16 KB ELF and kit contents.
 - [ ] Use the tools to compile generated C++ from a synthetic PPC fixture.
+
+
+### Synthetic Xbox 360 PPC fixture — 2026-11-21
+- [x] Add a redistributable synthetic XEX2 fixture generator (no commercial game data) with one PPC function: addi + blr.
+- [x] Add a host XenonRecomp workflow to translate the fixture and verify generated PPC C++ files and entry-point symbols.
+- [ ] Confirm the synthetic translation workflow passes; then compile the generated C++ with the Android Clang/LLD kit.

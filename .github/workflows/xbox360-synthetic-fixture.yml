@@ -1,0 +1,55 @@
+name: Xbox 360 synthetic PPC translation test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "toolchains/xbox360/tests/**"
+      - ".github/workflows/xbox360-synthetic-fixture.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-ppc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host tools
+        run: sudo apt-get update && sudo apt-get install -y git curl python3 ninja-build cmake g++
+
+      - name: Fetch pinned XenonRecomp and XDroid360 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/xr"
+          git clone https://github.com/hedge-dev/XenonRecomp.git "$RUNNER_TEMP/xr/src"
+          git -C "$RUNNER_TEMP/xr/src" fetch --depth 1 origin ddd128bcca99fe8bfbb99bea583c972351fa6ace
+          git -C "$RUNNER_TEMP/xr/src" checkout --force ddd128bcca99fe8bfbb99bea583c972351fa6ace
+          git -C "$RUNNER_TEMP/xr/src" submodule update --init --recursive --depth 1
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/udarmolota/Dragon-Age-Origins-Recomp-Android/bfbaa874323181191228ca20a7775f1725ee287a/scripts/patch_recompiler.py -o "$RUNNER_TEMP/xr/patch_recompiler.py"
+          echo "55d637e3157206a8267e25d24823448bc956f2a1955ddbc389a15f511e1812e6  $RUNNER_TEMP/xr/patch_recompiler.py" | sha256sum --check -
+          python3 -I "$RUNNER_TEMP/xr/patch_recompiler.py" "$RUNNER_TEMP/xr/src/XenonRecomp/recompiler.cpp"
+          grep -q '(XDroid360) A config path' "$RUNNER_TEMP/xr/src/XenonRecomp/recompiler_config.cpp"
+
+      - name: Build host XenonRecomp and translate synthetic XEX
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/xr/src"
+          BUILD="$RUNNER_TEMP/xr/build-host"
+          FIXTURE="$RUNNER_TEMP/xr/fixture"
+          cmake -G Ninja -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release
+          ninja -C "$BUILD" -j2 XenonRecomp
+          python3 -I toolchains/xbox360/tests/make_synthetic_xex.py "$FIXTURE"
+          "$BUILD/XenonRecomp/XenonRecomp" "$FIXTURE/config.toml" "$SRC/XenonUtils/ppc_context.h"
+          test -s "$FIXTURE/out/ppc_config.h"
+          test -s "$FIXTURE/out/ppc_context.h"
+          test -s "$FIXTURE/out/ppc_recomp_shared.h"
+          test -s "$FIXTURE/out/ppc_func_mapping.cpp"
+          test -s "$FIXTURE/out/ppc_recomp.0.cpp"
+          grep -q 'PPC_EXTERN_FUNC(_xstart)' "$FIXTURE/out/ppc_recomp_shared.h"
+          grep -q 'PPC_FUNC(_xstart)' "$FIXTURE/out/ppc_recomp.0.cpp"
+          echo "Synthetic XEX2 -> PPC C++ translation passed."

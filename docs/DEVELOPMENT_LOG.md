@@ -1267,3 +1267,9 @@ This is the durable project memory. Update it in every development session.
 - Artifact contains libclang.so, liblld.so, kit.zip, LLVM/NDK license notices, provenance and SHA-256 manifest.
 - Build is intentionally separate from XenonRecomp. No game build worker, title runtime or playable title is claimed.
 - CI result pending.
+
+
+### Synthetic Xbox 360 PPC translation fixture — 2026-11-21
+- Added a small synthetic, unencrypted XEX2 fixture generator containing a PE32 image with .text/.pdata and a two-instruction PPC function (addi r3,r0,1; blr).
+- Added a host XenonRecomp CI workflow using the same pinned source and XDroid360 patch; it checks generated ppc_config.h, ppc_context.h, shared header, function map, and _xstart C++ output.
+- The fixture contains no commercial game code, firmware or user keys. CI result pending.
