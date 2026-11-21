@@ -35,15 +35,15 @@ Product: Android app/runtime for launching game builds that have been legally an
 
 ## Known handoff status (2026-11-21)
 
-- Live `main` at the start of this handoff: `05b885e1c2c660220dcf925aabe3292bfe6fc868` (documentation-only change after the last verified app build).
-- Android CI #621 passed at commit `7f36140b42636ba806719a9bc230e23cc8b3b025`: Kotlin/JVM tests, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721064183`, archive SHA-256 `321a8cebae4afb447ade1e479dded7effb6740e8e31ce5a1a89d4d99486ba4af`.
-- Switch smoke #48 passed at commit `041efde53a73905d1ebb797ce04fb10615e61a0c`: all four pinned nx2android patches apply, title-profiled ARM64 NativeActivity host compiles, per-title theme/font staging works. Artifact `NGR-Switch-Runtime-Smoke`, ID `14721480591`, SHA-256 `dfcdabfc2e444bd6a8da4871f62c25515ed85f07809f4a28df232bcf4431f591`.
-- Smoke #49 was started to validate the exact donor `porter port --help` CLI contract used by the adapter; inspect its result before relying on that last check. Android CI #630 was also triggered by that workflow update; #621 remains the last confirmed green app build.
+- Live `main`: `72eccee8d5072349515b18e4052816a947db48f6`.
+- Android CI #630 passed at commit `e60d9ca5bba5d0fce6c7d54b9533c2cfdd708b79`: Kotlin/JVM tests, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721940302`, archive SHA-256 `ed239a60f1efc0b71d513bd782d1538a8345436926b4277624ad2c95428296e`; extracted APK SHA-256 `1a94eb4784bc97380f3ca68e2e992efdec1fae05cb016e4015d6ef7403ab8eff`.
+- Switch smoke #49 passed at commit `e60d9ca5bba5d0fce6c7d54b9533c2cfdd708b79`: all four pinned nx2android patches applied; donor `porter port --help` confirms the CLI flags NGR passes; theme/font staging and title-profiled ARM64 host build passed. Artifact `NGR-Switch-Runtime-Smoke`, ID `14721481165`, SHA-256 `2431a3de9e4ab68424d72ee9dd12d65df5f98a47ad77c0901758cbb2a4162c00`.
+- Smoke #50/#51 were triggered by the final nested font-license copy/assertion changes; inspect their latest status before assuming nested license verification passed.
 - Active console scope remains Xbox 360 + Nintendo Switch only. Xbox 360 source staging exists; its XenonRecomp pipeline/runtime are not yet integrated.
-- Switch integration now includes:
-  - pinned nx2android desktop adapter `tools/switch/port_game.py`, with four donor patches; skips per-game APK generation and packages a per-title `libdmhost.so`, `game_profile.h`, data pack, controller theme/font and receipt;
+- Switch integration includes:
+  - pinned nx2android desktop adapter `tools/switch/port_game.py`, four donor patches; skips per-game APK generation and packages a per-title `libdmhost.so`, `game_profile.h`, data pack, controller theme/font/license notices and receipt;
   - NGR one-APK importer/library/NativeActivity dispatcher with per-title internal runtime/save/temp root and external game-data root;
-  - SHA-256 checks for runtime and profile header; bounded SAF copy (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128); install journal/recovery; background recovery/listing;
+  - SHA-256 checks for runtime and profile header; bounded SAF copy (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128); install journal/recovery; background recovery/library listing;
   - donor `onDestroy` callback forwarding and delayed `dlclose`.
 - Current Switch graphics limitation: adapter forces `--vulkan-driver system`. Optional nx2android Turnip/adrenotools packaging and integration with NGR's component store are not implemented.
 - The complete NSP/XCI extraction/NSO rewrite/shader/host/data pipeline is desktop-assisted (Python 3.11+, .NET 10, NDK r27c, user's own keys/firmware). NGR Android does not run it on-device; it imports the prepared output folder.
