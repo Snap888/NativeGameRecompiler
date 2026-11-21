@@ -8,7 +8,7 @@ Target: Android ARM64 with Qualcomm Adreno. "All platforms / any games" is a lon
 
 | Technology | Intended role | Boundary |
 |---|---|---|
-| N64Recomp | First static recompilation proof of concept | Requires supported MIPS input and metadata plus a compatible runtime; not universal |
+| XDroid360 / XenonRecomp | Xbox 360 PowerPC-to-C++ preparation pipeline | Needs title-specific runtime, kernel/XAM, Xenos graphics and XMA audio; compiler alone is not a playable backend |\n| nx2android / nxnative | Nintendo Switch NSO/NRO rewrite and Android Horizon/NVN runtime | Desktop-assisted preparation currently; per-title profiles and Vulkan feature support are mandatory |
 | LLVM | IR, optimization and ARM64 code generation | Not a turnkey game recompiler |
 | FEX / Box64 | Future dynamic x86-64 Linux translation backends | Not static recompilers; syscall/library compatibility is substantial work |
 | QEMU | Diagnostic/reference execution backend | Performance and integration constraints |
@@ -18,7 +18,7 @@ Target: Android ARM64 with Qualcomm Adreno. "All platforms / any games" is a lon
 | GameActivity | Android lifecycle/input foundation | Evaluate when a native render loop is introduced |
 | Oboe | Low-latency Android audio | Later milestone |
 
-## Stage 1 result
+## Active scope decision (2026-11-21)\n\nOnly Xbox 360 and Nintendo Switch are in scope. Their detailed source audit and integration plan is [docs/XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md). Other console platforms are excluded from active development.\n\n## Stage 1 result
 
 A minimal host/runtime shell: Kotlin Activity, JNI bridge, C++20 core, Vulkan physical-device enumeration and Android controller discovery. No game execution or recompilation is implemented yet.
 
