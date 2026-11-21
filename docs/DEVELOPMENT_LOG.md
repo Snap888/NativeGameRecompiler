@@ -1197,3 +1197,26 @@ This is the durable project memory. Update it in every development session.
 3. Start Xbox 360 vertical slice: pin dependencies, build Android XenonRecomp/Clang/LLD and validate a synthetic PPC fixture.
 4. Start Switch vertical slice: pin dependencies, build desktop preparation tools, validate NSO/NRO rewrite fixture, then build Android Horizon/NVN Vulkan runtime.
 5. Decide whether Switch preparation remains desktop-assisted initially or is ported to Android after host/toolchain feasibility tests.
+
+
+## Session 2026-11-21 — Compiler job manager foundation
+
+### Implemented
+- Added ConsoleBuildJob and ConsoleBuildJobStore as a separate contract from execution Backend ABI v1.
+- Job metadata is restricted to Xbox 360 and Nintendo Switch and stores a SAF content URI, persisted grant flags, source/profile/toolchain fingerprints, workspace identifier, stage, progress, lifecycle state and timestamps.
+- Target-specific stages distinguish Xbox PPC recompilation/ARM64 compile from Switch NSO rewrite/shader preparation.
+- Added atomic JSON persistence, strict schema and URI validation, bounded job count, immutable source identity, write-once fingerprints and monotonic stage/progress updates.
+- Added queued/running/cancel-requested/cancelled/failed/succeeded states, queued cancellation and recovery of interrupted workers after process death.
+- Added per-job bounded logs with control-character sanitization and redaction of common prod.keys/title-key/password/token assignments. Game data, firmware and keys are not persisted in job metadata.
+- Added JVM tests for both target records, invalid source URIs, target-stage mismatch, transition rules, recovery, cancellation, log redaction and corrupt metadata.
+
+### Validation
+- Source and tests have been authored and committed; full Gradle/JVM and Android APK CI are pending.
+- No compiler binary, runtime, UI wiring or playable title is claimed at this stage.
+- No APK artifact is available from this change yet.
+
+### Next
+1. Run Android CI and correct any Kotlin/test failures.
+2. Connect SAF permission acquisition and the job store to the import screen.
+3. Add a real job worker with cancellation checkpoints and workspace quotas.
+4. Build the pinned XenonRecomp toolchain and validate a synthetic PPC fixture before adding a title runtime.

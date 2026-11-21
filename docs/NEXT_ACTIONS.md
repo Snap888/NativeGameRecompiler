@@ -72,7 +72,8 @@ Mark complete only when evidence exists.
 - [x] Add docs/XBOX360_SWITCH_INTEGRATION_PLAN.md with source revisions, architecture boundaries, licensing and staged acceptance criteria.
 - [x] Compile the target catalog in isolation with kotlinc and run runtime assertions (two-target exclusivity, file detection, key requirement).
 - [ ] Run full Gradle JVM tests and arm64-v8a APK CI for the target catalog.
-- [ ] Implement compiler job ABI separately from execution Backend ABI v1 (progress, cancel, resume, bounded logs, quotas).
+- [x] Implement compiler job contract separately from execution Backend ABI v1 (progress, cancel, process-death recovery, bounded/redacted logs, quotas).
+- [ ] Connect the job store to SAF import UI and a real worker/foreground service.
 - [ ] Add immutable source/toolchain/profile fingerprints and per-title profile validation.
 - [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
 - [ ] Xbox 360: build Android-hosted XenonRecomp + Clang/LLD in CI; validate a non-copyrighted PPC fixture.
@@ -353,3 +354,15 @@ Mark complete only when evidence exists.
 - [ ] Decide desktop-assisted Switch preparation vs a separately validated Android-hosted port pipeline; do not label it on-device until proven.
 - [ ] Add user-owned Switch key storage with strict redaction; never package keys, firmware or game data.
 - [ ] Add only Xbox 360 and Switch import flows; do not add other console targets.
+
+
+## Compiler job manager — 2026-11-21
+- [x] Add typed job metadata for Xbox 360 and Nintendo Switch, SAF content URI + grant flags, source/profile/toolchain SHA-256 fingerprints, workspace ID, stage, progress, state and timestamps.
+- [x] Add target-specific stage sequences (PPC recompilation vs NSO rewrite/shader build).
+- [x] Add atomic private persistence, 256-job quota, schema validation, immutable source identity, write-once fingerprints and monotonic progress/stages.
+- [x] Add cancellation states, queued-job cancellation and process-death recovery for interrupted workers.
+- [x] Add bounded per-job logs with control-character cleanup and redaction for key/password/token assignments.
+- [x] Add JVM regression tests for both targets, URI/path validation, state transitions, recovery, log redaction and corrupt metadata.
+- [ ] Full Gradle JVM tests and arm64-v8a APK CI for this change.
+- [ ] Connect SAF permission acquisition and job creation to the Android import UI.
+- [ ] Implement the actual Xbox 360 worker and synthetic PPC fixture; the job manager does not execute compiler tools.
