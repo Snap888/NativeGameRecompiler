@@ -70,12 +70,14 @@ jobs:
           mkdir -p build/NGR-Switch-Runtime/runtime
           cp build/switch-runtime/libdmhost.so build/NGR-Switch-Runtime/runtime/
           cp nx2android/nxnative/LICENSE build/NGR-Switch-Runtime/NX2ANDROID-LICENSE
+          RUNTIME_SHA=$(sha256sum build/NGR-Switch-Runtime/runtime/libdmhost.so | cut -d ' ' -f1)
           cat > build/NGR-Switch-Runtime/runtime-manifest.json <<EOF
           {
             "schema": 1,
             "target": "nintendo-switch",
             "title_id": "$TITLE_ID",
             "runtime": "runtime/libdmhost.so",
+            "sha256": "$RUNTIME_SHA",
             "nx2android_commit": "f32b3d563f0615d0e825747285d4e38d780e4ebb",
             "ndk": "27.2.12479018",
             "api": 31,
@@ -88,6 +90,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: NGR-Switch-Runtime-${{ inputs.title_id }}
-          path: build/NGR-Switch-Runtime-${{ inputs.title_id }}.tar.gz
+          path: build/NGR-Switch-Runtime-*.tar.gz
           if-no-files-found: error
           retention-days: 14
