@@ -1,19 +1,15 @@
 diff --git a/porter/pipeline.py b/porter/pipeline.py
 --- a/porter/pipeline.py
 +++ b/porter/pipeline.py
-@@ -274,2 +274,3 @@
-             self.inputs()
+@@ -275 +275,2 @@
 -            PROG.plan(1 + len(self.versions) + bool(self.fam['dlc']) + bool(o.firmware and self.ap.sysdata) + bool(o.fps60) + 6 + bool(o.install))   # nx_extract, the versions, the DLC, the system data, 60 fps, rewrite / split / Vulkan shaders / host / APK / data, install (unpack adds its own)
 +            no_apk = os.environ.get('NGR_NO_APK') == '1'
-+            PROG.plan(1 + len(self.versions) + bool(self.fam['dlc']) + bool(o.firmware and self.ap.sysdata) + bool(o.fps60) + (5 if no_apk else 6) + bool(o.install))   # NGR omits the donor APK; host and data pack are retained
-@@ -284,4 +285,5 @@
-         self.shaders()
-         self.host()
++            PROG.plan(1 + len(self.versions) + bool(self.fam['dlc']) + bool(o.firmware and self.ap.sysdata) + bool(o.fps60) + (5 if no_apk else 6) + bool(o.install))
+@@ -284 +285,2 @@
 -        self.apk()
 +        if not no_apk:
 +            self.apk()
-         self.data()
-@@ -291,2 +293,3 @@
-                            status=self.ap.status, derived=bool(self.derived), installed=bool(o.install))
+@@ -290 +291,2 @@
+-        say(f'done: {self.result["apk"]} and {self.result["data"]}')
 +        if no_apk: self.result['apk'] = 'NGR embedded runtime'
-         say(f'done: {self.result["apk"]} and {self.result["data"]}')
++        say(f'done: {self.result["apk"]} and {self.result["data"]}')
