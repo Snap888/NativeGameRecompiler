@@ -141,7 +141,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
     std::string library_path;
     if (!read_runtime_path(activity, &files_dir, &library_path) ||
         !validate_runtime_path(files_dir, library_path)) {
-        log_error("Missing or unsafe per-game runtime library path. Expected a verified NGR switch-port runtime.");
+        log_error("Missing or unsafe per-game runtime library path. Expected a prepared NGR switch-port runtime.");
         finish_activity(activity);
         return;
     }
@@ -166,7 +166,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
         return;
     }
 
-    __android_log_print(ANDROID_LOG_INFO, kTag, "Forwarding NativeActivity lifecycle to verified runtime: %s",
+    __android_log_print(ANDROID_LOG_INFO, kTag, "Forwarding NativeActivity lifecycle to prepared runtime: %s",
                         library_path.c_str());
     entry(activity, saved_state, saved_state_size);
 }
