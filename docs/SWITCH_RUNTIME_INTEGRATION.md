@@ -63,6 +63,20 @@ NGR's desktop-assisted adapter now calls the donor pipeline rather than reimplem
 7. Verify all files and profile fingerprints; atomically register the title in the NGR library.
 8. Launch the title through the NGR NativeActivity dispatcher.
 
+Example desktop invocation (all paths are local to the preparation PC; the output folder is what NGR imports):
+
+```bash
+python tools/switch/port_game.py \
+  --nx2android /path/to/nx2android-pinned-checkout \
+  --ngr-root /path/to/NativeGameRecompiler \
+  --source-folder /path/to/your-own-switch-dump-folder \
+  --keys /path/to/your-own/prod.keys \
+  --nx2a-home /path/to/nx2android-config \
+  --output /path/to/output/MySwitchPort
+```
+
+The `NX2A_HOME` directory must contain the donor's `config.json` with local NDK r27c and .NET 10 executable paths. The wrapper does not download or embed keys, firmware, or game dumps. Import the resulting `MySwitchPort` folder in NGR's **SWITCH LIBRARY → Import prepared Switch port folder** action.
+
 The nx2android CLI pipeline remains a desktop preparation tool and depends on Python 3.11+, its Python modules, .NET 10, NDK r27c, game-profile support and user-owned keys. `port_game.py` expects a pinned donor checkout and an `NX2A_HOME` containing the donor's configured NDK/.NET tool paths. The NGR Android source worker still only stages source files; it does not execute this Python/.NET toolchain on-device. The current adapter is desktop-assisted and its output is imported into NGR with the Switch Port folder picker. Moving the complete pipeline onto Android is a separate effort.
 
 ## Compatibility and security rules
