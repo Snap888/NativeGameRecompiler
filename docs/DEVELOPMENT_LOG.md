@@ -1220,3 +1220,13 @@ This is the durable project memory. Update it in every development session.
 2. Connect SAF permission acquisition and the job store to the import screen.
 3. Add a real job worker with cancellation checkpoints and workspace quotas.
 4. Build the pinned XenonRecomp toolchain and validate a synthetic PPC fixture before adding a title runtime.
+
+
+### Compiler job manager CI result — 2026-11-21
+- Actions run #467 (44914879736) completed successfully at commit a83cb286057b40cda4f5ccd59a1d71246c0ce0cb.
+- Passed: native ABI conformance, backend registry, all JVM unit tests, ARM64 debug APK build and artifact upload.
+- Artifact: NGR-arm64-debug, ID 14711137187, expires 2026-12-05.
+- Downloaded ZIP SHA-256: ca754e23c03f9d433a90155494b0630d1856a61417ba421c6c9d5ff51b37b60e.
+- Extracted app-debug.apk size: 2,518,991 bytes; SHA-256: bd0a984bdd7c0a27c45f9785a949810fdbcae3372a8c74fadc882b381725ed4b.
+- APK inspection confirms lib/arm64-v8a/libngr_runtime.so is present.
+- This verifies CI build/package contents only. Device installation, SAF persistence and actual console compilation/runtime remain unverified.

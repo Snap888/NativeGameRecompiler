@@ -363,6 +363,13 @@ Mark complete only when evidence exists.
 - [x] Add cancellation states, queued-job cancellation and process-death recovery for interrupted workers.
 - [x] Add bounded per-job logs with control-character cleanup and redaction for key/password/token assignments.
 - [x] Add JVM regression tests for both targets, URI/path validation, state transitions, recovery, log redaction and corrupt metadata.
-- [ ] Full Gradle JVM tests and arm64-v8a APK CI for this change.
+- [x] Full Gradle JVM tests and arm64-v8a APK CI passed in run #467 (44914879736) at a83cb286057b40cda4f5ccd59a1d71246c0ce0cb; artifact NGR-arm64-debug ID 14711137187.
 - [ ] Connect SAF permission acquisition and job creation to the Android import UI.
 - [ ] Implement the actual Xbox 360 worker and synthetic PPC fixture; the job manager does not execute compiler tools.
+
+
+### Compiler job manager CI verification — 2026-11-21
+- [x] Actions run #467 (44914879736) passed native ABI conformance, backend registry, full JVM unit tests, ARM64 debug APK build and artifact upload at commit a83cb286057b40cda4f5ccd59a1d71246c0ce0cb.
+- [x] Artifact NGR-arm64-debug, ID 14711137187, downloaded and inspected. ZIP SHA-256: ca754e23c03f9d433a90155494b0630d1856a61417ba421c6c9d5ff51b37b60e.
+- [x] Extracted APK SHA-256: bd0a984bdd7c0a27c45f9785a949810fdbcae3372a8c74fadc882b381725ed4b; APK contains lib/arm64-v8a/libngr_runtime.so.
+- [ ] Install and smoke-test this APK on the target Snapdragon/Adreno device.
