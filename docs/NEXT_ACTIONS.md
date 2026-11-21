@@ -460,32 +460,34 @@ Mark complete only when evidence exists.
 
 ## Nintendo Switch — embedded nx2android runtime
 
-- [x] Audit nx2android NativeActivity, per-title libdmhost.so build and separate data-pack output at pinned commit f32b3d563f0615d0e825747285d4e38d780e4ebb.
+- [x] Audit nx2android NativeActivity, per-title `libdmhost.so` build and separate data-pack output at pinned commit `f32b3d563f0615d0e825747285d4e38d780e4ebb`.
 - [x] Add NGR NativeActivity loader target and register the embedded activity in NGR's manifest.
-- [x] Add fail-closed nx2android patcher to select a separate NGR data root for each title ID.
-- [x] Add per-title runtime/data path validation and in-process launch intent.
-- [x] Add prepared-port folder importer with ELF64/AArch64 and SHA-256 validation, staging and rollback.
-- [x] Add Switch library UI with import and launch actions (same NGR APK; no separate game APK).
-- [x] Add manual workflow to build a pinned title-specific libdmhost.so for an nx2android Android profile.
-- [ ] Run Android Gradle, JVM and native CI after the integration commits; fix every failure.
-- [ ] Run switch-runtime workflow for a known supported Android profile and verify the artifact.
-- [ ] Add an nx2android port-bundle packager (runtime + data pack + manifest + required per-title assets).
-- [ ] Integrate the actual NSP/XCI -> LibHac extraction -> NSO rewrite -> shader translation -> data pack pipeline.
-- [ ] Decide and implement on-device or supported companion execution for Python/.NET/LibHac dependencies.
-- [ ] Add per-title gamepad theme/font assets to the in-process NativeActivity.
-- [ ] Physical-device test on Adreno: import, launch, Vulkan, audio, controls, lifecycle, saves and two-title isolation.
-
+- [x] Add per-title runtime/data path validation, launch intent and donor lifecycle teardown/unload.
+- [x] Add prepared-port importer with ELF64/AArch64, runtime hash and generated profile-header hash validation.
+- [x] Add Switch library UI with import and launch actions (same NGR APK; no per-game APK).
+- [x] Add desktop-assisted adapter around the donor's real `porter port` pipeline; patch skips only APK generation and retains host/data outputs.
+- [x] Package the title-specific controller theme and overlay font in each NGR data pack.
+- [x] Apply and compile all four donor patches in Switch smoke CI; smoke-test title theme/font staging.
+- [x] Bound SAF data-pack copy size/depth and add interrupted two-root install journal/recovery.
+- [x] Run Android ARM64/JVM/native CI and patched donor runtime smoke builds successfully (see validation checkpoint below).
+- [ ] Run the full `porter port` adapter with a user-owned supported title and keys; verify no game APK is generated.
+- [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
+- [ ] Integrate optional Turnip/adrenotools dependencies with NGR's component/driver runtime; current ports explicitly use the Android system Vulkan driver.
+- [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, pause/resume, saves and two-title isolation.
+- [ ] Decide and implement on-device or companion execution for Python/.NET/LibHac; desktop-assisted preparation is the current boundary.
 
 
 ## Nintendo Switch validation checkpoint — 2026-11-21
-- [x] Android CI #585: JVM/native tests, NGR NativeActivity loader compile, ARM64 APK and artifact upload passed (artifact ID 14720757607).
-- [x] Switch smoke #38: sequentially apply all four pinned nx2android patches and compile the patched profile-specific ARM64 NativeActivity runtime (artifact ID 14720643069).
-- [x] Package the donor's per-title controller theme and shared licensed overlay font in each NGR Switch data pack; load them through the NGR per-title data root.
-- [x] Require theme/font assets during import, library enumeration and native launch validation.
-- [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) and add unit tests.
-- [ ] Verify the latest Android CI after copy-budget implementation.
-- [ ] Add a durable install journal and recovery for interrupted two-root runtime/data replacement.
-- [ ] Add a synthetic NativeActivity host and lifecycle forwarding test.
-- [ ] Run the full donor `porter port` pipeline with a user-owned supported title; verify package output and that no game APK is generated.
-- [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, saves and title isolation.
-- [ ] Decide and implement the on-device or companion execution path for Python/.NET/LibHac; desktop-assisted preparation is the current boundary.
+- [x] Android CI #613: current NativeActivity loader with donor onDestroy forwarding, Kotlin/JVM tests, native CMake build and ARM64 APK passed (artifact ID 14721162062).
+- [x] Switch smoke #45: all four donor patches applied, title-profiled ARM64 host compiled, and per-title theme/font staging verified (artifact ID 14721390437).
+- [x] Add SHA-256 verification for both `libdmhost.so` and the generated `game_profile.h`.
+- [x] Add journaled two-root install recovery and move recovery/library scans off the UI thread.
+- [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) with unit tests.
+- [x] Reject collisions when donor theme/font assets are merged into the game data pack.
+- [x] Explicitly force `--vulkan-driver system` in the desktop adapter and validate that mode in the runtime receipt; optional custom Turnip/adrenotools libraries are not bundled.
+- [ ] Verify latest Android CI after the system-driver receipt, packaging collision checks and stream-safety changes.
+- [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
+- [ ] Run the full donor `porter port` adapter with a user-owned supported title; verify data pack, assets, profile header and no-APK receipt.
+- [ ] Import and launch on a physical Adreno device; verify Vulkan, sound, input, pause/resume, saves and title isolation.
+- [ ] Integrate custom Turnip/adrenotools support or NGR's own driver selection with the embedded runtime.
+- [ ] Decide and implement on-device or companion execution for Python/.NET/LibHac; desktop-assisted preparation is the current boundary.
