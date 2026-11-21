@@ -1575,7 +1575,11 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             if (resultCode == RESULT_OK) data?.data?.let { importOrdinaryGameZip(it) }
             return
         }
-        if (requestCode == REQUEST_SWITCH_PORT_FOLDER) {\n            if (resultCode == RESULT_OK) data?.data?.let { importSwitchPortFolder(it, data.flags) }\n            return\n        }\n        if (requestCode == REQUEST_CONSOLE_BUILD) {
+        if (requestCode == REQUEST_SWITCH_PORT_FOLDER) {
+            if (resultCode == RESULT_OK) data?.data?.let { importSwitchPortFolder(it, data.flags) }
+            return
+        }
+        if (requestCode == REQUEST_CONSOLE_BUILD) {
             if (resultCode == RESULT_OK) data?.takeIf { it.data != null }?.let { queueConsoleBuild(it) }
             pendingConsoleTarget = null
             return
