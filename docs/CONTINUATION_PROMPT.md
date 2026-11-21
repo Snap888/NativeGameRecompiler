@@ -38,7 +38,7 @@ Product: Android app/runtime for launching game builds that have been legally an
 - Live `main`: `72eccee8d5072349515b18e4052816a947db48f6`.
 - Android CI #630 passed at commit `e60d9ca5bba5d0fce6c7d54b9533c2cfdd708b79`: Kotlin/JVM tests, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721940302`, archive SHA-256 `ed239a60f1efc0b71d513bd782d1538a8345436926b4277624ad2c95428296e`; extracted APK SHA-256 `1a94eb4784bc97380f3ca68e2e992efdec1fae05cb016e4015d6ef7403ab8eff`.
 - Switch smoke #49 passed at commit `e60d9ca5bba5d0fce6c7d54b9533c2cfdd708b79`: all four pinned nx2android patches applied; donor `porter port --help` confirms the CLI flags NGR passes; theme/font staging and title-profiled ARM64 host build passed. Artifact `NGR-Switch-Runtime-Smoke`, ID `14721481165`, SHA-256 `2431a3de9e4ab68424d72ee9dd12d65df5f98a47ad77c0901758cbb2a4162c00`.
-- Smoke #50/#51 were triggered by the final nested font-license copy/assertion changes; inspect their latest status before assuming nested license verification passed.
+- Switch smoke #51 passed after the nested font-license copy/assertion changes; artifact ID `14721795180`.
 - Active console scope remains Xbox 360 + Nintendo Switch only. Xbox 360 source staging exists; its XenonRecomp pipeline/runtime are not yet integrated.
 - Switch integration includes:
   - pinned nx2android desktop adapter `tools/switch/port_game.py`, four donor patches; skips per-game APK generation and packages a per-title `libdmhost.so`, `game_profile.h`, data pack, controller theme/font/license notices and receipt;
