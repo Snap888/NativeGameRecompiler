@@ -81,6 +81,26 @@ class SwitchRuntimeLauncherTest {
     }
 
     @Test
+    fun rejectsDataManifestForAnotherTitle() {
+        val externalRoot = Files.createTempDirectory("ngr-switch-data-title").toFile()
+        try {
+            val data = File(externalRoot, "switch-ports/$titleId/data")
+            File(data, "mods").mkdirs()
+            File(data, "assets/overlay").mkdirs()
+            File(data, "assets/font").mkdirs()
+            File(data, "nx2a-data.json").writeText("""{"title_id":"0100000000010001"}""")
+            File(data, "env.txt").writeText("DM_ROOT=/unused")
+            File(data, "assets/overlay/theme.tsv").writeText("theme")
+            File(data, "assets/font/ui.bin").writeBytes(byteArrayOf(1))
+            assertThrows(IllegalArgumentException::class.java) {
+                SwitchRuntimeLauncher.validateGameDataRoot(externalRoot, titleId)
+            }
+        } finally {
+            externalRoot.deleteRecursively()
+        }
+    }
+
+    @Test
     fun rejectsProfileHeaderHashMismatch() {
         val root = Files.createTempDirectory("ngr-switch-profile-tampered").toFile()
         try {
