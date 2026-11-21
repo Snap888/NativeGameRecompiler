@@ -71,7 +71,7 @@ NGR decision:
 
 Repository: https://github.com/rexglue/rexglue-sdk  
 Default branch: main  
-License: not confirmed in this audit; inspect exact LICENSE/NOTICE and all submodules before adoption.  
+Observed root license: BSD-3-Clause-style terms with explicit Xenia-derived portions/copyright notice; preserve both the ReXGlue and Xenia notices and review all submodules. This is not MIT.  
 Build: CMake >= 3.25, Clang >= 20, C++23, 64-bit ARM64/x86_64. Upstream CMake platform detection lists Windows, Linux and macOS; Android is not explicitly listed as a supported target. Upstream README warns the project is early development and its public API may change.
 
 Role:
@@ -117,7 +117,7 @@ NGR decision:
 
 Repository: https://github.com/TGP482/XboxXBERecomp  
 Default branch: main  
-Observed license: MIT (also reported by Recompendium; verify root LICENSE and bundled dependencies before vendoring).
+Observed repository license: MIT (GitHub repository metadata); verify the exact root license file and every bundled/fetched dependency before vendoring.
 
 Role:
 - Original Xbox XBE x86 to native 64-bit Windows C++.
