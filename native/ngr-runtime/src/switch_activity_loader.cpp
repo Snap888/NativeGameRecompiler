@@ -2,6 +2,7 @@
 #include <android/native_activity.h>
 #include <dlfcn.h>
 #include <jni.h>
+#include <limits.h>
 #include <sys/stat.h>
 
 #include <cstdio>
