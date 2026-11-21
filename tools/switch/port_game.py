@@ -85,7 +85,7 @@ def main() -> int:
     if output.exists():
         parser.error("--output must not already exist")
     output.parent.mkdir(parents=True, exist_ok=True)
-    donor_output = Path(tempfile.mkdtemp(prefix="ngr-nx2a-output-"))
+    donor_output = Path(tempfile.mkdtemp(prefix="ngr-nx2a-output-", dir=output.parent))
     patches = [
         (ngr / "patches/nx2android/0001-use-ngr-title-data-root.patch",
          donor / "nxnative/dm/android/front_android.c", "NGR_SWITCH_GAME_ROOT"),
