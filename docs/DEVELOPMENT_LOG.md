@@ -1273,3 +1273,12 @@ This is the durable project memory. Update it in every development session.
 - Added a small synthetic, unencrypted XEX2 fixture generator containing a PE32 image with .text/.pdata and a two-instruction PPC function (addi r3,r0,1; blr).
 - Added a host XenonRecomp CI workflow using the same pinned source and XDroid360 patch; it checks generated ppc_config.h, ppc_context.h, shared header, function map, and _xstart C++ output.
 - The fixture contains no commercial game code, firmware or user keys. CI result pending.
+
+
+### Synthetic XEX2/PPC fixture CI — 2026-11-21
+- Actions run 44916892595 passed translation of a generated unencrypted XEX2 fixture into PPC C++ and verified expected generated files/symbols.
+- Actions run 44917032342 passed the same translation plus host Clang compilation of ppc_recomp.0.cpp and ppc_func_mapping.cpp.
+- Fixture is a generated PE32/XEX2 image with .text and empty .pdata; PPC function contains addi r3,r0,1 and blr. It contains no commercial game data, firmware or keys.
+- The recompiler logs that eight common save/restore helper addresses are unspecified in this minimal fixture. This is expected for the synthetic profile; real title profiles must supply the required helper addresses and runtime symbols.
+- Two CI iterations were needed: GCC host build rejected the upstream anonymous aggregate type, so host fixture builds now use Clang; the generated entry point is emitted as PPC_FUNC_IMPL(__imp___xstart), and the assertion was corrected accordingly.
+- This verifies parser -> PPC analysis -> C++ generation -> host compilation for one tiny function only. It does not validate a commercial XEX, complete game profile, Android cross-link, or gameplay.
