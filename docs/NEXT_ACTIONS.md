@@ -434,6 +434,13 @@ Mark complete only when evidence exists.
 
  
 ## Nintendo Switch embedded runtime — 2026-11-21
+- [x] Add pinned nx2android runtime build adapter; invoke donor `dm/android/build.py` and store `libdmhost.so` under NGR per-title package without creating an APK.
+- [x] Add runtime build receipt and SHA-256/donor revision/ABI/entry-point checks before NativeActivity launch.
+- [x] Add dedicated CI workflow to build a profile-only nx2android runtime from the pinned donor revision.
+- [ ] Verify donor runtime smoke workflow; fix build/toolchain errors.
+- [ ] Verify NGR Android CI compiles `ngr_switch_loader` and packages the NativeActivity.
+- [ ] Add a synthetic runtime library fixture and test create/pause/resume/destroy/surface lifecycle forwarding.
+
 - [x] Audit the current nx2android host build and APK writer: the reusable per-title runtime output is `libdmhost.so`; APK generation is a packaging wrapper, not the runtime itself.
 - [x] Add the first in-package NativeActivity loader and register it in the NGR manifest.
 - [x] Add Kotlin launch/path validation for per-title runtime libraries stored under NGR private files.
