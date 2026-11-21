@@ -471,6 +471,7 @@ Mark complete only when evidence exists.
 - [x] Bound SAF data-pack copy size/depth and add interrupted two-root install journal/recovery.
 - [x] Run Android ARM64/JVM/native CI and patched donor runtime smoke builds successfully (see validation checkpoint below).
 - [ ] Run the full `porter port` adapter with a user-owned supported title and keys; verify no game APK is generated.
+- [ ] Confirm Switch smoke #50/#51 preserves root and nested font license notices; the latest workflow is running.
 - [ ] Add a synthetic NativeActivity host and lifecycle forwarding/unload test.
 - [ ] Integrate optional Turnip/adrenotools dependencies with NGR's component/driver runtime; current ports explicitly use the Android system Vulkan driver.
 - [ ] Import and launch on a physical Adreno device; verify graphics, sound, input, pause/resume, saves and two-title isolation.
@@ -478,9 +479,10 @@ Mark complete only when evidence exists.
 
 
 ## Nintendo Switch validation checkpoint — 2026-11-21
-- [x] Android CI #621: current NativeActivity loader with donor onDestroy forwarding, Kotlin/JVM tests, native CMake build, package receipt/profile-header validation and ARM64 APK passed (artifact ID 14721064183).
+- [x] Android CI #630: current NativeActivity loader with donor onDestroy forwarding, Kotlin/JVM tests, native CMake build, package receipt/profile-header validation and ARM64 APK passed (artifact ID 14721940302).
 - [x] Switch smoke #45: all four donor patches applied, title-profiled ARM64 host compiled, and per-title theme/font staging verified (artifact ID 14721390437).
 - [x] Switch smoke #48: repeat patched title-host build and asset-staging verification after adding the explicit system Vulkan receipt mode (artifact ID 14721480591).
+- [x] Switch smoke #49: verify the exact donor `porter port` CLI options used by NGR (`--keys`, `--out`, `--version`, `--language`, `--experimental`, `--package`, `--jobs`, `--vulkan-driver`) (artifact ID 14721481165).
 - [x] Add SHA-256 verification for both `libdmhost.so` and the generated `game_profile.h`.
 - [x] Add journaled two-root install recovery and move recovery/library scans off the UI thread.
 - [x] Bound SAF data-pack copying (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128) with unit tests.
