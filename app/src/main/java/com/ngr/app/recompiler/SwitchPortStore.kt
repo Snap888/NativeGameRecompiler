@@ -311,15 +311,14 @@ class SwitchPortStore(private val context: Context) {
         maxBytes: Long,
         budget: SwitchPortCopyBudget? = null
     ): Long {
-        val input = context.contentResolver.openInputStream(document.uri)
-            ?: throw IOException("Unable to open " + document.name)
         var total = 0L
         val parent = target.parentFile ?: throw IOException("Switch package target has no parent")
         if (!parent.isDirectory && !parent.mkdirs()) throw IOException("Unable to create Switch package directory")
         if (target.exists() || java.nio.file.Files.isSymbolicLink(target.toPath())) {
-            input.close()
             throw IOException("Refusing to overwrite a Switch package file")
         }
+        val input = context.contentResolver.openInputStream(document.uri)
+            ?: throw IOException("Unable to open " + document.name)
         input.use { stream ->
             FileOutputStream(target).use { output ->
                 val buffer = ByteArray(1024 * 1024)
