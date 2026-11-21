@@ -23,18 +23,8 @@ object SwitchRuntimeLauncher {
     }
 
     @Throws(IOException::class)
-    fun validateRuntimeLibrary(filesDir: File, titleId: String): File {
-        val root = filesDir.canonicalFile
-        val expected = runtimeLibrary(root, titleId)
-        val canonical = expected.canonicalFile
-        val portsRoot = File(root, "switch-ports").canonicalFile
-        val expectedPrefix = portsRoot.path + File.separator
-        require(canonical.path.startsWith(expectedPrefix)) { "Runtime path escapes NGR storage" }
-        require(canonical == expected) { "Runtime library must not resolve through a symbolic link" }
-        require(!Files.isSymbolicLink(expected.toPath())) { "Runtime library must not be a symbolic link" }
-        require(expected.isFile && expected.length() > 0L) { "Switch runtime library is missing" }
-        return expected
-    }
+    fun validateRuntimeLibrary(filesDir: File, titleId: String): File =
+        SwitchRuntimePackageVerifier.verify(filesDir, titleId)
 
     fun launch(context: Context, titleId: String) {
         val library = validateRuntimeLibrary(context.filesDir, titleId)
