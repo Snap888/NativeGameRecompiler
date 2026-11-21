@@ -24,6 +24,10 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
+import com.ngr.app.recompiler.ConsoleBuildJob
+import com.ngr.app.recompiler.ConsoleBuildJobState
+import com.ngr.app.recompiler.ConsoleBuildJobStore
+import com.ngr.app.recompiler.ConsoleTargetId
 import java.io.File
 import java.io.FileOutputStream
 import java.io.ByteArrayOutputStream
@@ -184,7 +188,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         consoleBuildCard.addView(secondaryButton("＋  Add Xbox 360 ISO / ZIP") {
             chooseConsoleSource(ConsoleTargetId.XBOX_360)
         })
-        consoleBuildCard.addView(secondaryButton("＋  Add Nintendo Switch NSP / XCI") {
+        consoleBuildCard.addView(secondaryButton("＋  Add Nintendo Switch NSP / XCI / NSZ / XCZ") {
             chooseConsoleSource(ConsoleTargetId.NINTENDO_SWITCH)
         })
         consoleBuildJobStatus = mutedText()
@@ -1463,7 +1467,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             return
         }
         if (requestCode == REQUEST_CONSOLE_BUILD) {
-            if (resultCode == RESULT_OK && data?.data != null) queueConsoleBuild(data)
+            if (resultCode == RESULT_OK) data?.takeIf { it.data != null }?.let { queueConsoleBuild(it) }
             pendingConsoleTarget = null
             return
         }
