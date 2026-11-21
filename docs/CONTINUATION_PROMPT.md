@@ -35,13 +35,13 @@ Product: Android app/runtime for launching game builds that have been legally an
 
 ## Known handoff status (2026-11-21)
 
-- Last observed `main` before this handoff refresh: `381a2692757c54ed13f6ff377247ca1a76eceade`; fetch the live branch SHA again before editing.
-- Android CI #660 passed at commit `fdc708deb0f04c5c2fb25029c37542efb6513e8b`: Kotlin/JVM tests including title/profile/data-manifest binding, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721149150`, archive SHA-256 `c66d68b37a9d728339d44272a6b64c847c8d8fb23446330f5e864de15e7ac2f0`; extracted APK SHA-256 `aa523895ac22826ded832a0ccf582fd6a9b35e492e38d9ff6a43d0bbc1668e37`.
+- Last observed `main` before this handoff refresh: `60dfed428a74c8b64b857c28ca5c7fc68ebf1440`; fetch the live branch SHA again before editing.
+- Android CI #665 passed at commit `eed67d55f9fadee910d1f4631f583781a6faea49`: Kotlin/JVM tests including title/profile/data-manifest binding, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721568584`, archive SHA-256 `68c6b5a399babda61e00cad41a40e234bdb6f7b9af74e80c629fd33a0210172a`; extracted APK SHA-256 `0b4e61e0cac670ad485b75e41b639bb116528851af098facf66218fa6d33e926`.
 - Switch smoke #49 passed at commit `e60d9ca5bba5d0fce6c7d54b9533c2cfdd708b79`: all four pinned nx2android patches applied; donor `porter port --help` confirms the CLI flags NGR passes; theme/font staging and title-profiled ARM64 host build passed. Artifact `NGR-Switch-Runtime-Smoke`, ID `14721481165`, SHA-256 `2431a3de9e4ab68424d72ee9dd12d65df5f98a47ad77c0901758cbb2a4162c00`.
 - Switch smoke #58 passed at commit `3b0a4bea4d1f72e5e25ddc628c8958ed03202d5c`: Python profile-binding unit tests, donor CLI contract, theme/font/license staging and patched ARM64 host build passed. Artifact ID `14720649995`, SHA-256 `4b9c1459331f3f1409629b81ed6dd86be5f64bbf33e393dd6cdf9c99491ca505`.
 - Switch smoke #51 passed after the nested font-license copy/assertion changes; artifact ID `14721795180`.
 - Active console scope remains Xbox 360 + Nintendo Switch only. Xbox 360 source staging exists; its XenonRecomp pipeline/runtime are not yet integrated.
-- Switch integration additionally binds `nx2a-data.json` to the compiled profile: the adapter validates donor `profile_h`, stores `data_manifest_sha256`, and the importer/library scan/recovery/launcher verify title ID, profile hash and manifest hash.
+- Switch integration additionally binds `nx2a-data.json` to the compiled profile: the adapter validates donor `profile_h`, stores `data_manifest_sha256`, and the importer/library scan/recovery/launcher verify title ID, profile hash and manifest hash. Recovery now re-validates the full runtime receipt and runtime/profile hashes before committing a recovered install.
 - Switch integration includes:
   - pinned nx2android desktop adapter `tools/switch/port_game.py`, four donor patches; skips per-game APK generation and packages a per-title `libdmhost.so`, `game_profile.h`, data pack, controller theme/font/license notices and receipt;
   - NGR one-APK importer/library/NativeActivity dispatcher with per-title internal runtime/save/temp root and external game-data root;
