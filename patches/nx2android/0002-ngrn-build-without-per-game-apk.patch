@@ -1,15 +1,30 @@
 diff --git a/porter/pipeline.py b/porter/pipeline.py
 --- a/porter/pipeline.py
 +++ b/porter/pipeline.py
-@@ -275 +275,2 @@
+@@ -271,7 +271,8 @@
+         self.env = dict(os.environ, J=str(o.jobs), PYTHONIOENCODING='utf-8', PYTHONUTF8='1', DOTNET_CLI_TELEMETRY_OPTOUT='1')
+ 
+         try:
+             self.inputs()
 -            PROG.plan(1 + len(self.versions) + bool(self.fam['dlc']) + bool(o.firmware and self.ap.sysdata) + bool(o.fps60) + 6 + bool(o.install))   # nx_extract, the versions, the DLC, the system data, 60 fps, rewrite / split / Vulkan shaders / host / APK / data, install (unpack adds its own)
 +            no_apk = os.environ.get('NGR_NO_APK') == '1'
 +            PROG.plan(1 + len(self.versions) + bool(self.fam['dlc']) + bool(o.firmware and self.ap.sysdata) + bool(o.fps60) + (5 if no_apk else 6) + bool(o.install))
-@@ -284 +285,2 @@
+             self.extract()
+         finally: self.drop_unpacked()   # a failed run leaves no decompressed dumps behind either
+@@ -280,7 +281,8 @@
+         self.rewrite()
+         if o.install: self.pull_captures()
+         self.shaders()
+         self.host()
 -        self.apk()
 +        if not no_apk:
 +            self.apk()
-@@ -290 +291,2 @@
--        say(f'done: {self.result["apk"]} and {self.result["data"]}')
+         self.data()
+         if o.install: self.install()
+@@ -287,5 +289,6 @@
+         nsp.rmtree(self.work / 'tmp')
+         self.result.update(title_id=self.g.id, name=self.app_name, package=self.package, version=self.pkg_ver, display=self.display, language=self.lang,
+                            status=self.ap.status, derived=bool(self.derived), installed=bool(o.install))
 +        if no_apk: self.result['apk'] = 'NGR embedded runtime'
-+        say(f'done: {self.result["apk"]} and {self.result["data"]}')
+         say(f'done: {self.result["apk"]} and {self.result["data"]}')
+         if self.derived: say(f'[RED] {self.derived}: the port is built from a derived profile and may not run as the profile\'s tested version does'
