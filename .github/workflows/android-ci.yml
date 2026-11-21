@@ -41,6 +41,13 @@ jobs:
             native/ngr-runtime/tests/backend_registry_test.cpp \
             -o /tmp/ngr-backend-registry-test
           /tmp/ngr-backend-registry-test
+      - name: Run Switch NativeActivity lifecycle tests
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I native/ngr-runtime/include \
+            native/ngr-runtime/src/switch_runtime_lifecycle.cpp \
+            native/ngr-runtime/tests/switch_runtime_lifecycle_test.cpp \
+            -o /tmp/ngr-switch-lifecycle-test
+          /tmp/ngr-switch-lifecycle-test
       - name: Validate Switch integration tooling syntax
         run: python -m py_compile tools/switch/apply_nx2android_patch.py tools/switch/build_runtime.py tools/switch/assemble_port_bundle.py
       - name: Run JVM unit tests
