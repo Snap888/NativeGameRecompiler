@@ -65,6 +65,14 @@ jobs:
             git -C "$RUNNER_TEMP/nx2android" apply "$GITHUB_WORKSPACE/$patch"
           done
 
+      - name: Verify donor port CLI contract
+        run: |
+          cd "$RUNNER_TEMP/nx2android"
+          python -m porter port --help > "$RUNNER_TEMP/porter-port-help.txt"
+          for option in --keys --out --version --language --experimental --package --jobs --vulkan-driver; do
+            grep -q -- "$option" "$RUNNER_TEMP/porter-port-help.txt"
+          done
+
       - name: Verify per-title theme and overlay font staging
         run: |
           python tools/switch/verify_overlay_assets.py \
