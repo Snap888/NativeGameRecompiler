@@ -193,6 +193,9 @@ def main() -> int:
         generated_profile = source_folder / f"{title_id}_build/android/host/gen/{title_id}/game_profile.h"
         if not generated_profile.is_file():
             raise SystemExit(f"Generated game_profile.h is missing: {generated_profile}")
+        profile_hash = sha256(generated_profile)
+        if str(data_manifest.get("profile_h", "")).lower() != profile_hash:
+            raise SystemExit("nx2android data pack profile_h does not match the generated game_profile.h")
 
         temporary = output.with_name(output.name + ".partial")
         if temporary.exists():
@@ -233,6 +236,7 @@ def main() -> int:
             "runtime_sha256": sha256(runtime_dir / "libdmhost.so"),
             "profile_header": "runtime/game_profile.h",
             "profile_header_sha256": sha256(runtime_dir / "game_profile.h"),
+            "data_manifest_sha256": sha256(temporary / "data/nx2a-data.json"),
             "abi": "arm64-v8a",
             "entry_point": "ANativeActivity_onCreate",
             "apk_generated": False,
