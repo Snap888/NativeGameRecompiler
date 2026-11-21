@@ -15,7 +15,7 @@ object SwitchRuntimePackageVerifier {
     @Throws(IOException::class)
     fun verify(filesDir: File, titleId: String): File {
         val root = filesDir.canonicalFile
-        val packageDir = File(root, "switch-ports/$titleId")
+        val packageDir = File(root, "switch-ports/${titleId.uppercase()}")
         val runtime = SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
         val receipt = File(packageDir, "runtime-build.json")
         val portsRoot = File(root, "switch-ports").canonicalFile
