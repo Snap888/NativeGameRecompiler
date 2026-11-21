@@ -52,10 +52,11 @@ jobs:
 
       - name: Validate adapter syntax and donor patch
         run: |
-          python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py tools/switch/verify_overlay_assets.py
+          python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py tools/switch/verify_overlay_assets.py tools/switch/test_port_game.py
           python tools/switch/port_game.py --help >/dev/null
           python tools/switch/build_runtime.py --help >/dev/null
           python tools/switch/verify_overlay_assets.py --help >/dev/null
+          python tools/switch/test_port_game.py
           for patch in \
             patches/nx2android/0001-use-ngr-title-data-root.patch \
             patches/nx2android/0002-ngrn-build-without-per-game-apk.patch \
