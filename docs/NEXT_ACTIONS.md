@@ -81,10 +81,12 @@ Mark complete only when evidence exists.
 - [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
 - [ ] Xbox 360: build Android-hosted XenonRecomp + Clang/LLD in CI; validate a non-copyrighted PPC fixture.
 - [ ] Xbox 360: bring up a matching title runtime and Xenos Vulkan path before claiming a playable game.
-- [ ] Switch: pin nx2android/nxnative and all third-party revisions; finish SPDX/SBOM review.
-- [ ] Switch: build nx_extract/LibHac and shader tools on supported desktop CI; validate NSO/NRO rewrite with synthetic fixture.
-- [ ] Switch: build Android ARM64 Horizon/NVN Vulkan runtime and load a profile-matched test package.
-- [ ] Decide desktop-assisted Switch preparation vs a separately validated Android-hosted port pipeline; do not label it on-device until proven.
+- [x] Switch: pin nx2android donor revision `f32b3d563f0615d0e825747285d4e38d780e4ebb` for the initial embedded-runtime adapter; donor submodules/dependencies still require a complete SPDX/SBOM lock.
+- [x] Switch: add a desktop-assisted `port_game.py` adapter that invokes the real nx2android porter, skips the donor APK step, and assembles runtime + data into an NGR-importable package.
+- [ ] Switch: verify the no-APK patch applies cleanly and the pinned donor host builds in CI; verify NGR Android NativeActivity loader compiles in the same run.
+- [ ] Switch: validate NSO/NRO rewrite and shader conversion with synthetic fixtures and record toolchain/profile fingerprints in a complete package manifest.
+- [ ] Switch: import a generated package into NGR, test NativeActivity lifecycle/surface/audio/input, and launch a supported title on Adreno hardware.
+- [x] Decide first Switch preparation path: desktop-assisted nx2android pipeline with package import into NGR; Android-hosted preparation remains unimplemented and must not be advertised as available.
 - [ ] Add user-owned Switch key storage with strict redaction; never package keys, firmware or game data.
 - [ ] Add only Xbox 360 and Switch import flows; do not add other console targets.
 
