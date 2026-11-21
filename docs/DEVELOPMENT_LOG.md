@@ -1313,5 +1313,5 @@ This is the durable project memory. Update it in every development session.
 - Artifact NGR-arm64-debug ID 14712576422 (expires 2026-12-05); ZIP SHA-256 e5a0b9075bd0000bd12e57e6b7c3f94500438476ee29e3e673ef3c7c457726bf.
 - Extracted app-debug.apk size 4,178,861 bytes; SHA-256 d581caae4745d5252e17190842d847842e5bb53ff7105af0f6ca2a4535a1f762.
 - APK contains lib/arm64-v8a/libngr_runtime.so; archive contains WorkManager runtime metadata.
-- Follow-up fix in commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 treats negative SAF size metadata as unknown instead of rejecting the source. Run #484: native tests and JVM tests passed; ARM64 APK build/upload still in progress at this update.
+- Follow-up fix in commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 treats negative SAF size metadata as unknown instead of rejecting the source. Run #484 passed native tests, all JVM tests, ARM64 APK build and artifact upload. Artifact ID 14712008705; ZIP SHA-256 068bfaa3e551f9c7623f331d41e537bd9f59f4e2d8349675210b246c56e35f79. Extracted APK size 4,178,861 bytes; SHA-256 93feb3b6efd730dbbd59a29810480380fb0e18595fd5eb3f912d428fa5d37087.
 - Device behavior remains unverified; this build does not contain a console compiler or playable game runtime.

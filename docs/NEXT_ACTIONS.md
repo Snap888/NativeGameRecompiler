@@ -429,5 +429,5 @@ Mark complete only when evidence exists.
 - [x] Run #483 (44917831975), commit d8b1a08a85902b407bee92f513b1d6cc719acb9b: native ABI conformance, backend registry tests, all JVM tests, ARM64 debug APK and artifact upload passed.
 - [x] Artifact NGR-arm64-debug ID 14712576422; ZIP SHA-256 e5a0b9075bd0000bd12e57e6b7c3f94500438476ee29e3e673ef3c7c457726bf.
 - [x] Extracted APK SHA-256 d581caae4745d5252e17190842d847842e5bb53ff7105af0f6ca2a4535a1f762; includes lib/arm64-v8a/libngr_runtime.so and WorkManager runtime metadata.
-- [ ] Run #484 (44917991394) validates latest main commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 (SAF providers reporting unknown size); JVM and native tests passed, ARM64 APK build/upload still running at log update.
+- [x] Run #484 (44917991394) passed all native/JVM tests, ARM64 APK build and artifact upload at commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85. Artifact ID 14712008705; ZIP SHA-256 068bfaa3e551f9c7623f331d41e537bd9f59f4e2d8349675210b246c56e35f79; APK SHA-256 93feb3b6efd730dbbd59a29810480380fb0e18595fd5eb3f912d428fa5d37087.
 - [ ] Physical-device test on Snapdragon/Adreno: SAF persistent grant, multi-GB source copy, notification, cancellation, restart and low-storage behavior.
