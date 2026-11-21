@@ -80,6 +80,42 @@ class SwitchRuntimeLauncherTest {
     }
 
     @Test
+    fun rejectsProfileHeaderHashMismatch() {
+        val root = Files.createTempDirectory("ngr-switch-profile-tampered").toFile()
+        try {
+            val library = SwitchRuntimeLauncher.runtimeLibrary(root, titleId)
+            library.parentFile.mkdirs()
+            library.writeBytes(byteArrayOf(1, 2, 3, 4))
+            val packageDir = library.parentFile.parentFile
+            File(packageDir, "runtime/game_profile.h").writeText("tampered profile")
+            val runtimeHash = MessageDigest.getInstance("SHA-256").digest(library.readBytes())
+                .joinToString("") { "%02x".format(it) }
+            File(packageDir, "runtime-build.json").writeText(
+                """
+                {
+                  "format":"ngr-switch-runtime-build",
+                  "schema_version":1,
+                  "title_id":"$titleId",
+                  "donor_revision":"${SwitchRuntimePackageVerifier.DONOR_REVISION}",
+                  "runtime_library":"runtime/libdmhost.so",
+                  "runtime_sha256":"$runtimeHash",
+                  "profile_header":"runtime/game_profile.h",
+                  "profile_header_sha256":"${"0".repeat(64)}",
+                  "abi":"arm64-v8a",
+                  "entry_point":"ANativeActivity_onCreate",
+                  "apk_generated":false
+                }
+                """.trimIndent()
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                SwitchRuntimeLauncher.validateRuntimeLibrary(root, titleId)
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun rejectsRuntimeHashMismatch() {
         val root = Files.createTempDirectory("ngr-switch-tampered").toFile()
         try {
