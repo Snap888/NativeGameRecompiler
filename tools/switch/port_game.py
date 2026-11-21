@@ -100,6 +100,8 @@ def main() -> int:
     parser.add_argument("--version", default="")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     parser.add_argument("--experimental", action="store_true")
+    parser.add_argument("--vulkan-driver", choices=("system",), default="system",
+                        help="use Android's system Vulkan driver; custom Turnip packaging is not integrated yet")
     args = parser.parse_args()
 
     if not args.keys.is_file():
@@ -159,7 +161,7 @@ def main() -> int:
     command = [sys.executable, "-m", "porter", "port", str(source_folder),
                "--keys", str(keys), "--out", str(donor_output),
                "--package", "com.ngr.app", "--language", args.language,
-               "--jobs", str(args.jobs)]
+               "--jobs", str(args.jobs), "--vulkan-driver", args.vulkan_driver]
     if args.version:
         command += ["--version", args.version]
     if args.experimental:
@@ -232,6 +234,7 @@ def main() -> int:
             "abi": "arm64-v8a",
             "entry_point": "ANativeActivity_onCreate",
             "apk_generated": False,
+            "vulkan_driver": args.vulkan_driver,
             "data_manifest": "data/nx2a-data.json",
         }
         (temporary / "runtime-build.json").write_text(
