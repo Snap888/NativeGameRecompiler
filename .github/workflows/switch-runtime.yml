@@ -54,7 +54,7 @@ jobs:
       - name: Build title-specific Android NativeActivity runtime
         shell: bash
         run: |
-          mkdir -p "build/switch-port/$TITLE_ID"
+          mkdir -p "build/switch-ports/$TITLE_ID"
           python tools/switch/build_runtime.py \
             --nx2android "$PWD/nx2android" \
             --title-id "$TITLE_ID" \
