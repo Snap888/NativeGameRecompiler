@@ -340,7 +340,8 @@ Mark complete only when evidence exists.
 - [x] Add typed ConsoleRecompilerTargets catalog containing exactly Xbox 360 and Nintendo Switch.
 - [x] Add JVM tests for target exclusivity, accepted formats, preparation modes and key requirements.
 - [x] Add docs/XBOX360_SWITCH_INTEGRATION_PLAN.md with source revisions, architecture boundaries, licensing and staged acceptance criteria.
-- [ ] Run JVM tests and arm64-v8a APK CI for the target catalog.
+- [x] Compile the target catalog in isolation with kotlinc and run runtime assertions (two-target exclusivity, file detection, key requirement).
+- [ ] Run full Gradle JVM tests and arm64-v8a APK CI for the target catalog.
 - [ ] Implement compiler job ABI separately from execution Backend ABI v1 (progress, cancel, resume, bounded logs, quotas).
 - [ ] Add immutable source/toolchain/profile fingerprints and per-title profile validation.
 - [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
