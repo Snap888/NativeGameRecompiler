@@ -396,3 +396,10 @@ Mark complete only when evidence exists.
 - Source archive SHA-256: 31af71f8eed4858551099c879d94778c5b1e10ba209651fda3baac751cc0d024.
 - ELF: AArch64, Android API 29, NDK r27d, dynamically linked only against libm.so, libdl.so and libc.so; 16 KB page compatibility enabled.
 - [ ] Run a synthetic PPC fixture through XenonRecomp and compile its generated C++ with Android Clang/LLD.
+
+
+### Xbox 360 Clang/LLD Android kit — 2026-11-21
+- [x] Add pinned LLVM 22.1.8 source hash and NDK r27d build script for Android-hosted Clang/LLD plus matching sysroot/resource headers.
+- [x] Add isolated 180-minute GitHub Actions workflow; first build result pending.
+- [ ] Verify Clang/LLD Android cross-build, 16 KB ELF and kit contents.
+- [ ] Use the tools to compile generated C++ from a synthetic PPC fixture.

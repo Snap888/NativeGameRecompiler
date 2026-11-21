@@ -1259,3 +1259,11 @@ This is the durable project memory. Update it in every development session.
 - Binary SHA-256 1ae719f34b888fc15d113e700ec4e695ef826ecf0b2399cfb733bfe474390fe2; source archive SHA-256 31af71f8eed4858551099c879d94778c5b1e10ba209651fda3baac751cc0d024.
 - ELF inspection confirms AArch64, Android API 29 and 16 KB page compatibility. DT_NEEDED is limited to libm.so, libdl.so and libc.so.
 - This is a real PPC-to-C++ compiler executable, not a game runtime. Synthetic PPC fixture, Android Clang/LLD and title-specific runtime integration remain pending.
+
+
+### Xbox 360 Android Clang/LLD kit — 2026-11-21
+- Added toolchains/xbox360/build_clang_kit_android.sh using LLVM 22.1.8 source SHA-256 pin and NDK 27.3.13750724.
+- Workflow builds host tablegens, cross-compiles Android Clang and LLD for API 29/arm64-v8a with 16 KB page compatibility, and assembles the matching NDK sysroot/resource-header kit.
+- Artifact contains libclang.so, liblld.so, kit.zip, LLVM/NDK license notices, provenance and SHA-256 manifest.
+- Build is intentionally separate from XenonRecomp. No game build worker, title runtime or playable title is claimed.
+- CI result pending.
