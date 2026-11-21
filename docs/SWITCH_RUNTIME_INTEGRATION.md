@@ -38,7 +38,7 @@ A donor `libdmhost.so` exports `ANativeActivity_onCreate`. It is compiled with a
 NGR now has the first loader and runtime-build adapter slice:
 
 - `native/ngr-runtime/src/switch_activity_loader.cpp` exports the NativeActivity entry point registered by NGR's manifest.
-- The loader reads the runtime library path from the activity intent.
+- The loader reads the runtime library path from the activity intent and validates a per-title private root for saves and temporary files.
 - It accepts only a canonical regular file under NGR's private `files/switch-ports/` directory and requires the donor runtime filename `runtime/libdmhost.so`.
 - It loads the selected per-title library with `dlopen`, resolves its `ANativeActivity_onCreate`, and forwards the existing activity lifecycle to it. The library handle is retained for the activity lifetime.
 - `SwitchRuntimeLauncher.kt` validates the 16-hex title ID and delegates to `SwitchRuntimePackageVerifier`, then launches the in-package NativeActivity with the path extra.
