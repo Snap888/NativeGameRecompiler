@@ -20,8 +20,8 @@ files/switch-ports/<TITLE_ID>/
   runtime/libdmhost.so
   runtime/game_profile.h
   runtime-build.json
-  saves/                 # donor DM_SAVE root
-  tmp/                   # donor DM_TEMP root
+  save/                  # donor DM_SAVE root
+  temp/                  # donor DM_TEMP root
 
 external-files/switch-ports/<TITLE_ID>/data/
   nx2a-data.json
