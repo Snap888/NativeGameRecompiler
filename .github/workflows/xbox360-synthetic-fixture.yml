@@ -47,11 +47,13 @@ jobs:
           ninja -C "$BUILD" -j2 XenonRecomp
           python3 -I toolchains/xbox360/tests/make_synthetic_xex.py "$FIXTURE"
           "$BUILD/XenonRecomp/XenonRecomp" "$FIXTURE/config.toml" "$SRC/XenonUtils/ppc_context.h"
+          echo "Generated fixture files:"
+          find "$FIXTURE/out" -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort
           test -s "$FIXTURE/out/ppc_config.h"
           test -s "$FIXTURE/out/ppc_context.h"
           test -s "$FIXTURE/out/ppc_recomp_shared.h"
           test -s "$FIXTURE/out/ppc_func_mapping.cpp"
           test -s "$FIXTURE/out/ppc_recomp.0.cpp"
           grep -q 'PPC_EXTERN_FUNC(_xstart)' "$FIXTURE/out/ppc_recomp_shared.h"
-          grep -q 'PPC_FUNC(_xstart)' "$FIXTURE/out/ppc_recomp.0.cpp"
+          grep -q 'PPC_FUNC_IMPL(__imp___xstart)' "$FIXTURE/out/ppc_recomp.0.cpp"
           echo "Synthetic XEX2 -> PPC C++ translation passed."
