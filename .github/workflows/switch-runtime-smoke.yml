@@ -1,0 +1,70 @@
+name: Nintendo Switch runtime smoke build
+
+on:
+  push:
+    paths:
+      - "tools/switch/**"
+      - "native/ngr-runtime/**"
+      - "app/src/main/AndroidManifest.xml"
+      - "app/src/main/java/com/ngr/app/recompiler/SwitchRuntime*.kt"
+      - ".github/workflows/switch-runtime-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-donor-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout NGR
+        uses: actions/checkout@v4
+
+      - name: Set up Java for Android SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install pinned NDK
+        run: sdkmanager --install "ndk;27.2.12479018"
+
+      - name: Fetch pinned nx2android source
+        env:
+          DONOR_REVISION: f32b3d563f0615d0e825747285d4e38d780e4ebb
+        run: |
+          git clone --no-checkout --recurse-submodules https://github.com/shirai91/nx2android.git "$RUNNER_TEMP/nx2android"
+          git -C "$RUNNER_TEMP/nx2android" checkout "$DONOR_REVISION"
+          git -C "$RUNNER_TEMP/nx2android" submodule update --init --recursive
+          test "$(git -C "$RUNNER_TEMP/nx2android" rev-parse HEAD)" = "$DONOR_REVISION"
+
+      - name: Validate adapter syntax
+        run: python -m py_compile tools/switch/build_runtime.py
+
+      - name: Build title-profiled NativeActivity runtime (no APK)
+        run: |
+          python tools/switch/build_runtime.py \
+            --nx2android "$RUNNER_TEMP/nx2android" \
+            --title-id 0100000000010000 \
+            --ndk "$ANDROID_HOME/ndk/27.2.12479018" \
+            --package-dir "$RUNNER_TEMP/switch-ports/0100000000010000" \
+            --jobs 2
+
+      - name: Upload runtime smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGR-Switch-Runtime-Smoke
+          path: |
+            ${{ runner.temp }}/switch-ports/0100000000010000/runtime/libdmhost.so
+            ${{ runner.temp }}/switch-ports/0100000000010000/runtime-build.json
+          if-no-files-found: error
+          retention-days: 14
