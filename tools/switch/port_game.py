@@ -66,7 +66,10 @@ def copy_overlay_assets(donor: Path, title_id: str, data_root: Path) -> None:
         raise SystemExit(f"Unable to resolve the donor gamepad theme: {error}") from error
     if not theme_source.is_dir():
         raise SystemExit(f"Donor gamepad theme directory is missing: {theme_source}")
-    copy_tree(theme_source, data_root / "assets/overlay")
+    overlay_target = data_root / "assets/overlay"
+    if overlay_target.exists():
+        raise SystemExit("Data pack already contains assets/overlay; refusing to overwrite title assets")
+    copy_tree(theme_source, overlay_target)
 
     font_source = donor / "nxnative/dm/third_party/fusion-pixel-font"
     font_file = font_source / "fusion-pixel-12px-proportional-zh_tw.nxpf"
@@ -74,10 +77,15 @@ def copy_overlay_assets(donor: Path, title_id: str, data_root: Path) -> None:
         raise SystemExit(f"Donor overlay font is missing or unsafe: {font_file}")
     font_target = data_root / "assets/font"
     font_target.mkdir(parents=True, exist_ok=True)
+    if (font_target / "ui.bin").exists():
+        raise SystemExit("Data pack already contains assets/font/ui.bin; refusing to overwrite")
     shutil.copy2(font_file, font_target / "ui.bin")
     for notice in font_source.glob("*.txt"):
         if notice.is_file() and not notice.is_symlink():
-            shutil.copy2(notice, font_target / notice.name)
+            target_notice = font_target / notice.name
+            if target_notice.exists():
+                raise SystemExit(f"Data pack font notice collision: {target_notice}")
+            shutil.copy2(notice, target_notice)
 
 
 def main() -> int:
