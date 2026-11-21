@@ -86,9 +86,23 @@ def main() -> int:
         parser.error("--output must not already exist")
     output.parent.mkdir(parents=True, exist_ok=True)
     donor_output = Path(tempfile.mkdtemp(prefix="ngr-nx2a-output-"))
-    patch = ngr / "patches/nx2android/0002-ngrn-build-without-per-game-apk.patch"
-    if not patch.is_file():
-        raise SystemExit(f"NGR no-APK patch is missing: {patch}")
+    patches = [
+        (ngr / "patches/nx2android/0001-use-ngr-title-data-root.patch",
+         donor / "nxnative/dm/android/front_android.c", "NGR_SWITCH_GAME_ROOT"),
+        (ngr / "patches/nx2android/0002-ngrn-build-without-per-game-apk.patch",
+         donor / "porter/pipeline.py", "NGR_NO_APK"),
+    ]
+    for patch, target, marker in patches:
+        if not patch.is_file():
+            raise SystemExit(f"Required NGR donor patch is missing: {patch}")
+        current = target.read_text(encoding="utf-8")
+        if marker in current:
+            continue
+        check = subprocess.run(["git", "apply", "--check", str(patch)], cwd=donor,
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if check.returncode:
+            raise SystemExit(f"Donor source no longer matches reviewed patch {patch.name}:\\n" + check.stdout)
+        subprocess.run(["git", "apply", str(patch)], cwd=donor, check=True)
 
     revision = subprocess.check_output(
         ["git", "-C", str(donor), "rev-parse", "HEAD"], text=True
@@ -96,16 +110,6 @@ def main() -> int:
     if revision != PINNED_NX2ANDROID_REVISION:
         raise SystemExit(f"Expected nx2android {PINNED_NX2ANDROID_REVISION}, got {revision}")
 
-    pipeline = donor / "porter/pipeline.py"
-    original = pipeline.read_text(encoding="utf-8")
-    if "NGR_NO_APK" not in original:
-        check = subprocess.run(["git", "apply", "--check", str(patch)], cwd=donor,
-                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        if check.returncode:
-            raise SystemExit("Pinned nx2android pipeline does not match the reviewed patch:\n" + check.stdout)
-        subprocess.run(["git", "apply", str(patch)], cwd=donor, check=True)
-    elif "self.result.get(\"apk\"" not in original:
-        raise SystemExit("Unexpected or partial NGR patch state in nx2android checkout")
 
     env = dict(os.environ)
     env.update({
