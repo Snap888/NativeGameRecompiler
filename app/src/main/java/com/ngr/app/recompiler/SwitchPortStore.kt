@@ -35,7 +35,8 @@ class SwitchPortStore(private val context: Context) {
             val runtime = File(dir, "runtime/libdmhost.so")
             val data = File(external, "$id/data")
             if (!runtime.isFile || !data.isDirectory || !File(data, "nx2a-data.json").isFile ||
-                !File(data, "mods").isDirectory || !File(data, "env.txt").isFile) return@mapNotNull null
+                !File(data, "mods").isDirectory || !File(data, "env.txt").isFile ||
+                !File(data, "assets/overlay/theme.tsv").isFile || !File(data, "assets/font/ui.bin").isFile) return@mapNotNull null
             val manifest = readJson(File(data, "nx2a-data.json")) ?: return@mapNotNull null
             if (manifest.optString("title_id").uppercase(Locale.ROOT) != id) return@mapNotNull null
             InstalledSwitchPort(id, manifest.optString("name", "Nintendo Switch game"),
@@ -83,6 +84,12 @@ class SwitchPortStore(private val context: Context) {
         }
         if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
         if (dataDir.findFile("env.txt")?.isFile != true) throw IOException("env.txt is missing")
+        val assets = dataDir.findFile("assets")?.takeIf { it.isDirectory }
+            ?: throw IOException("NGR per-title assets folder is missing")
+        if (assets.findFile("overlay")?.findFile("theme.tsv")?.isFile != true ||
+            assets.findFile("font")?.findFile("ui.bin")?.isFile != true) {
+            throw IOException("Switch gamepad theme or overlay font is missing")
+        }
 
         val internalRoot = File(context.filesDir, "switch-ports")
         val externalBase = context.getExternalFilesDir(null) ?: throw IOException("External app storage is unavailable")
