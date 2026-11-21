@@ -7,6 +7,7 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.util.Locale
+import java.security.MessageDigest
 import org.json.JSONObject
 
 /**
@@ -45,7 +46,12 @@ object SwitchRuntimeLauncher {
     }
 
     @Throws(IOException::class)
-    fun validateGameDataRoot(externalFilesDir: File, titleId: String): File {
+    fun validateGameDataRoot(
+        externalFilesDir: File,
+        titleId: String,
+        expectedProfileHash: String? = null,
+        expectedDataManifestHash: String? = null
+    ): File {
         val root = externalFilesDir.canonicalFile
         val expected = gameDataRoot(root, titleId)
         val canonical = expected.canonicalFile
@@ -60,6 +66,16 @@ object SwitchRuntimeLauncher {
         require(manifest.optString("title_id").uppercase(Locale.ROOT) == titleId.uppercase(Locale.ROOT)) {
             "Switch data manifest title ID does not match the selected runtime"
         }
+        if (expectedProfileHash != null) {
+            require(manifest.optString("profile_h").equals(expectedProfileHash, ignoreCase = true)) {
+                "Switch data pack was built for a different game profile"
+            }
+        }
+        if (expectedDataManifestHash != null) {
+            require(HASH.matches(expectedDataManifestHash) && sha256(manifestFile) == expectedDataManifestHash.lowercase(Locale.ROOT)) {
+                "Switch data manifest hash does not match the runtime receipt"
+            }
+        }
         require(File(expected, "mods").isDirectory) { "Rewritten Switch modules are missing" }
         require(File(expected, "env.txt").isFile) { "Switch runtime environment file is missing" }
         require(File(expected, "assets/overlay/theme.tsv").isFile &&
@@ -67,11 +83,30 @@ object SwitchRuntimeLauncher {
         return expected
     }
 
+    private val HASH = Regex("^[0-9a-fA-F]{64}$")
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
     fun launch(context: Context, titleId: String) {
         val library = validateRuntimeLibrary(context.filesDir, titleId)
         val externalRoot = context.getExternalFilesDir(null)
             ?: throw IOException("App-specific external storage is unavailable")
-        val gameRoot = validateGameDataRoot(externalRoot, titleId)
+        val runtimeRoot = library.parentFile.parentFile
+        val receipt = JSONObject(File(runtimeRoot, "runtime-build.json").readText(Charsets.UTF_8))
+        val expectedProfileHash = receipt.optString("profile_header_sha256")
+        val expectedDataManifestHash = receipt.optString("data_manifest_sha256")
+        val gameRoot = validateGameDataRoot(externalRoot, titleId, expectedProfileHash, expectedDataManifestHash)
         val intent = Intent(context, NativeActivity::class.java).apply {
             putExtra(EXTRA_RUNTIME_LIBRARY, library.absolutePath)
             putExtra(EXTRA_GAME_ROOT, gameRoot.absolutePath)
