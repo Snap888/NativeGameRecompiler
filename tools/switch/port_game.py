@@ -164,6 +164,16 @@ def main() -> int:
         shutil.copyfile(host, runtime_dir / "libdmhost.so")
         copy_tree(data_source, temporary / "data")
 
+        # nx2android writes absolute paths rooted at its package's files folder.
+        # In NGR, each title's pack lives one level below that folder.
+        env_file = temporary / "data/env.txt"
+        if env_file.is_file():
+            donor_files_root = "/sdcard/Android/data/com.ngr.app/files"
+            ngr_title_root = donor_files_root + f"/switch-ports/{title_id}/data"
+            env_text = env_file.read_text(encoding="utf-8")
+            env_file.write_text(env_text.replace(donor_files_root, ngr_title_root),
+                                encoding="utf-8", newline="\\n")
+
         license_candidates = [donor / "nxnative/LICENSE", donor / "LICENSE"]
         license_file = next((p for p in license_candidates if p.is_file()), None)
         if license_file:
