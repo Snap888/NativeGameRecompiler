@@ -54,6 +54,8 @@ object SwitchRuntimeLauncher {
         require(File(expected, "nx2a-data.json").isFile) { "nx2android data manifest is missing" }
         require(File(expected, "mods").isDirectory) { "Rewritten Switch modules are missing" }
         require(File(expected, "env.txt").isFile) { "Switch runtime environment file is missing" }
+        require(File(expected, "assets/overlay/theme.tsv").isFile &&
+            File(expected, "assets/font/ui.bin").isFile) { "Switch per-title overlay assets are missing" }
         return expected
     }
 
