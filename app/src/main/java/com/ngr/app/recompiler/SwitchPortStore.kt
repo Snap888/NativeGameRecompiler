@@ -55,8 +55,8 @@ class SwitchPortStore(private val context: Context) {
             ?: throw IOException("runtime/libdmhost.so is missing")
         val manifestDoc = dataDir.findFile("nx2a-data.json")?.takeIf { it.isFile }
             ?: throw IOException("data/nx2a-data.json is missing")
-        val runtimeManifestDoc = tree.findFile("runtime-manifest.json")?.takeIf { it.isFile }
-            ?: throw IOException("runtime-manifest.json is missing")
+        val runtimeReceiptDoc = tree.findFile("runtime-build.json")?.takeIf { it.isFile }
+            ?: throw IOException("runtime-build.json is missing")
 
         val manifestBytes = context.contentResolver.openInputStream(manifestDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
             ?: throw IOException("Unable to read nx2a-data.json")
@@ -64,15 +64,23 @@ class SwitchPortStore(private val context: Context) {
             .getOrElse { throw IOException("Invalid nx2a-data.json", it) }
         val titleId = manifest.optString("title_id").uppercase(Locale.ROOT)
         if (!titlePattern.matches(titleId)) throw IOException("Data pack has an invalid title_id")
-        val runtimeManifestBytes = context.contentResolver.openInputStream(runtimeManifestDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
-            ?: throw IOException("Unable to read runtime-manifest.json")
-        val runtimeManifest = runCatching { JSONObject(String(runtimeManifestBytes, Charsets.UTF_8)) }
-            .getOrElse { throw IOException("Invalid runtime-manifest.json", it) }
-        if (runtimeManifest.optString("target") != "nintendo-switch" ||
-            runtimeManifest.optString("title_id").uppercase(Locale.ROOT) != titleId ||
-            runtimeManifest.optString("runtime") != "runtime/libdmhost.so") throw IOException("Runtime component does not match this Switch title")
-        val expectedHash = runtimeManifest.optString("sha256").lowercase(Locale.ROOT)
-        if (!Regex("^[0-9a-f]{64}$").matches(expectedHash)) throw IOException("Runtime SHA-256 is missing")
+        val runtimeReceiptBytes = context.contentResolver.openInputStream(runtimeReceiptDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
+            ?: throw IOException("Unable to read runtime-build.json")
+        val runtimeReceipt = runCatching { JSONObject(String(runtimeReceiptBytes, Charsets.UTF_8)) }
+            .getOrElse { throw IOException("Invalid runtime-build.json", it) }
+        if (runtimeReceipt.optString("format") != "ngr-switch-runtime-build" ||
+            runtimeReceipt.optInt("schema_version") != 1 ||
+            runtimeReceipt.optString("title_id").uppercase(Locale.ROOT) != titleId ||
+            runtimeReceipt.optString("donor_revision") != SwitchRuntimePackageVerifier.DONOR_REVISION ||
+            runtimeReceipt.optString("runtime_library") != "runtime/libdmhost.so" ||
+            runtimeReceipt.optString("abi") != "arm64-v8a" ||
+            runtimeReceipt.optString("entry_point") != "ANativeActivity_onCreate" ||
+            runtimeReceipt.optBoolean("apk_generated", true)) throw IOException("Runtime receipt does not match this NGR Switch build")
+        val expectedHash = runtimeReceipt.optString("runtime_sha256").lowercase(Locale.ROOT)
+        if (!Regex("^[0-9a-f]{64}$").matches(expectedHash) ||
+            !Regex("^[0-9a-fA-F]{64}$").matches(runtimeReceipt.optString("profile_header_sha256"))) {
+            throw IOException("Runtime SHA-256/profile receipt is missing")
+        }
         if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
         if (dataDir.findFile("env.txt")?.isFile != true) throw IOException("env.txt is missing")
 
@@ -92,7 +100,7 @@ class SwitchPortStore(private val context: Context) {
             copyDocument(runtimeDoc, runtimeOut, maxRuntimeBytes)
             validateElf64Arm64(runtimeOut)
             if (sha256(runtimeOut) != expectedHash) throw IOException("Switch runtime SHA-256 mismatch")
-            File(runtimeTemp, "runtime-manifest.json").writeBytes(runtimeManifestBytes)
+            File(runtimeTemp, "runtime-build.json").writeBytes(runtimeReceiptBytes)
             tree.findFile("NX2ANDROID-LICENSE")?.takeIf { it.isFile }?.let { copyDocument(it, File(runtimeTemp, "NX2ANDROID-LICENSE"), 1024L * 1024) }
 
             val dataOut = File(dataTemp, "data")
