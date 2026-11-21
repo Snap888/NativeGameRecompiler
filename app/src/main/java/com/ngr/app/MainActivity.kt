@@ -24,6 +24,10 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.ngr.app.recompiler.ConsoleBuildJob
 import com.ngr.app.recompiler.ConsoleBuildJobState
 import com.ngr.app.recompiler.ConsoleBuildJobStore
@@ -325,6 +329,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         root.addView(diagnostics, sectionParams())
 
         setContentView(scroll)
+        WorkManager.getInstance(this).getWorkInfosByTagLiveData(ConsoleSourceStagingWorker.WORK_TAG)
+            .observe(this) { refreshConsoleBuildJobs() }
         refresh()
     }
 
@@ -1355,8 +1361,17 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             Toast.makeText(this, "Job not queued: ${result.error}", Toast.LENGTH_LONG).show()
             return
         }
-        NgrLogger.info("console.recompiler", "Queued metadata job id=${job.jobId} target=${target.stableId}")
-        Toast.makeText(this, "Job saved. Compiler worker is not connected yet.", Toast.LENGTH_LONG).show()
+        val request = OneTimeWorkRequestBuilder<ConsoleSourceStagingWorker>()
+            .setInputData(workDataOf(ConsoleSourceStagingWorker.KEY_JOB_ID to job.jobId))
+            .addTag(ConsoleSourceStagingWorker.WORK_TAG)
+            .build()
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            ConsoleSourceStagingWorker.uniqueWorkName(job.jobId),
+            ExistingWorkPolicy.KEEP,
+            request
+        )
+        NgrLogger.info("console.recompiler", "Queued source staging job id=${job.jobId} target=${target.stableId}")
+        Toast.makeText(this, "Source queued for background validation and staging", Toast.LENGTH_LONG).show()
         refreshConsoleBuildJobs()
     }
 
@@ -1366,7 +1381,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         consoleBuildJobStatus.text = buildString {
             append("${result.jobs.size} console build job(s)")
             if (result.errors.isNotEmpty()) append(" · ${result.errors.size} invalid record(s)")
-            append("\nQueue persistence is active; compilation has not started.")
+            append("\nSource intake runs in the background; PPC/NSO compilers and playable runtimes are still pending.")
         }
         if (result.jobs.isEmpty()) {
             consoleBuildJobList.addView(TextView(this).apply {
@@ -1388,7 +1403,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                 setOnClickListener {
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle(job.sourceDisplayName)
-                        .setMessage("Target: ${job.targetId.stableId}\nState: ${job.state}\nStage: ${job.stage}\nProgress: ${job.progressPercent}%\nJob ID: ${job.jobId}\n\nThe compiler/runtime worker is not connected yet.")
+                        .setMessage("Target: ${job.targetId.stableId}\nState: ${job.state}\nStage: ${job.stage}\nProgress: ${job.progressPercent}%\nSHA-256: ${job.sourceSha256 ?: "pending"}\nJob ID: ${job.jobId}\n\nSource staging is implemented. Game extraction, recompilation, shader translation and playable runtime integration are still pending.")
                         .setPositiveButton("Close", null).show()
                 }
             }
@@ -1399,7 +1414,12 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
                     isAllCaps = false
                     setOnClickListener {
                         val cancelled = consoleBuildJobStore.requestCancel(job.jobId)
-                        if (!cancelled.success) Toast.makeText(this@MainActivity, cancelled.error, Toast.LENGTH_SHORT).show()
+                        if (cancelled.success) {
+                            WorkManager.getInstance(this@MainActivity)
+                                .cancelUniqueWork(ConsoleSourceStagingWorker.uniqueWorkName(job.jobId))
+                        } else {
+                            Toast.makeText(this@MainActivity, cancelled.error, Toast.LENGTH_SHORT).show()
+                        }
                         refreshConsoleBuildJobs()
                     }
                 })

@@ -8,7 +8,7 @@ enum class ConsoleBuildJobState {
 }
 
 enum class ConsoleBuildStage {
-    VALIDATE_SOURCE, EXTRACT, RECOMPILE_PPC, REWRITE_NSO, BUILD_SHADERS,
+    VALIDATE_SOURCE, SOURCE_STAGED, EXTRACT, RECOMPILE_PPC, REWRITE_NSO, BUILD_SHADERS,
     COMPILE_ARM64, BUILD_RUNTIME, PACKAGE_OUTPUT, VERIFY_OUTPUT, COMPLETE
 }
 
@@ -68,7 +68,7 @@ data class ConsoleBuildJob(
 
         fun stagesFor(target: ConsoleTargetId): List<ConsoleBuildStage> = when (target) {
             ConsoleTargetId.XBOX_360 -> listOf(
-                ConsoleBuildStage.VALIDATE_SOURCE, ConsoleBuildStage.EXTRACT,
+                ConsoleBuildStage.VALIDATE_SOURCE, ConsoleBuildStage.SOURCE_STAGED, ConsoleBuildStage.EXTRACT,
                 ConsoleBuildStage.RECOMPILE_PPC, ConsoleBuildStage.COMPILE_ARM64,
                 ConsoleBuildStage.BUILD_RUNTIME, ConsoleBuildStage.PACKAGE_OUTPUT,
                 ConsoleBuildStage.VERIFY_OUTPUT, ConsoleBuildStage.COMPLETE
