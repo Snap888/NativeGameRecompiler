@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install host tools
-        run: sudo apt-get update && sudo apt-get install -y git curl python3 ninja-build cmake g++
+        run: sudo apt-get update && sudo apt-get install -y git curl python3 ninja-build cmake clang
 
       - name: Fetch pinned XenonRecomp and XDroid360 patch
         shell: bash
@@ -41,6 +41,8 @@ jobs:
           SRC="$RUNNER_TEMP/xr/src"
           BUILD="$RUNNER_TEMP/xr/build-host"
           FIXTURE="$RUNNER_TEMP/xr/fixture"
+          export CC=clang
+          export CXX=clang++
           cmake -G Ninja -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release
           ninja -C "$BUILD" -j2 XenonRecomp
           python3 -I toolchains/xbox360/tests/make_synthetic_xex.py "$FIXTURE"
