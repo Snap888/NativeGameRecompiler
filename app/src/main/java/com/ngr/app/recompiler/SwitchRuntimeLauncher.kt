@@ -6,6 +6,8 @@ import android.app.NativeActivity
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.util.Locale
+import org.json.JSONObject
 
 /**
  * Launches a title-specific nx2android NativeActivity runtime inside NGR.
@@ -51,7 +53,13 @@ object SwitchRuntimeLauncher {
         require(canonical.path.startsWith(prefix)) { "Switch data path escapes NGR storage" }
         require(canonical == expected) { "Switch data root must not resolve through a symbolic link" }
         require(expected.isDirectory) { "Switch data pack is missing" }
-        require(File(expected, "nx2a-data.json").isFile) { "nx2android data manifest is missing" }
+        val manifestFile = File(expected, "nx2a-data.json")
+        require(manifestFile.isFile && manifestFile.length() in 2..65536 &&
+            !Files.isSymbolicLink(manifestFile.toPath())) { "nx2android data manifest is missing or unsafe" }
+        val manifest = JSONObject(manifestFile.readText(Charsets.UTF_8))
+        require(manifest.optString("title_id").uppercase(Locale.ROOT) == titleId.uppercase(Locale.ROOT)) {
+            "Switch data manifest title ID does not match the selected runtime"
+        }
         require(File(expected, "mods").isDirectory) { "Rewritten Switch modules are missing" }
         require(File(expected, "env.txt").isFile) { "Switch runtime environment file is missing" }
         require(File(expected, "assets/overlay/theme.tsv").isFile &&
