@@ -59,3 +59,5 @@ No backend plugin loader, static game recompiler, dynamic translator, N64Recomp 
 ## Legal
 
 NGR does not distribute copyrighted game data, ROMs, BIOS images, encryption keys or proprietary assets. Users must provide content they are legally entitled to use. Third-party components will be integrated only after license and compatibility review.
+
+- [Static recompiler integration audit](docs/RECOMPILER_INTEGRATION_AUDIT.md) — upstream source review, Android adaptation map, licensing gates and staged implementation plan.
