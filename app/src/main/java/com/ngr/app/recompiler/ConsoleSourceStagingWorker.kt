@@ -184,7 +184,7 @@ class ConsoleSourceStagingWorker(
 
     private fun querySize(uri: Uri): Long? = runCatching {
         applicationContext.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use {
-            if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null
+            if (it.moveToFirst() && !it.isNull(0)) it.getLong(0).takeIf { size -> size >= 0L } else null
         }
     }.getOrNull()
 
