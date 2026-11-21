@@ -164,6 +164,7 @@ def main() -> int:
         runtime_dir = temporary / "runtime"
         runtime_dir.mkdir()
         shutil.copyfile(host, runtime_dir / "libdmhost.so")
+        shutil.copyfile(generated_profile, runtime_dir / "game_profile.h")
         copy_tree(data_source, temporary / "data")
 
         # The donor APK normally carries a per-title controller theme and a shared
@@ -213,7 +214,8 @@ def main() -> int:
             "donor_revision": revision,
             "runtime_library": "runtime/libdmhost.so",
             "runtime_sha256": sha256(runtime_dir / "libdmhost.so"),
-            "profile_header_sha256": sha256(generated_profile),
+            "profile_header": "runtime/game_profile.h",
+            "profile_header_sha256": sha256(runtime_dir / "game_profile.h"),
             "abi": "arm64-v8a",
             "entry_point": "ANativeActivity_onCreate",
             "apk_generated": False,
