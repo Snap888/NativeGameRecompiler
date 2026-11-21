@@ -20,12 +20,12 @@ object SwitchRuntimeLauncher {
 
     fun runtimeLibrary(filesDir: File, titleId: String): File {
         require(TITLE_ID.matches(titleId)) { "Invalid Switch title ID" }
-        return File(filesDir, "switch-ports/$titleId/runtime/libdmhost.so")
+        return File(filesDir, "switch-ports/${titleId.uppercase()}/runtime/libdmhost.so")
     }
 
     fun gameDataRoot(externalFilesDir: File, titleId: String): File {
         require(TITLE_ID.matches(titleId)) { "Invalid Switch title ID" }
-        return File(externalFilesDir, "switch-ports/$titleId/data")
+        return File(externalFilesDir, "switch-ports/${titleId.uppercase()}/data")
     }
 
     @Throws(IOException::class)
