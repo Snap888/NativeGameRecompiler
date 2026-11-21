@@ -1119,3 +1119,36 @@ This is the durable project memory. Update it in every development session.
 - Actions run #429 (44316501792), commit `03f369e5fed7bf657bca68c76674cdfe466030cd`, passed Native ABI conformance, backend registry, JVM unit tests, ARM64 debug APK build and artifact upload.
 - Artifact ID `14433695246` downloaded and inspected. ZIP contains `app-debug.apk` (2,486,165 bytes), including `lib/arm64-v8a/libngr_runtime.so`. APK SHA-256: `5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44`.
 - Physical Android installation and multi-GB SAF import remain unverified; no device test is claimed.
+
+
+## Session 2026-11-21 — Static recompiler source audit
+
+### Repository baseline
+- Inspected current main README and technical documents in Snap888/NativeGameRecompiler.
+- Confirmed NGR has an Android ARM64 shell, package/component management foundation and backend ABI header, but no compiler plugin loader, static recompiler or title runtime yet.
+- Current NGR toolchain is JDK 17, NDK 27.2.12479018, CMake 3.22.1 and Gradle 8.9.
+
+### Upstream audit
+- Reviewed README/build configuration for XenonRecomp, ReXGlue SDK, UnleashedRecomp-Android, XboxXBERecomp, N64Recomp and N64ModernRuntime.
+- Reviewed Android Original Xbox port SCDA-XBERecomp-android and Android N64 examples Zelda64Recomp-Android, CBFD-Recompiled-Android-Evolved and automobili-lamborghini-recomp.
+- Key findings and the proposed NGR module/file map are recorded in docs/RECOMPILER_INTEGRATION_AUDIT.md.
+
+### Decisions
+- N64Recomp remains the first planned compiler proof-of-concept; N64ModernRuntime is GPL-3.0 and requires an explicit licensing/distribution decision before integration.
+- XenonRecomp and ReXGlue are alternative/overlapping Xbox 360 code-generation paths. ReXGlue's Linux ARM64 support is not proof of Android NDK support; its current CMake requires Clang 20+, C++23 and CMake 3.25+.
+- UnleashedRecomp-Android is a title-specific Android reference, not a universal Xbox 360 runtime.
+- XboxXBERecomp's upstream host is Windows/D3D12/XAudio2-oriented; SCDA-XBERecomp-android demonstrates the Android Vulkan/SDL3 adaptation path.
+- Keep compiler ABI separate from execution backend ABI v1. N64Recomp is a build-time compiler, not a runtime plugin.
+- No upstream source, game assets, ROMs, generated PPC code or copyrighted game payloads were copied into NGR in this audit.
+
+### Validation status
+- Audit documentation committed to main.
+- No native code changed and no APK build was triggered by this documentation-only pass.
+- No physical-device validation or game compatibility claim is made.
+
+### Next actions
+- Pin upstream commits/submodules and finish SPDX/transitive dependency review.
+- Build N64Recomp host CLI in CI with synthetic/redistributable test input.
+- Decide the GPL runtime boundary before integrating N64ModernRuntime.
+- Compare XenonRecomp and ReXGlue with a non-copyrighted PPC fixture before selecting an Xbox 360 codegen backend.
+
