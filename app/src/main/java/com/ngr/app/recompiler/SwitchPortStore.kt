@@ -21,7 +21,7 @@ data class InstalledSwitchPort(
 /** Imports a prepared nx2android port folder into NGR without installing another APK. */
 class SwitchPortStore(private val context: Context) {
     private val titlePattern = Regex("^[0-9A-F]{16}$")
-    private val maxFiles = 250_000
+    private val maxDataFileBytes = 32L * 1024 * 1024 * 1024
     private val maxManifestBytes = 64 * 1024
     private val maxRuntimeBytes = 512L * 1024 * 1024
 
@@ -111,8 +111,8 @@ class SwitchPortStore(private val context: Context) {
             tree.findFile("NX2ANDROID-LICENSE")?.takeIf { it.isFile }?.let { copyDocument(it, File(runtimeTemp, "NX2ANDROID-LICENSE"), 1024L * 1024) }
 
             val dataOut = File(dataTemp, "data")
-            val copiedFiles = copyTree(dataDir, dataOut, 0, maxFiles)
-            if (copiedFiles > maxFiles) throw IOException("Port contains too many files")
+            val copyBudget = SwitchPortCopyBudget()
+            copyTree(dataDir, dataOut, copyBudget, 0)
             val checked = readJson(File(dataOut, "nx2a-data.json")) ?: throw IOException("Copied data manifest is invalid")
             if (checked.optString("title_id").uppercase(Locale.ROOT) != titleId) throw IOException("Title ID changed while importing")
 
@@ -145,38 +145,61 @@ class SwitchPortStore(private val context: Context) {
         }
     }
 
-    private fun copyTree(source: DocumentFile, destination: File, currentFiles: Int, max: Int): Int {
+    private fun copyTree(
+        source: DocumentFile,
+        destination: File,
+        budget: SwitchPortCopyBudget,
+        depth: Int
+    ) {
+        budget.validateDepth(depth)
         if (!source.isDirectory) throw IOException("Data pack root is not a folder")
-        if (!destination.mkdirs() && !destination.isDirectory) throw IOException("Unable to create data directory")
-        var count = currentFiles
+        if (destination.exists() || java.nio.file.Files.isSymbolicLink(destination.toPath())) {
+            throw IOException("Switch data-pack destination already exists or is unsafe")
+        }
+        if (!destination.mkdirs()) throw IOException("Unable to create data directory")
         for (child in source.listFiles()) {
             val name = child.name ?: throw IOException("Unnamed item in data pack")
             if (name.isBlank() || name == "." || name == ".." || name.contains('/') ||
-                name.contains('\\') || name.any { it.code < 0x20 }) throw IOException("Unsafe data-pack path")
+                name.contains('\\\\') || name.any { it.code < 0x20 }) throw IOException("Unsafe data-pack path")
             val target = File(destination, name)
+            if (target.exists() || java.nio.file.Files.isSymbolicLink(target.toPath())) {
+                throw IOException("Duplicate or unsafe data-pack entry: $name")
+            }
             if (child.isDirectory) {
-                count = copyTree(child, target, count, max)
+                budget.recordEntry(isFile = false)
+                copyTree(child, target, budget, depth + 1)
             } else if (child.isFile) {
-                count++
-                if (count > max) throw IOException("Port contains too many files")
-                copyDocument(child, target, Long.MAX_VALUE)
+                budget.recordEntry(isFile = true)
+                copyDocument(child, target, maxDataFileBytes, budget)
+            } else {
+                throw IOException("Unsupported item in Switch data pack: $name")
             }
         }
-        return count
     }
 
-    private fun copyDocument(document: DocumentFile, target: File, maxBytes: Long): Long {
-        val input = context.contentResolver.openInputStream(document.uri) ?: throw IOException("Unable to open " + document.name)
+    private fun copyDocument(
+        document: DocumentFile,
+        target: File,
+        maxBytes: Long,
+        budget: SwitchPortCopyBudget? = null
+    ): Long {
+        val input = context.contentResolver.openInputStream(document.uri)
+            ?: throw IOException("Unable to open " + document.name)
         var total = 0L
         target.parentFile?.mkdirs()
+        if (target.exists() || java.nio.file.Files.isSymbolicLink(target.toPath())) {
+            input.close()
+            throw IOException("Refusing to overwrite a Switch package file")
+        }
         FileOutputStream(target).use { output ->
             input.use { stream ->
                 val buffer = ByteArray(1024 * 1024)
                 while (true) {
                     val n = stream.read(buffer)
                     if (n < 0) break
+                    if (total > maxBytes - n.toLong()) throw IOException("File exceeds permitted size")
                     total += n
-                    if (total > maxBytes) throw IOException("File exceeds permitted size")
+                    budget?.recordBytes(total, n)
                     output.write(buffer, 0, n)
                 }
                 output.fd.sync()
