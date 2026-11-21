@@ -13,12 +13,18 @@ Status: **runtime build and patch smoke-tested in CI; no game launch/device test
 
 The donor's APK is not the runtime itself. Its per-title native runtime is `libdmhost.so`, produced by `dm/android/build.py --game <16-digit-title-id> --ndk <NDK> --release --lib`. The APK writer wraps that library in a minimal `android.app.NativeActivity` package and adds launcher metadata/assets. The game data is separate from the APK and is read from the app's private files area.
 
-NGR must therefore keep one installed application and store each prepared title under:
+NGR keeps one installed application and splits each prepared title across two app-private roots:
 
 ```
 files/switch-ports/<TITLE_ID>/
-  manifest.json
   runtime/libdmhost.so
+  runtime/game_profile.h
+  runtime-build.json
+  saves/                 # donor DM_SAVE root
+  tmp/                   # donor DM_TEMP root
+
+external-files/switch-ports/<TITLE_ID>/data/
+  nx2a-data.json
   mods/
   RomFS/
   aoc/
@@ -26,8 +32,11 @@ files/switch-ports/<TITLE_ID>/
   shaders.dmsv
   env.txt
   settings.txt
-  nx2a-data.json
+  assets/overlay/        # per-title controller theme
+  assets/font/ui.bin    # donor overlay font
 ```
+
+The runtime and save/temp root stays in internal app storage; the larger game data pack is in the app-specific external files directory. The install journal coordinates replacement and crash recovery across these two roots.
 
 Only files required by a particular game's profile are present. User game data, firmware and keys are never copied into the repository or NGR APK.
 
