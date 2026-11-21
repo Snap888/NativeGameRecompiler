@@ -1453,3 +1453,30 @@ This is the durable project memory. Update it in every development session.
 3. Complete package inventory/hash validation and make the two-root (private runtime + external data) install atomic across crash/restart.
 4. Confirm every asset and dependency needed by the donor runtime is present when the donor APK step is skipped.
 5. Port a user-owned game matching a pinned nx2android Android profile, import the generated folder, and test launch, surface, audio, input, pause/resume and saves on Adreno.
+
+
+## Session 2026-11-21 — Switch runtime build and asset integration
+
+### Successful CI checkpoints
+- Android CI run #585 [44938575345](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44938575345), commit `e1f7b6ee87dcced65a865e0994c3f576b88eb0eb`: native ABI checks, backend registry tests, Switch tooling syntax, JVM tests, CMake/NDK build of both `libngr_runtime.so` and `libngr_switch_loader.so`, ARM64 debug APK and artifact upload all passed. Artifact `NGR-arm64-debug` ID `14720757607`, ZIP SHA-256 `f8bd92a8398464fb01b45ebc2575e45c79b19191bf67f3d79bbc371a9ac7af9e`.
+- Switch runtime smoke run #38 [44938805585](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44938805585), commit `63cd4a2226865093395ec655776a76b441f61610`: all four NGR patches were applied sequentially to the pinned nx2android checkout, then the patched title-profiled ARM64 NativeActivity host was built successfully. Artifact `NGR-Switch-Runtime-Smoke` ID `14720643069`, SHA-256 `d691f01e6b13bd04d7cdaa6c864b535c7296cf4515de8c6d4a64a753faa03b58`.
+- These are compile/packaging checks only. No commercial title dump or `prod.keys` was used; no actual game was ported or launched.
+
+### Integration issue found and fixed
+- Audit found that skipping the donor APK also skipped its per-title controller theme and overlay font, which normally arrive through `AAssetManager`. Without this, NGR would run the game with a missing theme/font even if the host loaded.
+- Added donor patch `0004-load-per-title-assets-from-ngr-data.patch`: the donor asset loader still prefers APK assets but can fall back to `NGR_SWITCH_GAME_ROOT/assets/`, rejecting unsafe relative paths.
+- `port_game.py` now resolves the donor profile's actual theme and copies its theme files plus the shared licensed overlay font into the title's data pack. Kotlin importer, launcher and native loader require those files.
+- Updated the Switch library UI copy to clearly state that nx2android preparation is desktop-assisted today; NGR does not yet run NSP/XCI recompilation on-device.
+
+### Import hardening in progress
+- Added a bounded SAF copy budget: 64 GiB aggregate, 32 GiB per file, 250,000 files, 500,000 total entries and 128 directory levels. Unsupported entries, duplicate/unsafe paths and over-limit copies fail and the staging directory is cleaned up.
+- Added unit tests for exact limits and each rejection boundary.
+- Android CI for these latest import-budget changes is still running; do not mark this follow-up verified until its result is checked.
+- The current two-directory install has rollback on ordinary errors but is not crash-atomic across internal runtime and external data roots. Add a durable transaction journal/recovery pass before claiming crash-safe installs.
+
+### Next
+1. Verify latest Android CI after the bounded-copy changes.
+2. Add a synthetic `libdmhost.so` fixture and test the loader's NativeActivity lifecycle forwarding.
+3. Exercise the full `porter port` wrapper with a user-owned title/profile and keys; verify data pack, assets, receipt and no-APK result.
+4. Import the package into NGR and test launch, Vulkan surface, input, audio, pause/resume, saves and two-title isolation on Adreno.
+5. Decide whether the Python/.NET/LibHac preparation toolchain will run on-device or via a supported companion workflow; until then, keep the desktop-assisted boundary explicit.
