@@ -2,14 +2,14 @@
 
 Native Game Recompiler is an Android ARM64 runtime and modular game-recompilation research project targeting Qualcomm Adreno GPUs.
 
-> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. The Wine/Proton process launcher and static-recompilation backend are not implemented yet. Physical-device validation remains pending. NGR is not a general-purpose game recompiler.
+> **Current status:** Android runtime shell, NGRPACK package management, environment profile persistence, component catalog/download/install pipeline and dependency resolver are implemented. Xbox 360 source staging and the first in-package Nintendo Switch NativeActivity dispatch scaffold are present; the donor's per-title runtime, extraction/rewrite pipeline and playable title integration are not yet built or verified. Physical-device validation remains pending. NGR is not a general-purpose game recompiler.
 
 ## Project direction
 
 - Android host application with Kotlin UI and a native C++20 runtime core.
 - Console static-recompilation scope is locked to **Xbox 360 and Nintendo Switch only**.
 - Xbox 360 foundation: the user's XDroid360 fork (PowerPC/XEX recompilation, Android toolchain and title-specific runtime modules).
-- Nintendo Switch foundation: nx2android/nxnative (NSO/NRO rewrite, Horizon service host and NVN-to-Vulkan Android runtime).
+- Nintendo Switch foundation: nx2android/nxnative (NSO/NRO rewrite, Horizon service host and NVN-to-Vulkan Android runtime). NGR is integrating its per-title `libdmhost.so` into one NGR installation instead of generating a separate APK for each game.
 - Both targets produce/run Android ARM64 (`arm64-v8a`) code; their CPU, OS-service and graphics runtimes remain separate.
 - Existing generic Wine/environment/package-management code is legacy foundation and is not an active platform-expansion target.
 - NGR Environment Manager foundation: versioned profiles, per-game overrides, component version pins, typed catalog, HTTPS/SHA-256 download, ZIP staging, atomic component store/rollback and dependency resolution.
@@ -64,4 +64,5 @@ Xbox 360 and Nintendo Switch compiler pipelines, console-specific runtimes, titl
 NGR does not distribute copyrighted game data, ROMs, BIOS images, encryption keys or proprietary assets. Users must provide content they are legally entitled to use. Third-party components will be integrated only after license and compatibility review.
 
 - [Xbox 360 + Switch integration plan](docs/XBOX360_SWITCH_INTEGRATION_PLAN.md) — source audit, architecture boundaries, licensing gates and staged implementation.
+- [Switch runtime integration](docs/SWITCH_RUNTIME_INTEGRATION.md) — nx2android's `libdmhost.so`, in-package NativeActivity dispatch, per-game port package layout and remaining integration steps.
 - [Static recompiler integration audit](docs/RECOMPILER_INTEGRATION_AUDIT.md) — historical research checkpoint.
