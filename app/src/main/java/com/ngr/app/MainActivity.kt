@@ -53,6 +53,8 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var packageManager: NgrPackPackageManager
     private lateinit var consoleBuildJobStore: ConsoleBuildJobStore
     private lateinit var switchPortStore: SwitchPortStore
+    private var switchRecoveryStarted = false
+    private var switchRecoveryComplete = false
     private lateinit var switchPortList: LinearLayout
     private lateinit var switchPortStatus: TextView
     private var pendingConsoleTarget: ConsoleTargetId? = null
@@ -1376,32 +1378,55 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
 
     private fun refreshSwitchPorts() {
         if (!::switchPortStore.isInitialized || !::switchPortList.isInitialized) return
-        val ports = switchPortStore.listInstalled()
-        switchPortStatus.text = "${ports.size} installed Switch port(s)"
-        switchPortList.removeAllViews()
-        if (ports.isEmpty()) {
-            switchPortList.addView(TextView(this).apply {
-                text = "No prepared Switch ports imported yet"
-                textSize = 12f
-                setTextColor(Color.rgb(143, 155, 174))
-                setPadding(0, dp(8), 0, dp(8))
-            })
-        }
-        ports.forEach { port ->
-            val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), 0, dp(10)) }
-            item.addView(TextView(this).apply {
-                text = "${port.name}\nTitle ID: ${port.titleId} · ${port.version}"
-                textSize = 13f
-                setTextColor(Color.rgb(205, 216, 232))
-            })
-            item.addView(primaryButton("▶  Launch in NGR") {
-                runCatching { SwitchRuntimeLauncher.launch(this@MainActivity, port.titleId) }
-                    .onFailure {
-                        NgrLogger.error("switch.launch", "Launch failed for ${port.titleId}", it)
-                        Toast.makeText(this@MainActivity, "Switch launch failed: ${it.message}", Toast.LENGTH_LONG).show()
+        if (!switchRecoveryComplete) {
+            if (!switchRecoveryStarted) {
+                switchRecoveryStarted = true
+                switchPortStatus.text = "Recovering Switch library…"
+                packageWorker.execute {
+                    runCatching { switchPortStore.recoverInterruptedInstalls() }
+                        .onFailure { NgrLogger.error("switch.recovery", "Interrupted Switch install recovery failed", it) }
+                    runOnUiThread {
+                        switchRecoveryComplete = true
+                        refreshSwitchPorts()
                     }
-            })
-            switchPortList.addView(item)
+                }
+            }
+            return
+        }
+        switchPortStatus.text = "Loading Switch library…"
+        packageWorker.execute {
+            val ports = runCatching { switchPortStore.listInstalled() }
+                .onFailure { NgrLogger.error("switch.library", "Unable to enumerate Switch ports", it) }
+                .getOrDefault(emptyList())
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                switchPortStatus.text = "${ports.size} installed Switch port(s)"
+                switchPortList.removeAllViews()
+                if (ports.isEmpty()) {
+                    switchPortList.addView(TextView(this).apply {
+                        text = "No prepared Switch ports imported yet"
+                        textSize = 12f
+                        setTextColor(Color.rgb(143, 155, 174))
+                        setPadding(0, dp(8), 0, dp(8))
+                    })
+                }
+                ports.forEach { port ->
+                    val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), 0, dp(10)) }
+                    item.addView(TextView(this).apply {
+                        text = "${port.name}\nTitle ID: ${port.titleId} · ${port.version}"
+                        textSize = 13f
+                        setTextColor(Color.rgb(205, 216, 232))
+                    })
+                    item.addView(primaryButton("▶  Launch in NGR") {
+                        runCatching { SwitchRuntimeLauncher.launch(this@MainActivity, port.titleId) }
+                            .onFailure {
+                                NgrLogger.error("switch.launch", "Launch failed for ${port.titleId}", it)
+                                Toast.makeText(this@MainActivity, "Switch launch failed: ${it.message}", Toast.LENGTH_LONG).show()
+                            }
+                    })
+                    switchPortList.addView(item)
+                }
+            }
         }
     }
 
