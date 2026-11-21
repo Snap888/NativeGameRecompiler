@@ -11,9 +11,10 @@
     <application android:allowBackup="false" android:label="Native Game Recompiler" android:theme="@android:style/Theme.Material.NoActionBar">
         <service android:name="androidx.work.impl.foreground.SystemForegroundService" android:foregroundServiceType="dataSync" tools:node="merge" />
         <activity android:name="android.app.NativeActivity"
-            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|density|layoutDirection|colorMode"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|density|layoutDirection|colorMode|fontScale"
             android:exported="false"
             android:label="Switch game runtime"
+            android:screenOrientation="landscape"
             android:launchMode="singleTop">
             <meta-data android:name="android.app.lib_name" android:value="ngr_switch_loader" />
         </activity>
