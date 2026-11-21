@@ -1384,3 +1384,33 @@ This is the durable project memory. Update it in every development session.
 3. Build a prepared port bundle format (runtime + data pack + runtime manifest) from nx2android's existing porter output; do not include keys, firmware or game dumps in CI.
 4. Integrate the actual nx2android porter preparation workflow and choose a supported on-device/desktop companion execution model for Python/.NET/LibHac.
 5. Device-test import, launch, lifecycle, Vulkan, audio, controller input, saves, suspend/resume and isolation between two title IDs.
+
+## Session 2026-11-21 — nx2android porter connected without per-game APK
+
+### Implemented
+- Added `patches/nx2android/0001-use-ngr-title-data-root.patch`: the donor Android host reads `NGR_SWITCH_GAME_ROOT` before falling back to its app-wide external files directory. This keeps each game's mods, RomFS, shaders, settings and logs isolated under its NGR title directory.
+- Added `patches/nx2android/0002-ngrn-build-without-per-game-apk.patch`: the donor porter skips only `self.apk()`; it still extracts the source, rewrites NSO modules, translates shaders, builds the title-profiled `libdmhost.so` and creates the nx2android data pack.
+- Added `tools/switch/port_game.py`: pinned-checkout orchestration for the real donor `python -m porter port` command. It requires the user's own `prod.keys` and configured NDK/.NET tool paths, applies both patches, disables APK generation, and packages `runtime/libdmhost.so`, the donor data pack and a SHA-256 build receipt into one NGR-importable folder.
+- Hardened data-pack copying: rejects symlinks and non-regular files instead of following links out of the donor output tree.
+- Updated the Switch runtime smoke workflow to syntax-check both Python adapters and verify both donor patches apply to the exact pinned revision.
+- Updated `docs/SWITCH_RUNTIME_INTEGRATION.md` and `docs/NEXT_ACTIONS.md`.
+
+### Architecture now
+- NGR remains the only installed Android application.
+- Per title, NGR stores the NativeActivity library privately and stores the larger nx2android data pack in app-specific external storage.
+- NGR's NativeActivity loader selects the correct title library and passes its per-title data root. The NGR adapter does not create per-game APKs.
+- The current Android UI imports an already prepared NGR Switch Port folder and shows a launch entry. The desktop adapter is not yet wired into Android-side Python/.NET execution.
+
+### Not yet verified / not claimed
+- GitHub Actions has not yet reported the new run result for the latest commits. Do not claim patch application, Python syntax, CMake, JVM tests or APK build are green until the run is inspected.
+- No real NSP/XCI has been ported through the new adapter in this session; no `prod.keys`, firmware or game content was used.
+- No title-specific runtime has yet been imported and launched on a physical Adreno device.
+- The donor runtime is profile-specific, not a universal Switch emulator. A title must exist in nx2android's Android profile catalog and match the exact game/update build.
+- The separate `build_runtime.py` smoke artifact is only a host-library build, not a playable port.
+
+### Next actions
+1. Verify both donor patches apply in CI and fix any hunk drift.
+2. Verify the NGR NativeActivity loader compiles and all JVM tests pass in the same Android build.
+3. Run `port_game.py` against a legal test dump/profile with the user's keys and inspect the package inventory, runtime ELF dependencies, profile hash and data manifest.
+4. Import that package through NGR, test lifecycle/surface recreation/audio/input/saves and verify two title IDs do not share data.
+5. Launch a supported title on Adreno before calling the Switch pipeline playable.
