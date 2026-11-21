@@ -41,6 +41,25 @@ class ConsoleBuildJobStoreTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test fun sourceStagedStateHasTargetSpecificNextStage() {
+        val root = Files.createTempDirectory("ngr-jobs-").toFile()
+        try {
+            val store = ConsoleBuildJobStore(root)
+            val first = job()
+            assertTrue(store.create(first).success)
+            val staged = first.copy(
+                stage = ConsoleBuildStage.SOURCE_STAGED,
+                completedStages = listOf(ConsoleBuildStage.VALIDATE_SOURCE),
+                sourceSha256 = "a".repeat(64),
+                progressPercent = 5,
+                updatedAtEpochMillis = first.updatedAtEpochMillis + 1
+            )
+            assertTrue(staged.validate().isEmpty())
+            assertTrue(store.update(staged).success)
+            assertEquals(ConsoleBuildStage.SOURCE_STAGED, store.get(first.jobId)?.stage)
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun validatesTargetSpecificStagesAndSuccessInvariant() {
         assertTrue(job().copy(stage = ConsoleBuildStage.REWRITE_NSO).validate().isNotEmpty())
         assertTrue(job(target = ConsoleTargetId.NINTENDO_SWITCH).copy(stage = ConsoleBuildStage.RECOMPILE_PPC).validate().isNotEmpty())

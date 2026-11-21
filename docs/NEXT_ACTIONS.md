@@ -74,7 +74,9 @@ Mark complete only when evidence exists.
 - [ ] Run full Gradle JVM tests and arm64-v8a APK CI for the target catalog.
 - [x] Implement compiler job contract separately from execution Backend ABI v1 (progress, cancel, process-death recovery, bounded/redacted logs, quotas).
 - [x] Connect the job store to the SAF import UI with persistent read grants and a visible cancellable queue.
-- [ ] Implement a real worker/foreground service; queue records do not yet invoke compiler tools.
+- [x] Add WorkManager-backed foreground source intake: private staging copy, SHA-256, size/free-space bounds, target format checks and ZIP path inspection.
+- [ ] Verify background source intake and cancellation on a physical Android device.
+- [ ] Implement compiler workers; current WorkManager worker only validates and stages source bytes, it does not invoke compiler tools.
 - [ ] Add immutable source/toolchain/profile fingerprints and per-title profile validation.
 - [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
 - [ ] Xbox 360: build Android-hosted XenonRecomp + Clang/LLD in CI; validate a non-copyrighted PPC fixture.
@@ -409,3 +411,15 @@ Mark complete only when evidence exists.
 - [x] Add a redistributable synthetic XEX2 fixture generator (no commercial game data) with one PPC function: addi + blr.
 - [x] Add a host XenonRecomp workflow to translate the fixture and verify generated PPC C++ files and entry-point symbols.
 - [ ] Confirm the synthetic translation workflow passes; then compile the generated C++ with the Android Clang/LLD kit.
+
+
+## Source staging worker — 2026-11-21
+- [x] Add durable WorkManager unique work per console build job and foreground notification for large source copies.
+- [x] Copy selected SAF source into an app-private per-job workspace; compute SHA-256 while streaming.
+- [x] Enforce 64 GiB source limit, free-space reserve, source extension checks, non-empty/size consistency and cancellation checkpoints.
+- [x] For Xbox ZIP, inspect the central directory, reject traversal-like entry paths and require at least one ISO. Do not extract the archive yet.
+- [x] For Switch, stage bounded NSP/XCI/NSZ/XCZ bytes only; cryptographic/package parsing remains assigned to the pinned nx2android toolchain.
+- [x] Add source-staged lifecycle stage and restart-safe worker re-entry.
+- [ ] Run Gradle/JVM and arm64 APK CI; resolve all compile/test failures before calling this stage verified.
+- [ ] Device-test 4-8 GB ISO and Switch package staging, process death, cancellation, low-storage and provider permission revocation.
+- [ ] Implement Xbox extraction and XenonRecomp only after staging validation.

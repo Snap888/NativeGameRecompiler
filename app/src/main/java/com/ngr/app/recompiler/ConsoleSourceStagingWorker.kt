@@ -35,12 +35,20 @@ class ConsoleSourceStagingWorker(
     override fun doWork(): Result {
         val jobId = inputData.getString(KEY_JOB_ID) ?: return Result.failure()
         var job = store.get(jobId) ?: return Result.failure()
-        if (job.state != ConsoleBuildJobState.QUEUED) return Result.success()
-
-        val now = System.currentTimeMillis()
-        val running = job.copy(state = ConsoleBuildJobState.RUNNING, updatedAtEpochMillis = now, errorCode = null)
-        if (!store.update(running).success) return Result.failure()
-        job = running
+        if (job.state == ConsoleBuildJobState.CANCEL_REQUESTED) {
+            finishCancelled(job)
+            return Result.success()
+        }
+        if (job.state.isTerminal || (job.stage == ConsoleBuildStage.SOURCE_STAGED && job.sourceSha256 != null)) {
+            return Result.success()
+        }
+        if (job.state == ConsoleBuildJobState.QUEUED) {
+            val running = job.copy(state = ConsoleBuildJobState.RUNNING, updatedAtEpochMillis = System.currentTimeMillis(), errorCode = null)
+            if (!store.update(running).success) return Result.failure()
+            job = running
+        } else if (job.state != ConsoleBuildJobState.RUNNING) {
+            return Result.success()
+        }
         store.appendLog(jobId, "INFO", "Source staging started for ${job.targetId.stableId}")
         var temporary: File? = null
         try {
@@ -78,7 +86,13 @@ class ConsoleSourceStagingWorker(
             }
 
             val destination = File(workspace, "source.$extension")
-            if (destination.exists()) throw StageFailure("WORKSPACE_COLLISION", "A staged source already exists for this job")
+            if (destination.exists()) {
+                if (destination.isSymbolicLink() || !destination.isFile || !destination.delete()) {
+                    throw StageFailure("WORKSPACE_COLLISION", "Unable to safely replace an incomplete staged source")
+                }
+            }
+            workspace.listFiles().orEmpty().filter { it.name.startsWith("source-") && it.name.endsWith(".part") }
+                .forEach { if (it.isFile && !it.isSymbolicLink()) it.delete() }
             temporary = File.createTempFile("source-", ".part", workspace)
             val digest = MessageDigest.getInstance("SHA-256")
             var copied = 0L

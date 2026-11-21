@@ -1282,3 +1282,26 @@ This is the durable project memory. Update it in every development session.
 - The recompiler logs that eight common save/restore helper addresses are unspecified in this minimal fixture. This is expected for the synthetic profile; real title profiles must supply the required helper addresses and runtime symbols.
 - Two CI iterations were needed: GCC host build rejected the upstream anonymous aggregate type, so host fixture builds now use Clang; the generated entry point is emitted as PPC_FUNC_IMPL(__imp___xstart), and the assertion was corrected accordingly.
 - This verifies parser -> PPC analysis -> C++ generation -> host compilation for one tiny function only. It does not validate a commercial XEX, complete game profile, Android cross-link, or gameplay.
+
+
+## Session 2026-11-21 — SAF source staging worker
+
+### Implemented
+- Connected the console import picker to unique WorkManager jobs.
+- Added a foreground data-sync worker which verifies the persisted SAF read grant, copies the selected source into a private per-job workspace, computes SHA-256 in the same streaming pass and persists the source fingerprint.
+- Enforced target extension, non-empty file, reported-vs-copied size consistency, 64 GiB maximum source size and a 128 MiB private-storage reserve.
+- Xbox ZIP intake scans the central directory without extracting, rejects traversal-like paths and requires at least one .iso entry. Raw Xbox ISO is staged without guessing undocumented header rules.
+- Switch NSP/XCI/NSZ/XCZ intake is bounded and staged, but package/keys validation is intentionally deferred to the pinned nx2android/LibHac toolchain.
+- Added source-staged lifecycle state, cancellation integration, progress notifications and worker restart re-entry.
+- UI now shows SHA-256 and accurately distinguishes source staging from the not-yet-integrated compiler/runtime.
+
+### Safety and limitations
+- Source content is copied only to app-private storage; no game files, keys or firmware are uploaded or committed.
+- The worker does not extract ISO/NSP/XCI containers, run XenonRecomp, rewrite NSO, compile ARM64, translate shaders or create a playable package.
+- WorkManager/foreground service integration has been authored but awaits CI and physical-device verification.
+
+### Next
+1. Run full JVM tests and ARM64 APK CI.
+2. Verify multi-gigabyte copy, notification, cancellation and process-death behavior on Snapdragon Android.
+3. Add an isolated Xbox ISO/ZIP extractor and synthetic fixture tests.
+4. Pin and build XenonRecomp plus the Android patch before implementing the PPC compiler worker.
