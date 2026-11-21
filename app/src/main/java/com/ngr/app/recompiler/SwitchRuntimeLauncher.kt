@@ -5,7 +5,6 @@ import android.content.Intent
 import android.app.NativeActivity
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
 
 /**
  * Launches nx2android's NativeActivity runtime inside the NGR package.
