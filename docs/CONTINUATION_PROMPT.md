@@ -33,16 +33,22 @@ Product: Android app/runtime for launching game builds that have been legally an
 - NGRPACK is a ZIP-compatible package with versioned manifest and SHA-256 hashes. Treat all package data as untrusted. Console build outputs need a separate profile-bound artifact/package contract.
 - Never distribute copyrighted game data, ROMs, BIOS images, proprietary keys or game assets.
 
-## Known handoff status (2026-11-17)
-- Latest implementation commit: `d4799d8c0ca0deed9395fa58bedc75fbea0d39ca`.
-- Stage 1: Android Activity, JNI, C++20 runtime, Vulkan physical-device probe, gamepad discovery and CI workflow.
-- Stage 2: native capability registry, JNI report, strict extracted-package manifest validator and JVM regression tests. CI passed.
-- Stage 3: read-only NGRPACK ZIP inspector, bounded staging extraction, streamed size checks, full manifest/SHA-256 validation, atomic install/update with rollback/recovery, package inventory/removal and Android Document Picker UI. CI run #56 passed.
-- Latest artifact: `NGR-arm64-debug`, Actions run #71, artifact ID `14364007052`, archive SHA-256 `caeb05249b81f9543cd9868601419e59ce14deec5c41c647ac6680a26af261fc`.
-- Backend execution ABI v1 C contract is defined in `native/ngr-runtime/include/ngr/backend_abi_v1.h`, with C/C++ compile checks and ADR 0003. Loader, runtime negotiation, registry and conformance tests are not implemented; capability remains planned.
-- Physical-device validation remains pending. No static/dynamic game backend or game execution is implemented.
-- Package signing/trust policy and sandbox are not implemented; never execute package payloads.
-- Next priority: install/test APK on Snapdragon/Adreno device, then define signed package trust policy and stable backend ABI.
+## Known handoff status (2026-11-21)
+
+- Live `main` at the start of this handoff: `05b885e1c2c660220dcf925aabe3292bfe6fc868` (documentation-only change after the last verified app build).
+- Android CI #621 passed at commit `7f36140b42636ba806719a9bc230e23cc8b3b025`: Kotlin/JVM tests, native ABI/registry checks, CMake build including `libngr_switch_loader.so`, and ARM64 debug APK. Artifact `NGR-arm64-debug`, ID `14721064183`, archive SHA-256 `321a8cebae4afb447ade1e479dded7effb6740e8e31ce5a1a89d4d99486ba4af`.
+- Switch smoke #48 passed at commit `041efde53a73905d1ebb797ce04fb10615e61a0c`: all four pinned nx2android patches apply, title-profiled ARM64 NativeActivity host compiles, per-title theme/font staging works. Artifact `NGR-Switch-Runtime-Smoke`, ID `14721480591`, SHA-256 `dfcdabfc2e444bd6a8da4871f62c25515ed85f07809f4a28df232bcf4431f591`.
+- Smoke #49 was started to validate the exact donor `porter port --help` CLI contract used by the adapter; inspect its result before relying on that last check. Android CI #630 was also triggered by that workflow update; #621 remains the last confirmed green app build.
+- Active console scope remains Xbox 360 + Nintendo Switch only. Xbox 360 source staging exists; its XenonRecomp pipeline/runtime are not yet integrated.
+- Switch integration now includes:
+  - pinned nx2android desktop adapter `tools/switch/port_game.py`, with four donor patches; skips per-game APK generation and packages a per-title `libdmhost.so`, `game_profile.h`, data pack, controller theme/font and receipt;
+  - NGR one-APK importer/library/NativeActivity dispatcher with per-title internal runtime/save/temp root and external game-data root;
+  - SHA-256 checks for runtime and profile header; bounded SAF copy (64 GiB total, 32 GiB/file, 250k files, 500k entries, depth 128); install journal/recovery; background recovery/listing;
+  - donor `onDestroy` callback forwarding and delayed `dlclose`.
+- Current Switch graphics limitation: adapter forces `--vulkan-driver system`. Optional nx2android Turnip/adrenotools packaging and integration with NGR's component store are not implemented.
+- The complete NSP/XCI extraction/NSO rewrite/shader/host/data pipeline is desktop-assisted (Python 3.11+, .NET 10, NDK r27c, user's own keys/firmware). NGR Android does not run it on-device; it imports the prepared output folder.
+- No real Switch dump has been ported/imported/launched in NGR. No physical-device game test exists. Do not call any title playable. The CI profile host is a smoke artifact, not a game port.
+- Development journal: `docs/DEVELOPMENT_LOG.md`; active task list: `docs/NEXT_ACTIONS.md`; Switch design/usage: `docs/SWITCH_RUNTIME_INTEGRATION.md`.
 
 ## Working rules
 - Audit first, then implement in small reviewable commits.
