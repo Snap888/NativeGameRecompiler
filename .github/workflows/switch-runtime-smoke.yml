@@ -52,9 +52,10 @@ jobs:
 
       - name: Validate adapter syntax and donor patch
         run: |
-          python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py
+          python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py tools/switch/verify_overlay_assets.py
           python tools/switch/port_game.py --help >/dev/null
           python tools/switch/build_runtime.py --help >/dev/null
+          python tools/switch/verify_overlay_assets.py --help >/dev/null
           for patch in \
             patches/nx2android/0001-use-ngr-title-data-root.patch \
             patches/nx2android/0002-ngrn-build-without-per-game-apk.patch \
@@ -63,6 +64,13 @@ jobs:
             git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/$patch"
             git -C "$RUNNER_TEMP/nx2android" apply "$GITHUB_WORKSPACE/$patch"
           done
+
+      - name: Verify per-title theme and overlay font staging
+        run: |
+          python tools/switch/verify_overlay_assets.py \
+            --nx2android "$RUNNER_TEMP/nx2android" \
+            --title-id 0100000000010000 \
+            --output "$RUNNER_TEMP/ngr-switch-assets"
 
       - name: Build title-profiled NativeActivity runtime (no APK)
         run: |
