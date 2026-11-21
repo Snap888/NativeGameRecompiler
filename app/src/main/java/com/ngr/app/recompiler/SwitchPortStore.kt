@@ -275,6 +275,12 @@ class SwitchPortStore(private val context: Context) {
 
     private fun isValidInstalledPair(runtimeDir: File, dataDir: File, titleId: String): Boolean = runCatching {
         val runtime = File(runtimeDir, "runtime/libdmhost.so")
+        val appFilesRoot = runtimeDir.parentFile?.parentFile
+            ?: throw IOException("Switch app-private root is unavailable")
+        val verifiedRuntime = SwitchRuntimePackageVerifier.verify(appFilesRoot, titleId)
+        if (verifiedRuntime.canonicalFile != runtime.canonicalFile) {
+            throw IOException("Switch runtime receipt points to a different library")
+        }
         validateElf64Arm64(runtime)
         if (!File(runtimeDir, "runtime/game_profile.h").isFile) {
             throw IOException("Switch game profile header is missing")
