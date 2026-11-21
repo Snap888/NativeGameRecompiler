@@ -1480,3 +1480,26 @@ This is the durable project memory. Update it in every development session.
 3. Exercise the full `porter port` wrapper with a user-owned title/profile and keys; verify data pack, assets, receipt and no-APK result.
 4. Import the package into NGR and test launch, Vulkan surface, input, audio, pause/resume, saves and two-title isolation on Adreno.
 5. Decide whether the Python/.NET/LibHac preparation toolchain will run on-device or via a supported companion workflow; until then, keep the desktop-assisted boundary explicit.
+
+
+## Session 2026-11-21 — package integrity, lifecycle and Vulkan boundary
+
+### Additional verified checkpoints
+- Android CI run #613 [44939742227](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44939742227), commit `87a999f8bfa43c3cc58af112fde244dfb4599fbb`: complete Android/JVM/native build passed after adding the NativeActivity teardown wrapper. APK artifact `NGR-arm64-debug` ID `14721162062`, ZIP SHA-256 `d683ec41a1298f538d5b9534426d1494f9c3dd1e2adc22699aba3d9b9057dde4`.
+- Switch smoke run #45 [44939742310](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44939742310), same commit: patch application, title-profiled host build and real donor theme/font staging passed. Artifact `NGR-Switch-Runtime-Smoke` ID `14721390437`, SHA-256 `37d6c6b650a86afab4bc852ae5f4bdc60f374c7c5731153380f46194290cd7ce`.
+- Switch smoke run #48 [44940034506](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44940034506), commit `041efde53a73905d1ebb797ce04fb10615e61a0c`, passed again after the package receipt was extended with the Vulkan driver mode. Artifact ID `14721480591`, SHA-256 `dfcdabfc2e444bd6a8da4871f62c25515ed85f07809f4a28df232bcf4431f591`.
+- Android CI #606 [44939525228](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44939525228) passed the profile-header hash-mismatch regression test.
+
+### Further hardening
+- The package now carries `runtime/game_profile.h`; the importer and pre-launch verifier check its SHA-256 against the port receipt as well as the native library hash.
+- Added a durable per-title install journal with `prepared`, `runtime_backed_up`, `backed_up`, `runtime_installed` and `installed` phases. Startup recovery restores previous roots or commits a complete validated pair. Recovery and library enumeration are dispatched off the UI thread.
+- The NativeActivity loader wraps the donor's `onDestroy`: it calls the donor callback first and unloads `libdmhost.so` only after donor teardown. It refuses a second active runtime in the same process.
+- The adapter explicitly passes `--vulkan-driver system` and the receipt records that mode. This avoids a false-success package when nx2android's optional adrenotools/Turnip APK libraries are omitted. NGR currently does not load a custom Turnip driver for the embedded Switch runtime; this is a known graphics limitation, not an implied feature.
+- Theme/font staging is a dedicated helper and is exercised by the smoke workflow against the pinned donor profile. It rejects asset-path collisions rather than overwriting files from the game data pack.
+- SAF copying now validates destination creation before opening source streams and closes streams reliably on copy failures.
+
+### Current validation boundary
+- Android APK compilation, JVM tests, donor patch application, profile-specific ARM64 host compilation and theme/font staging are CI-verified.
+- Latest Android CI after the system-driver receipt and copy-stream changes is still running at this checkpoint; check the newest Actions run before reporting that exact revision green.
+- No full NSP/XCI port has been run with a real user-owned dump/keys. No Switch title has been imported or launched on a physical Android device.
+- The desktop adapter uses the donor's real extraction/rewrite/shader/host/data pipeline but is not an on-device Python/.NET/LibHac toolchain.
