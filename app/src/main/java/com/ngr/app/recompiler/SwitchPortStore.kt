@@ -196,8 +196,10 @@ class SwitchPortStore(private val context: Context) {
         val journal = File(internalRoot, ".$titleId.install.json")
         val journalTemp = File(internalRoot, ".$titleId.install.json.tmp")
         val state = readJson(journal)
-        val phase = if (state?.optInt("schema_version") == 1 &&
-            state.optString("title_id") == titleId) state.optString("phase") else ""
+        val validState = state?.takeIf {
+            it.optInt("schema_version") == 1 && it.optString("title_id") == titleId
+        }
+        val phase = validState?.optString("phase").orEmpty()
 
         if (phase == "installed" && isValidInstalledPair(runtime, data, titleId)) {
             deleteTree(runtimeBackup); deleteTree(dataBackup)
