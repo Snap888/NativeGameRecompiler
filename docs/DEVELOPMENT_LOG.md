@@ -1527,3 +1527,9 @@ This is the durable project memory. Update it in every development session.
 - Switch smoke #58 [44941082552](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44941082552), commit `3b0a4bea4d1f72e5e25ddc628c8958ed03202d5c`, passed: Python adapter unit tests, donor CLI contract, per-title theme/font/license staging and patched ARM64 host build. Artifact ID `14720649995`, SHA-256 `4b9c1459331f3f1409629b81ed6dd86be5f64bbf33e393dd6cdf9c99491ca505`.
 - Android CI #655/#656 initially failed because the test receipt fixtures omitted the newly required `data_manifest` path. The fixtures were corrected. Android CI #660 [44941312094], commit `fdc708deb0f04c5c2fb25029c37542efb6513e8b`, then passed the JVM unit-test suite, native ABI/registry checks, CMake/NDK build and ARM64 APK upload. Artifact `NGR-arm64-debug` ID `14721149150`, archive SHA-256 `c66d68b37a9d728339d44272a6b64c847c8d8fb23446330f5e864de15e7ac2f0`; extracted APK SHA-256 `aa523895ac22826ded832a0ccf582fd6a9b35e492e38d9ff6a43d0bbc1668e37`.
 - This still does not replace a full real-title port test. The CI data/profile fixtures are synthetic.
+
+
+### Final recovery-validation APK
+- Android CI #665 [44941664371](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44941664371), commit `eed67d55f9fadee910d1f4631f583781a6faea49`, passed after making interrupted-install recovery re-verify the complete runtime receipt and runtime/profile hashes before committing a recovered pair. JVM unit tests, native checks, CMake/NDK and ARM64 APK all passed.
+- Artifact `NGR-arm64-debug` ID `14721568584`, archive SHA-256 `68c6b5a399babda61e00cad41a40e234bdb6f7b9af74e80c629fd33a0210172a`; extracted APK SHA-256 `0b4e61e0cac670ad485b75e41b639bb116528851af098facf66218fa6d33e926`.
+- This is the newest verified Android app build. It still has no physical-device or real-game launch evidence.
