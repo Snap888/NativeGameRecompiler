@@ -86,4 +86,8 @@ Xbox 360 and Switch compiler pipelines are not runtime plugins. Graphics-provide
 
 ## Translator preset preferences
 Environment profile schema v3 stores Box64 and FEX preset choices (Compatibility/Balanced/Performance). v1/v2 documents migrate to FEX Balanced when the field is absent. These fields represent user intent only; a runtime adapter must map them to version-specific Box64/FEX settings after the exact upstream version and supported configuration keys are audited. A saved preset is not proof that a translator is installed, configured or active.
-\n\n## Locked console integration scope\n\nOnly Xbox 360 and Nintendo Switch are admitted to the console target registry. See [XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md) for the audited donor architecture, source revisions, licensing boundaries and acceptance criteria. The generic Wine/Box64/FEX and N64 roadmap text from earlier project stages is superseded for active development.\n
+
+
+## Locked console integration scope
+
+Only Xbox 360 and Nintendo Switch are admitted to the console target registry. See [XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md) for the audited donor architecture, source revisions, licensing boundaries and acceptance criteria. The generic Wine/Box64/FEX and N64 roadmap text from earlier project stages is superseded for active development.
