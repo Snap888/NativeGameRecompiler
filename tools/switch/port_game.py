@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Run the pinned nx2android preparation pipeline for NGR, without creating a game APK.
-
-The donor still performs the real extraction, profile validation, NSO rewrite,
-shader translation and title-specific Android host build. NGR then assembles
-one importable port folder: runtime/, data/, runtime-build.json and notices.
-"""
+"""Prepare an NGR-importable Switch port with nx2android, without a game APK."""
 from __future__ import annotations
 
 import argparse
@@ -33,7 +28,6 @@ def run(command: list[str], *, cwd: Path, env: dict[str, str]) -> str:
     result = subprocess.run(command, cwd=cwd, env=env, text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output = result.stdout or ""
-    # Do not echo key contents or the exact location of the user's prod.keys.
     output = re.sub(r"(?i)(prod\.keys(?:\s*[:=]\s*)?)[^\s]+", r"\1[redacted]", output)
     print(output, end="", flush=True)
     if result.returncode:
@@ -47,10 +41,9 @@ def copy_tree(source: Path, destination: Path) -> None:
     destination.mkdir(parents=True)
     for root, directories, files in os.walk(source, followlinks=False):
         base = Path(root)
-        relative = base.relative_to(source)
-        target_root = destination / relative
+        target_root = destination / base.relative_to(source)
         target_root.mkdir(parents=True, exist_ok=True)
-        for name in list(directories):
+        for name in directories:
             item = base / name
             if item.is_symlink() or not item.is_dir():
                 raise SystemExit(f"Unsafe directory in donor data pack: {item}")
@@ -65,16 +58,11 @@ def copy_tree(source: Path, destination: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nx2android", required=True, type=Path)
-    parser.add_argument("--ngr-root", required=True, type=Path,
-                        help="NGR repository root (contains patches/nx2android)")
-    parser.add_argument("--source-folder", required=True, type=Path,
-                        help="Folder containing the user's NSP/XCI/NSZ/XCZ and updates/DLC")
-    parser.add_argument("--keys", required=True, type=Path,
-                        help="User-owned prod.keys; never copied into the output package")
-    parser.add_argument("--nx2a-home", required=True, type=Path,
-                        help="nx2android config home with NDK and .NET SDK configured")
-    parser.add_argument("--output", required=True, type=Path,
-                        help="Destination folder for the NGR-importable port package")
+    parser.add_argument("--ngr-root", required=True, type=Path)
+    parser.add_argument("--source-folder", required=True, type=Path)
+    parser.add_argument("--keys", required=True, type=Path)
+    parser.add_argument("--nx2a-home", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--language", default="en-US")
     parser.add_argument("--version", default="")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
@@ -95,7 +83,7 @@ def main() -> int:
     nx2a_home = args.nx2a_home.resolve(strict=True)
     output = args.output.resolve()
     if output.exists():
-        parser.error("--output must not already exist; use a new destination to avoid replacing a previous port")
+        parser.error("--output must not already exist")
     output.parent.mkdir(parents=True, exist_ok=True)
     donor_output = Path(tempfile.mkdtemp(prefix="ngr-nx2a-output-"))
     patch = ngr / "patches/nx2android/0002-ngrn-build-without-per-game-apk.patch"
@@ -112,39 +100,39 @@ def main() -> int:
     original = pipeline.read_text(encoding="utf-8")
     if "NGR_NO_APK" not in original:
         check = subprocess.run(["git", "apply", "--check", str(patch)], cwd=donor,
-                                text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if check.returncode:
-            raise SystemExit("Pinned nx2android pipeline no longer matches NGR's reviewed no-APK patch:\n" + check.stdout)
+            raise SystemExit("Pinned nx2android pipeline does not match the reviewed patch:\n" + check.stdout)
         subprocess.run(["git", "apply", str(patch)], cwd=donor, check=True)
-    else:
-        # Do not silently accept an unrelated or modified patch.
-        if "self.apk()" not in original or "self.result.get(\"apk\"" not in original:
-            raise SystemExit("nx2android checkout contains an unexpected NGR patch state")
+    elif "self.result.get(\"apk\"" not in original:
+        raise SystemExit("Unexpected or partial NGR patch state in nx2android checkout")
 
     env = dict(os.environ)
-    env["NX2A_HOME"] = str(nx2a_home)
-    env["NGR_NO_APK"] = "1"
-    env["PYTHONUTF8"] = "1"
-    env["PYTHONIOENCODING"] = "utf-8"
-    env["PYTHONPATH"] = str(donor) + os.pathsep + env.get("PYTHONPATH", "")
+    env.update({
+        "NX2A_HOME": str(nx2a_home),
+        "NGR_NO_APK": "1",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONPATH": str(donor) + os.pathsep + env.get("PYTHONPATH", ""),
+    })
     command = [sys.executable, "-m", "porter", "port", str(source_folder),
-               "--keys", str(keys), "--out", str(output), "--package", "com.ngr.app",
-               "--language", args.language, "--jobs", str(args.jobs)]
+               "--keys", str(keys), "--out", str(donor_output),
+               "--package", "com.ngr.app", "--language", args.language,
+               "--jobs", str(args.jobs)]
     if args.version:
         command += ["--version", args.version]
     if args.experimental:
         command += ["--experimental"]
 
     try:
-        run(command[:command.index("--out") + 1] + [str(donor_output)] + command[command.index("--out") + 2:],
-            cwd=donor, env=env)
-
+        run(command, cwd=donor, env=env)
         packs = []
         for candidate in donor_output.glob("*-data"):
-        manifest = candidate / "nx2a-data.json"
-        if manifest.is_file():
+            manifest_file = candidate / "nx2a-data.json"
+            if not manifest_file.is_file():
+                continue
             try:
-                data = json.loads(manifest.read_text(encoding="utf-8"))
+                data = json.loads(manifest_file.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
             if TITLE_ID.fullmatch(str(data.get("title_id", ""))):
@@ -156,8 +144,6 @@ def main() -> int:
 
         host = source_folder / f"{title_id}_build/android/host/libdmhost.so"
         if not host.is_file():
-        # The donor's --debug option is not used here, but preserve a useful
-        # diagnostic if a future pinned profile changes the host output name.
             raise SystemExit(f"nx2android did not leave the title runtime at {host}")
         generated_profile = source_folder / f"{title_id}_build/android/host/gen/{title_id}/game_profile.h"
         if not generated_profile.is_file():
@@ -203,8 +189,7 @@ def main() -> int:
 
     print(json.dumps({"result": "NGR_SWITCH_PORT_PACKAGE", "title_id": title_id,
                       "name": data_manifest.get("name", title_id),
-                      "package_folder": str(output),
-                      "apk_generated": False}, indent=2))
+                      "package_folder": str(output), "apk_generated": False}, indent=2))
     return 0
 
 
