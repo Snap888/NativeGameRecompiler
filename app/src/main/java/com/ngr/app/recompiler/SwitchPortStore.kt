@@ -186,9 +186,11 @@ class SwitchPortStore(private val context: Context) {
 
     private fun recoverInterruptedInstalls(internalRoot: File, externalRoot: File) {
         val pattern = Regex("^\\.([0-9A-F]{16})\\.(install\\.json|partial|backup)$")
-        val ids = (internalRoot.listFiles().orEmpty() + externalRoot.listFiles().orEmpty())
-            .mapNotNull { pattern.matchEntire(it.name)?.groupValues?.get(1) }
-            .toSet()
+        val entries: List<File> = internalRoot.listFiles()?.toList().orEmpty() +
+            externalRoot.listFiles()?.toList().orEmpty()
+        val ids: Set<String> = entries.mapNotNull { entry ->
+            pattern.matchEntire(entry.name)?.groupValues?.get(1)
+        }.toSet()
         ids.forEach { id -> recoverInterruptedInstall(internalRoot, externalRoot, id) }
     }
 
