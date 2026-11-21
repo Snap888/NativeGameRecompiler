@@ -22,7 +22,7 @@ The new Kotlin target catalog contains only xbox360 and nintendo-switch. Its sta
 - Writable user fork: https://github.com/Snap888/XDroid360
 - Fork commit inspected: 6eefb7f738d4e63cb11cb6bb63911f55094e8ada
 - Upstream project: https://github.com/udarmolota/XDroid360
-- Current fork README and Android app build configuration inspected.
+- Current fork README and Android app build configuration inspected. The fork README still labels its alpha as 0.1.2 while upstream README reports 0.1.3; use the inspected fork commit and exact toolchain pins, not the stale version label.
 - android/app/src/main/java/com/udarmolota/xdroid360/RecipeRunner.java inspected.
 - android/app/build.gradle inspected.
 - toolchain/build_tools.sh inspected.
