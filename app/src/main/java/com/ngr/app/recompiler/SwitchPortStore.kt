@@ -64,6 +64,8 @@ class SwitchPortStore(private val context: Context) {
             ?: throw IOException("data/ folder is missing")
         val runtimeDoc = runtimeDir.findFile("libdmhost.so")?.takeIf { it.isFile }
             ?: throw IOException("runtime/libdmhost.so is missing")
+        val profileHeaderDoc = runtimeDir.findFile("game_profile.h")?.takeIf { it.isFile }
+            ?: throw IOException("runtime/game_profile.h is missing")
         val manifestDoc = dataDir.findFile("nx2a-data.json")?.takeIf { it.isFile }
             ?: throw IOException("data/nx2a-data.json is missing")
         val runtimeReceiptDoc = tree.findFile("runtime-build.json")?.takeIf { it.isFile }
@@ -84,12 +86,14 @@ class SwitchPortStore(private val context: Context) {
             runtimeReceipt.optString("title_id").uppercase(Locale.ROOT) != titleId ||
             runtimeReceipt.optString("donor_revision") != SwitchRuntimePackageVerifier.DONOR_REVISION ||
             runtimeReceipt.optString("runtime_library") != "runtime/libdmhost.so" ||
+            runtimeReceipt.optString("profile_header") != "runtime/game_profile.h" ||
             runtimeReceipt.optString("abi") != "arm64-v8a" ||
             runtimeReceipt.optString("entry_point") != "ANativeActivity_onCreate" ||
             runtimeReceipt.optBoolean("apk_generated", true)) throw IOException("Runtime receipt does not match this NGR Switch build")
         val expectedHash = runtimeReceipt.optString("runtime_sha256").lowercase(Locale.ROOT)
+        val expectedProfileHash = runtimeReceipt.optString("profile_header_sha256").lowercase(Locale.ROOT)
         if (!Regex("^[0-9a-f]{64}$").matches(expectedHash) ||
-            !Regex("^[0-9a-fA-F]{64}$").matches(runtimeReceipt.optString("profile_header_sha256"))) {
+            !Regex("^[0-9a-f]{64}$").matches(expectedProfileHash)) {
             throw IOException("Runtime SHA-256/profile receipt is missing")
         }
         if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
@@ -118,6 +122,11 @@ class SwitchPortStore(private val context: Context) {
             copyDocument(runtimeDoc, runtimeOut, maxRuntimeBytes)
             validateElf64Arm64(runtimeOut)
             if (sha256(runtimeOut) != expectedHash) throw IOException("Switch runtime SHA-256 mismatch")
+            val profileHeaderOut = File(runtimeTemp, "runtime/game_profile.h")
+            copyDocument(profileHeaderDoc, profileHeaderOut, 4L * 1024 * 1024)
+            if (sha256(profileHeaderOut) != expectedProfileHash) {
+                throw IOException("Generated Switch profile header SHA-256 mismatch")
+            }
             File(runtimeTemp, "runtime-build.json").writeBytes(runtimeReceiptBytes)
             tree.findFile("NX2ANDROID-LICENSE")?.takeIf { it.isFile }?.let { copyDocument(it, File(runtimeTemp, "NX2ANDROID-LICENSE"), 1024L * 1024) }
 
@@ -238,6 +247,9 @@ class SwitchPortStore(private val context: Context) {
     private fun isValidInstalledPair(runtimeDir: File, dataDir: File, titleId: String): Boolean = runCatching {
         val runtime = File(runtimeDir, "runtime/libdmhost.so")
         validateElf64Arm64(runtime)
+        if (!File(runtimeDir, "runtime/game_profile.h").isFile) {
+            throw IOException("Switch game profile header is missing")
+        }
         val manifest = readJson(File(dataDir, "data/nx2a-data.json"))
             ?: throw IOException("Switch data manifest is missing")
         manifest.optString("title_id").uppercase(Locale.ROOT) == titleId &&
