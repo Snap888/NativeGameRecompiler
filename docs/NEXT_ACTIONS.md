@@ -1,6 +1,6 @@
 # NGR — Next Actions
 
-Mark complete only when evidence exists.
+Mark complete only when evidence exists.\n\n## Active scope lock — 2026-11-21\n- Active console targets: **Xbox 360 and Nintendo Switch only**.\n- Donor foundations: Snap888/XDroid360 and shirai91/nx2android.\n- N64, Original Xbox, PlayStation, Xbox One, Switch 2 and generic PC/EXE recompilation are out of scope for this workstream.\n- Earlier Wine/Box64/FEX checklist items are legacy foundation and deferred; do not expand them while implementing the two console targets.\n- Full design: [docs/XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md).
 
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
@@ -56,14 +56,25 @@ Mark complete only when evidence exists.
 - [ ] Add ReShade/shader activation after injection compatibility is verified.
 - [ ] Add Wayland only for validated Wine/Proton + Wayland Turnip combinations; X11 first.
 
-## P4 — Static recompiler
-- [ ] Pin N64Recomp upstream commit and review SPDX/transitive licenses.
-- [ ] Obtain legally distributable test input and metadata.
-- [ ] Build toolchain reproducibly in CI.
-- [ ] Generate C/C++ from test input and compile for Android ARM64.
-- [ ] Implement only runtime services required by that test.
-- [ ] Validate correctness before performance tuning.
-- [ ] Keep static-recompiled backend independent of Wine and the compatibility environment.
+## P4 — Xbox 360 + Nintendo Switch static recompilers
+- [x] Lock the active console scope to Xbox 360 and Nintendo Switch only.
+- [x] Audit the writable Snap888/XDroid360 fork, its on-device recipe runner, Android toolchain, DAORecomp submodule and NOTICE.
+- [x] Audit nx2android porter, NSO/NRO rewrite, Horizon host, Android Vulkan/NVN runtime and desktop preparation requirements.
+- [x] Add typed ConsoleRecompilerTargets catalog containing exactly Xbox 360 and Nintendo Switch.
+- [x] Add JVM tests for target exclusivity, accepted formats, preparation modes and key requirements.
+- [x] Add docs/XBOX360_SWITCH_INTEGRATION_PLAN.md with source revisions, architecture boundaries, licensing and staged acceptance criteria.
+- [ ] Run JVM tests and arm64-v8a APK CI for the target catalog.
+- [ ] Implement compiler job ABI separately from execution Backend ABI v1 (progress, cancel, resume, bounded logs, quotas).
+- [ ] Add immutable source/toolchain/profile fingerprints and per-title profile validation.
+- [ ] Xbox 360: pin XDroid360 recomp submodule, XenonRecomp patch, Clang/LLD, DAO/SoD runtime and shader dependencies; finish SPDX/SBOM review.
+- [ ] Xbox 360: build Android-hosted XenonRecomp + Clang/LLD in CI; validate a non-copyrighted PPC fixture.
+- [ ] Xbox 360: bring up a matching title runtime and Xenos Vulkan path before claiming a playable game.
+- [ ] Switch: pin nx2android/nxnative and all third-party revisions; finish SPDX/SBOM review.
+- [ ] Switch: build nx_extract/LibHac and shader tools on supported desktop CI; validate NSO/NRO rewrite with synthetic fixture.
+- [ ] Switch: build Android ARM64 Horizon/NVN Vulkan runtime and load a profile-matched test package.
+- [ ] Decide desktop-assisted Switch preparation vs a separately validated Android-hosted port pipeline; do not label it on-device until proven.
+- [ ] Add user-owned Switch key storage with strict redaction; never package keys, firmware or game data.
+- [ ] Add only Xbox 360 and Switch import flows; do not add other console targets.
 
 ## P5 — Graphics, input and audio
 - [ ] Add Vulkan extension/feature report.
