@@ -152,13 +152,21 @@ class SwitchPortStore(private val context: Context) {
                 output.fd.sync()
             }
         }
-        if (total == 0L) throw IOException("Empty file: " + document.name)
         return total
     }
 
     private fun validateElf64Arm64(file: File) {
-        val header = file.inputStream().use { it.readNBytes(20) }
-        if (header.size < 20 || header[0] != 0x7f.toByte() || header[1] != 'E'.code.toByte() ||
+        val header = ByteArray(20)
+        val read = file.inputStream().use { input ->
+            var offset = 0
+            while (offset < header.size) {
+                val n = input.read(header, offset, header.size - offset)
+                if (n < 0) break
+                offset += n
+            }
+            offset
+        }
+        if (read < 20 || header[0] != 0x7f.toByte() || header[1] != 'E'.code.toByte() ||
             header[2] != 'L'.code.toByte() || header[3] != 'F'.code.toByte() ||
             header[4] != 2.toByte() || header[5] != 1.toByte()) throw IOException("Runtime is not a little-endian ELF64 library")
         val machine = (header[18].toInt() and 0xff) or ((header[19].toInt() and 0xff) shl 8)
