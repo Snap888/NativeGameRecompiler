@@ -137,7 +137,16 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
         finish_activity(activity);
         return;
     }
-    if (setenv("NGR_SWITCH_GAME_ROOT", game_root.c_str(), 1) != 0) {
+    const std::string private_root = files_dir + kPortsDirectory + title_id;
+    char canonical_files[PATH_MAX] = {}, canonical_private[PATH_MAX] = {};
+    if (!realpath(files_dir.c_str(), canonical_files) || !realpath(private_root.c_str(), canonical_private) ||
+        std::string(canonical_private) != std::string(canonical_files) + kPortsDirectory + title_id) {
+        log_error("Per-title private save directory is missing or unsafe.");
+        finish_activity(activity);
+        return;
+    }
+    if (setenv("NGR_SWITCH_GAME_ROOT", game_root.c_str(), 1) != 0 ||
+        setenv("NGR_SWITCH_PRIVATE_ROOT", private_root.c_str(), 1) != 0) {
         log_error("Unable to set per-title Switch data root.");
         finish_activity(activity);
         return;
