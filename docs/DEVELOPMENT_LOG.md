@@ -1420,3 +1420,7 @@ This is the durable project memory. Update it in every development session.
 - Updated the NativeActivity dispatcher to validate the private title directory and set both `NGR_SWITCH_GAME_ROOT` and `NGR_SWITCH_PRIVATE_ROOT` before loading the donor runtime.
 - Updated the Switch smoke workflow to check all three pinned donor patches.
 - Still awaiting Actions verification; the new patches and NativeActivity forwarding remain unverified until CI and device tests pass.
+
+### Data-pack path correction
+- The donor writes absolute `DM_AOC_DIR`, `DM_SYSDATA` and optional font paths against `/sdcard/Android/data/com.ngr.app/files`. NGR stores the pack below `switch-ports/<TITLE_ID>/data`, so `port_game.py` now rewrites that base prefix in the generated `env.txt` to the title-specific data root before packaging.
+- Corrected unified-diff hunk counts in all three donor patches and added CI checks for patch application plus adapter CLI help/syntax. The actual workflow result is still pending.
