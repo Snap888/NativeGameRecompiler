@@ -381,3 +381,10 @@ Mark complete only when evidence exists.
 - [x] Artifact NGR-arm64-debug, ID 14711342035. ZIP SHA-256: c9758a075144fd4f3406dbbeb81f907f37800b5c92bbb96ba0cccfbf95aae29b.
 - [x] Extracted APK SHA-256: a01790c140a4a8ab7755bb86306617d58bc5052c47a904503ffa7b98aa2078e2; contains lib/arm64-v8a/libngr_runtime.so.
 - [ ] Install the queue UI APK on Snapdragon/Adreno hardware and test SAF grants across app restarts.
+
+
+### Xbox 360 compiler toolchain build — 2026-11-21
+- [x] Pin XenonRecomp source commit and XDroid360 patch commit + SHA-256 in a reproducible Android arm64 build script.
+- [x] Add an isolated GitHub Actions workflow that builds the Android API 29 / arm64-v8a / 16 KB-page executable and uploads its corresponding source and license materials.
+- [ ] Verify the XenonRecomp Android cross-build and artifact contents in Actions.
+- [ ] Build the Android Clang/LLD kit and run a synthetic PPC-to-ARM64 fixture; XenonRecomp alone is not a playable runtime.

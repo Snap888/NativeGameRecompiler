@@ -1242,3 +1242,11 @@ This is the durable project memory. Update it in every development session.
 - Artifact NGR-arm64-debug ID 14711342035; ZIP SHA-256 c9758a075144fd4f3406dbbeb81f907f37800b5c92bbb96ba0cccfbf95aae29b; APK SHA-256 a01790c140a4a8ab7755bb86306617d58bc5052c47a904503ffa7b98aa2078e2.
 - APK contains lib/arm64-v8a/libngr_runtime.so. Device install and SAF permission persistence across process death remain unverified.
 - This is a queue UI, not an operational recompiler: XenonRecomp/Clang/LLD worker, Switch preparation adapter, title runtime and gameplay are not yet integrated.
+
+
+### Xbox 360 XenonRecomp Android toolchain — 2026-11-21
+- Added toolchains/xbox360/build_xenonrecomp_android.sh, pinning XenonRecomp ddd128bcca99fe8bfbb99bea583c972351fa6ace and the XDroid360 patch bfbaa874323181191228ca20a7775f1725ee287a with SHA-256 verification.
+- Script builds XenonRecomp for Android API 29, arm64-v8a and 16 KB page-size compatibility using NDK 27.3.13750724; verifies the output ELF is AArch64.
+- Added an isolated GitHub Actions workflow and artifact containing the compiler, corresponding patched source archive, patch script, GPL-2.0 text, MIT notices, provenance and hashes.
+- This stage intentionally excludes Clang/LLD, Xenos shader compilation, the GPL-3.0 native renderer and all title runtimes. A XenonRecomp executable only emits PPC-derived C++ and cannot launch a game by itself.
+- CI result pending; no compiler binary or playable Xbox 360 support is claimed yet.

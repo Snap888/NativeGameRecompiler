@@ -9,3 +9,7 @@ local.properties
 .cxx/
 *.apk
 *.aab
+
+# Generated Xbox 360 compiler toolchain artifacts
+toolchains/xbox360/out/
+toolchains/xbox360/.work/
