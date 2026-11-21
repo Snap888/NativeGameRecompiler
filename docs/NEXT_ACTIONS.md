@@ -71,7 +71,7 @@ Mark complete only when evidence exists.
 - [x] Add JVM tests for target exclusivity, accepted formats, preparation modes and key requirements.
 - [x] Add docs/XBOX360_SWITCH_INTEGRATION_PLAN.md with source revisions, architecture boundaries, licensing and staged acceptance criteria.
 - [x] Compile the target catalog in isolation with kotlinc and run runtime assertions (two-target exclusivity, file detection, key requirement).
-- [ ] Run full Gradle JVM tests and arm64-v8a APK CI for the target catalog.
+- [x] Full Gradle JVM tests and arm64-v8a APK CI passed in run #483 at commit d8b1a08a85902b407bee92f513b1d6cc719acb9b; latest SAF unknown-size fix is under run #484.
 - [x] Implement compiler job contract separately from execution Backend ABI v1 (progress, cancel, process-death recovery, bounded/redacted logs, quotas).
 - [x] Connect the job store to the SAF import UI with persistent read grants and a visible cancellable queue.
 - [x] Add WorkManager-backed foreground source intake: private staging copy, SHA-256, size/free-space bounds, target format checks and ZIP path inspection.
@@ -423,3 +423,11 @@ Mark complete only when evidence exists.
 - [ ] Run Gradle/JVM and arm64 APK CI; resolve all compile/test failures before calling this stage verified.
 - [ ] Device-test 4-8 GB ISO and Switch package staging, process death, cancellation, low-storage and provider permission revocation.
 - [ ] Implement Xbox extraction and XenonRecomp only after staging validation.
+
+
+## Source staging CI verification — 2026-11-21
+- [x] Run #483 (44917831975), commit d8b1a08a85902b407bee92f513b1d6cc719acb9b: native ABI conformance, backend registry tests, all JVM tests, ARM64 debug APK and artifact upload passed.
+- [x] Artifact NGR-arm64-debug ID 14712576422; ZIP SHA-256 e5a0b9075bd0000bd12e57e6b7c3f94500438476ee29e3e673ef3c7c457726bf.
+- [x] Extracted APK SHA-256 d581caae4745d5252e17190842d847842e5bb53ff7105af0f6ca2a4535a1f762; includes lib/arm64-v8a/libngr_runtime.so and WorkManager runtime metadata.
+- [ ] Run #484 (44917991394) validates latest main commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 (SAF providers reporting unknown size); JVM and native tests passed, ARM64 APK build/upload still running at log update.
+- [ ] Physical-device test on Snapdragon/Adreno: SAF persistent grant, multi-GB source copy, notification, cancellation, restart and low-storage behavior.

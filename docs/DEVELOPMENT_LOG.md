@@ -1305,3 +1305,13 @@ This is the durable project memory. Update it in every development session.
 2. Verify multi-gigabyte copy, notification, cancellation and process-death behavior on Snapdragon Android.
 3. Add an isolated Xbox ISO/ZIP extractor and synthetic fixture tests.
 4. Pin and build XenonRecomp plus the Android patch before implementing the PPC compiler worker.
+
+
+## CI verification — source staging worker
+
+- Run #483 (44917831975) passed at commit d8b1a08a85902b407bee92f513b1d6cc719acb9b: native ABI conformance, backend registry, all JVM tests, ARM64 debug APK and artifact upload.
+- Artifact NGR-arm64-debug ID 14712576422 (expires 2026-12-05); ZIP SHA-256 e5a0b9075bd0000bd12e57e6b7c3f94500438476ee29e3e673ef3c7c457726bf.
+- Extracted app-debug.apk size 4,178,861 bytes; SHA-256 d581caae4745d5252e17190842d847842e5bb53ff7105af0f6ca2a4535a1f762.
+- APK contains lib/arm64-v8a/libngr_runtime.so; archive contains WorkManager runtime metadata.
+- Follow-up fix in commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 treats negative SAF size metadata as unknown instead of rejecting the source. Run #484: native tests and JVM tests passed; ARM64 APK build/upload still in progress at this update.
+- Device behavior remains unverified; this build does not contain a console compiler or playable game runtime.
