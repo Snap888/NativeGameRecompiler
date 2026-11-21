@@ -50,6 +50,7 @@ jobs:
       - name: Validate adapter syntax and donor patch
         run: |
           python -m py_compile tools/switch/build_runtime.py tools/switch/port_game.py
+          git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0001-use-ngr-title-data-root.patch"
           git -C "$RUNNER_TEMP/nx2android" apply --check "$GITHUB_WORKSPACE/patches/nx2android/0002-ngrn-build-without-per-game-apk.patch"
 
       - name: Build title-profiled NativeActivity runtime (no APK)
