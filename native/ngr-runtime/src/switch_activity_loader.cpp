@@ -22,6 +22,7 @@ using RuntimeEntry = void (*)(ANativeActivity*, void*, size_t);
 using RuntimeOnDestroy = void (*)(ANativeActivity*);
 void* g_runtime_handle = nullptr;
 RuntimeOnDestroy g_runtime_on_destroy = nullptr;
+bool g_runtime_destroying = false;
 ngr::SwitchRuntimeLifecycleState g_runtime_lifecycle{};
 
 void call_donor_on_destroy(void* activity) {
@@ -35,11 +36,14 @@ void unload_runtime(void* handle) {
 }
 
 void on_runtime_destroy(ANativeActivity* activity) {
+    if (g_runtime_destroying) return;
+    g_runtime_destroying = true;
     g_runtime_lifecycle.runtime_handle = g_runtime_handle;
     g_runtime_lifecycle.donor_on_destroy = g_runtime_on_destroy ? call_donor_on_destroy : nullptr;
     g_runtime_lifecycle.unload_runtime = unload_runtime;
-    g_runtime_handle = nullptr;
     ngr::switch_runtime_destroy(&g_runtime_lifecycle, activity);
+    g_runtime_handle = nullptr;
+    g_runtime_destroying = false;
 }
 
 void log_error(const char* message) { __android_log_write(ANDROID_LOG_ERROR, kTag, message); }
