@@ -45,4 +45,4 @@ nx2android's NativeActivity normally sets its g_root to ANativeActivity.external
 
 ## Current limitations
 
-The NativeActivity bridge and per-title path contract are authored but not yet CI-verified. No Switch title runtime has yet been built by the new workflow, imported into NGR, launched, or tested on a device. Existing NGR APK artifacts do not contain a playable Switch runtime.
+The NativeActivity bridge, build receipt verifier and prepared-port importer are authored but not yet CI-verified. No Switch title runtime has yet been built by the new workflow, imported into NGR, launched, or tested on a device. Existing NGR APK artifacts do not contain a playable Switch runtime.
