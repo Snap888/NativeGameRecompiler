@@ -80,11 +80,13 @@ def copy_overlay_assets(donor: Path, title_id: str, data_root: Path) -> None:
     if (font_target / "ui.bin").exists():
         raise SystemExit("Data pack already contains assets/font/ui.bin; refusing to overwrite")
     shutil.copy2(font_file, font_target / "ui.bin")
-    for notice in font_source.glob("*.txt"):
+    for notice in font_source.rglob("*.txt"):
         if notice.is_file() and not notice.is_symlink():
-            target_notice = font_target / notice.name
+            relative_notice = notice.relative_to(font_source)
+            target_notice = font_target / relative_notice
             if target_notice.exists():
                 raise SystemExit(f"Data pack font notice collision: {target_notice}")
+            target_notice.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(notice, target_notice)
 
 
