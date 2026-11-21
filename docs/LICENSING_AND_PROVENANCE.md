@@ -107,3 +107,11 @@ Inspected commit: 828ded46adb11722591c4353a2ba88175640d250
 - User-owned prod.keys, title keys, firmware and game data must never be committed, bundled, uploaded or emitted in logs.
 
 No donor code was copied during this scope reset. The new NGR target catalog contains only metadata.
+
+
+### NGR integration decision
+- NGR root project LICENSE is MIT.
+- The XDroid360 root launcher is MIT, but selected tool/runtime/renderer pieces are GPL-2.0-or-later or GPL-3.0. Keep these components separately packaged where technically and legally appropriate; do not link GPL renderer code into the MIT host without an explicit licensing decision.
+- A separate child executable shipped in the same APK needs a component-specific GPL source/notice compliance review; do not assume it automatically changes the host's license, and do not assume it is automatically mere aggregation.
+- The Switch nxnative core is MIT, but its third-party dependencies retain their own licenses.
+- No source integration is approved until pinned per-file and dependency provenance, exact binary contents, and distribution obligations are documented.
