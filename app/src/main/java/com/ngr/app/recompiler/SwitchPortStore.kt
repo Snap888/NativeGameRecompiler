@@ -35,7 +35,8 @@ class SwitchPortStore(private val context: Context) {
             if (!titlePattern.matches(id)) return@mapNotNull null
             val runtime = File(dir, "runtime/libdmhost.so")
             val data = File(external, "$id/data")
-            if (!runtime.isFile || !data.isDirectory || !File(data, "nx2a-data.json").isFile ||
+            if (!runtime.isFile || !File(dir, "runtime/game_profile.h").isFile ||
+                !data.isDirectory || !File(data, "nx2a-data.json").isFile ||
                 !File(data, "mods").isDirectory || !File(data, "env.txt").isFile ||
                 !File(data, "assets/overlay/theme.tsv").isFile || !File(data, "assets/font/ui.bin").isFile) return@mapNotNull null
             val manifest = readJson(File(data, "nx2a-data.json")) ?: return@mapNotNull null
