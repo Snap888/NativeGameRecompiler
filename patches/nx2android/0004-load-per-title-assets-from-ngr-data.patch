@@ -1,0 +1,69 @@
+diff --git a/nxnative/dm/android/overlay_theme.c b/nxnative/dm/android/overlay_theme.c
+--- a/nxnative/dm/android/overlay_theme.c
++++ b/nxnative/dm/android/overlay_theme.c
+@@ -7,6 +7,8 @@
+ #include <android/asset_manager.h>
++#include <limits.h>
+ #include <pthread.h>
++#include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <zlib.h>
+@@ -12,8 +14,46 @@
+ __attribute__((weak)) AAssetManager *dm_front_assets(void) { return NULL; }
+ 
+-static uint8_t *asset(const char *name, size_t *n) {   // the whole asset, NUL-terminated (malloc), NULL when the APK has none
+-    AAssetManager *am = dm_front_assets(); AAsset *a = am ? AAssetManager_open(am, name, AASSET_MODE_BUFFER) : NULL;
+-    if (!a) return NULL;
+-    off_t len = AAsset_getLength(a); uint8_t *b = malloc((size_t)len + 1);
+-    if (b && AAsset_read(a, b, (size_t)len) != len) { free(b); b = NULL; }
+-    AAsset_close(a); if (b) { b[len] = 0; *n = (size_t)len; }
+-    return b;
++static int safe_asset_name(const char *name) {
++    if (!name || !name[0] || name[0] == '/' || strchr(name, '\\')) return 0;
++    const char *part = name;
++    for (const char *p = name;; p++) {
++        if (*p == '/' || *p == 0) {
++            size_t len = (size_t)(p - part);
++            if (!len || (len == 1 && part[0] == '.') ||
++                (len == 2 && part[0] == '.' && part[1] == '.')) return 0;
++            if (!*p) break;
++            part = p + 1;
++        }
++    }
++    return 1;
++}
++
++static uint8_t *asset(const char *name, size_t *n) {
++    // Prefer normal APK assets. NGR stores the donor's per-title theme beside
++    // the game data and exposes it through NGR_SWITCH_GAME_ROOT/assets/.
++    AAssetManager *am = dm_front_assets();
++    AAsset *a = am ? AAssetManager_open(am, name, AASSET_MODE_BUFFER) : NULL;
++    if (a) {
++        off_t len = AAsset_getLength(a);
++        uint8_t *b = len >= 0 && len <= 64 * 1024 * 1024 ? malloc((size_t)len + 1) : NULL;
++        if (b && AAsset_read(a, b, (size_t)len) != len) { free(b); b = NULL; }
++        AAsset_close(a);
++        if (b) { b[len] = 0; *n = (size_t)len; return b; }
++    }
++
++    const char *root = getenv("NGR_SWITCH_GAME_ROOT");
++    if (!root || !root[0] || !safe_asset_name(name)) return NULL;
++    char path[PATH_MAX];
++    int written = snprintf(path, sizeof path, "%s/assets/%s", root, name);
++    if (written <= 0 || (size_t)written >= sizeof path) return NULL;
++    FILE *file = fopen(path, "rb");
++    if (!file) return NULL;
++    if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return NULL; }
++    long length = ftell(file);
++    if (length < 0 || length > 64 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
++        fclose(file); return NULL;
++    }
++    uint8_t *b = malloc((size_t)length + 1);
++    if (!b) { fclose(file); return NULL; }
++    size_t got = fread(b, 1, (size_t)length, file);
++    fclose(file);
++    if (got != (size_t)length) { free(b); return NULL; }
++    b[length] = 0; *n = (size_t)length;
++    return b;
+ }
