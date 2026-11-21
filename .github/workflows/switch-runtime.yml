@@ -1,0 +1,92 @@
+name: Nintendo Switch embedded runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      title_id:
+        description: "16-digit Nintendo Switch title ID from nx2android"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-title-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Validate title ID
+        shell: bash
+        run: |
+          [[ "${{ inputs.title_id }}" =~ ^[0-9A-Fa-f]{16}$ ]] || { echo "title_id must be exactly 16 hexadecimal characters"; exit 2; }
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Android NDK r27c
+        uses: android-actions/setup-android@v3
+
+      - name: Install pinned NDK
+        shell: bash
+        run: |
+          sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Fetch pinned nx2android source
+        shell: bash
+        run: |
+          git clone --recurse-submodules https://github.com/shirai91/nx2android.git nx2android
+          git -C nx2android checkout f32b3d563f0615d0e825747285d4e38d780e4ebb
+          git -C nx2android submodule update --init --recursive
+          test -f "nx2android/nxnative/dm/games/${{ inputs.title_id }}/android.tsv" || {
+            echo "No Android profile for title ID ${{ inputs.title_id }} at pinned nx2android revision"
+            exit 3
+          }
+
+      - name: Apply NGR per-title data-root integration
+        run: python tools/switch/apply_nx2android_patch.py nx2android
+
+      - name: Build title-specific Android NativeActivity runtime
+        shell: bash
+        run: |
+          mkdir -p build/switch-runtime
+          python nx2android/nxnative/dm/android/build.py \
+            --game "${{ inputs.title_id }}" \
+            --ndk "$ANDROID_NDK_HOME" \
+            --out "$PWD/build/switch-runtime" \
+            --lib --release --jobs 4
+          test -s build/switch-runtime/libdmhost.so
+          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h build/switch-runtime/libdmhost.so
+          "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -d build/switch-runtime/libdmhost.so
+
+      - name: Assemble NGR runtime component
+        shell: bash
+        run: |
+          mkdir -p build/NGR-Switch-Runtime/runtime
+          cp build/switch-runtime/libdmhost.so build/NGR-Switch-Runtime/runtime/
+          cp nx2android/nxnative/LICENSE build/NGR-Switch-Runtime/NX2ANDROID-LICENSE
+          cat > build/NGR-Switch-Runtime/runtime-manifest.json <<EOF
+          {
+            "schema": 1,
+            "target": "nintendo-switch",
+            "title_id": "${{ inputs.title_id }}",
+            "runtime": "runtime/libdmhost.so",
+            "nx2android_commit": "f32b3d563f0615d0e825747285d4e38d780e4ebb",
+            "ndk": "27.2.12479018",
+            "api": 31,
+            "license": "MIT with third-party notices retained in upstream source"
+          }
+          EOF
+          sha256sum build/NGR-Switch-Runtime/runtime/libdmhost.so > build/NGR-Switch-Runtime/SHA256SUMS
+          tar -C build -czf "NGR-Switch-Runtime-${{ inputs.title_id }}.tar.gz" NGR-Switch-Runtime
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NGR-Switch-Runtime-${{ inputs.title_id }}
+          path: build/NGR-Switch-Runtime-${{ inputs.title_id }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14
