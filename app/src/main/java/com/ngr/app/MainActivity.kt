@@ -36,6 +36,8 @@ import com.ngr.app.recompiler.ConsoleBuildJobState
 import com.ngr.app.recompiler.ConsoleBuildJobStore
 import com.ngr.app.recompiler.ConsoleSourceStagingWorker
 import com.ngr.app.recompiler.ConsoleTargetId
+import com.ngr.app.recompiler.SwitchPortStore
+import com.ngr.app.recompiler.SwitchRuntimeLauncher
 import java.io.File
 import java.io.FileOutputStream
 import java.io.ByteArrayOutputStream
@@ -50,6 +52,9 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
     private lateinit var inputManager: InputManager
     private lateinit var packageManager: NgrPackPackageManager
     private lateinit var consoleBuildJobStore: ConsoleBuildJobStore
+    private lateinit var switchPortStore: SwitchPortStore
+    private lateinit var switchPortList: LinearLayout
+    private lateinit var switchPortStatus: TextView
     private var pendingConsoleTarget: ConsoleTargetId? = null
     private lateinit var shortcutStore: NgrGameShortcutStore
     private lateinit var shortcutStatus: TextView
@@ -83,6 +88,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         private const val REQUEST_GAME_FOLDER = 4105
         private const val REQUEST_COMPONENT_CATALOG = 4106
         private const val REQUEST_CONSOLE_BUILD = 4107
+        private const val REQUEST_SWITCH_PORT_FOLDER = 4108
         init { System.loadLibrary("ngr_runtime") }
     }
 
@@ -97,6 +103,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         packageManager = NgrPackPackageManager(File(filesDir, "ngr-packages"))
         consoleBuildJobStore = ConsoleBuildJobStore(File(filesDir, "ngr-runtime"))
+        switchPortStore = SwitchPortStore(this)
         packageWorker.execute {
             val removed = packageManager.cleanupAbandonedFolderStaging()
             if (removed > 0) NgrLogger.info("package.import", "Cleaned $removed abandoned folder import staging directory/directories")
@@ -188,10 +195,24 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
         packageList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(packageList)
 
+        addSection(root, "SWITCH LIBRARY", "Installed Nintendo Switch ports")
+        val switchLibraryCard = createCard()
+        switchLibraryCard.addView(TextView(this).apply {
+            text = "Import a prepared nx2android port folder. NGR stores its title-specific runtime and game data internally and launches it in the same NGR app — no separate game APK is installed."
+            textSize = 13f
+            setTextColor(Color.rgb(163, 174, 191))
+        })
+        switchLibraryCard.addView(primaryButton("＋  Import prepared Switch port folder") { chooseSwitchPortFolder() })
+        switchPortStatus = mutedText()
+        switchLibraryCard.addView(switchPortStatus)
+        switchPortList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        switchLibraryCard.addView(switchPortList)
+        root.addView(switchLibraryCard, sectionParams())
+
         addSection(root, "CONSOLE RECOMPILERS", "Xbox 360 · Nintendo Switch")
         val consoleBuildCard = createCard()
         consoleBuildCard.addView(TextView(this).apply {
-            text = "Queue a game preparation job. Xbox 360 and Switch import metadata is saved securely; compiler workers and playable runtimes are not connected yet."
+            text = "Xbox 360 and Switch source intake is available. Switch ports can be imported into the built-in runtime; automatic NSP/XCI extraction and recompilation are still being integrated."
             textSize = 13f
             setTextColor(Color.rgb(163, 174, 191))
         })
@@ -1325,6 +1346,64 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             .setPositiveButton("Close", null)
             .show()
     }
+    private fun chooseSwitchPortFolder() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        startActivityForResult(intent, REQUEST_SWITCH_PORT_FOLDER)
+    }
+
+    private fun importSwitchPortFolder(uri: Uri, flags: Int) {
+        runCatching {
+            contentResolver.takePersistableUriPermission(uri, flags and Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }.onFailure { NgrLogger.warn("switch.import", "Could not persist folder grant: ${it.message}") }
+        switchPortStatus.text = "Importing prepared Switch port…"
+        packageWorker.execute {
+            val result = runCatching { switchPortStore.installFromTree(uri) }
+            runOnUiThread {
+                result.onSuccess { port ->
+                    NgrLogger.info("switch.import", "Installed title=${port.titleId} name=${port.name}")
+                    Toast.makeText(this, "Switch port imported: ${port.name}", Toast.LENGTH_LONG).show()
+                }.onFailure {
+                    NgrLogger.error("switch.import", "Switch port import failed", it)
+                    Toast.makeText(this, "Switch port import failed: ${it.message}", Toast.LENGTH_LONG).show()
+                }
+                refreshSwitchPorts()
+            }
+        }
+    }
+
+    private fun refreshSwitchPorts() {
+        if (!::switchPortStore.isInitialized || !::switchPortList.isInitialized) return
+        val ports = switchPortStore.listInstalled()
+        switchPortStatus.text = "${ports.size} installed Switch port(s)"
+        switchPortList.removeAllViews()
+        if (ports.isEmpty()) {
+            switchPortList.addView(TextView(this).apply {
+                text = "No prepared Switch ports imported yet"
+                textSize = 12f
+                setTextColor(Color.rgb(143, 155, 174))
+                setPadding(0, dp(8), 0, dp(8))
+            })
+        }
+        ports.forEach { port ->
+            val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(10), 0, dp(10)) }
+            item.addView(TextView(this).apply {
+                text = "${port.name}\nTitle ID: ${port.titleId} · ${port.version}"
+                textSize = 13f
+                setTextColor(Color.rgb(205, 216, 232))
+            })
+            item.addView(primaryButton("▶  Launch in NGR") {
+                runCatching { SwitchRuntimeLauncher.launch(this@MainActivity, port.titleId) }
+                    .onFailure {
+                        NgrLogger.error("switch.launch", "Launch failed for ${port.titleId}", it)
+                        Toast.makeText(this@MainActivity, "Switch launch failed: ${it.message}", Toast.LENGTH_LONG).show()
+                    }
+            })
+            switchPortList.addView(item)
+        }
+    }
+
     private fun chooseConsoleSource(target: ConsoleTargetId) {
         pendingConsoleTarget = target
         val title = if (target == ConsoleTargetId.XBOX_360) "Select Xbox 360 ISO or ZIP" else "Select Nintendo Switch NSP, XCI, NSZ or XCZ"
@@ -1495,7 +1574,7 @@ class MainActivity : Activity(), InputManager.InputDeviceListener {
             if (resultCode == RESULT_OK) data?.data?.let { importOrdinaryGameZip(it) }
             return
         }
-        if (requestCode == REQUEST_CONSOLE_BUILD) {
+        if (requestCode == REQUEST_SWITCH_PORT_FOLDER) {\n            if (resultCode == RESULT_OK) data?.data?.let { importSwitchPortFolder(it, data.flags) }\n            return\n        }\n        if (requestCode == REQUEST_CONSOLE_BUILD) {
             if (resultCode == RESULT_OK) data?.takeIf { it.data != null }?.let { queueConsoleBuild(it) }
             pendingConsoleTarget = null
             return
