@@ -29,8 +29,8 @@ Product: Android app/runtime for launching game builds that have been legally an
 - DXVK (D3D8-11) and VKD3D-Proton (D3D12) are future integrations, not currently integrated.
 - LLVM is compiler infrastructure, not a ready-made game recompiler.
 - FEX and Box64 are future dynamic translation backends, not static recompilers.
-- First bounded static recompiler experiment: N64/MIPS with N64Recomp, only after dependency/license review and obtaining a legally usable test input.
-- NGRPACK is a future ZIP-compatible package with versioned manifest and SHA-256 hashes. Treat all package data as untrusted.
+- Active console targets are **Xbox 360 and Nintendo Switch only**. Xbox 360 is based on Snap888/XDroid360; Nintendo Switch is based on shirai91/nx2android. Do not add N64, Original Xbox, PlayStation, Xbox One, Switch 2 or generic PC/EXE targets.
+- NGRPACK is a ZIP-compatible package with versioned manifest and SHA-256 hashes. Treat all package data as untrusted. Console build outputs need a separate profile-bound artifact/package contract.
 - Never distribute copyrighted game data, ROMs, BIOS images, proprietary keys or game assets.
 
 ## Known handoff status (2026-11-17)
@@ -58,16 +58,16 @@ Product: Android app/runtime for launching game builds that have been legally an
 Continue implementation from the live repository. Maintain the development journal and next-action list. End with changes, exact commits, build/test status, known issues and the next task.
 
 
-## Updated direction — WinNative runtime and Environment Manager
+## Legacy direction — WinNative runtime and Environment Manager (deferred; not active scope)
 - Reuse WinNative/Winlator Bionic technology for a Wine compatibility backend, but do not collapse NGR into a WinNative fork.
-- NGR must support three independent execution modes: Wine compatibility, static recompiled ARM64 and native ARM64.
+- Earlier Wine/Box64/FEX execution-mode work is legacy foundation and deferred while the active Xbox 360 + Switch workstream is implemented.
 - Environment Manager scope includes containers/Wine prefixes, Wine/Proton layers, Box64, FEXCore/FEX unixlibs, optional WOWBox64, DXVK, VKD3D-Proton, Turnip/Adreno drivers, ReShade/shader packs, environment variables, audio/input/display and per-game profiles.
 - Standard x86_64 + Box64 and ARM64EC + FEX are distinct configurations with explicit compatibility checks.
 - X11 is the first display path. Wayland is gated on a matching Wine/Proton winewayland driver and compatible Wayland Turnip libraries.
 - Never replace Android system Vulkan libraries. Keep Turnip isolated.
 - Catalog presence is not proof of runtime integration. ReShade activation must be audited and tested separately.
 - WinNative is GPL-3.0; review NGR licensing and all component licenses before copying or linking code.
-- Read `docs/WINNATIVE_INTEGRATION_PLAN.md` before continuing this work.
+- Do not expand WinNative/Wine integration during the active console work. Historical notes remain in `docs/WINNATIVE_INTEGRATION_PLAN.md`.
 - Current session only records architecture/docs; no donor source or binary was ported. First next task is file-by-file donor source audit and provenance/license matrix.
 
 
@@ -80,3 +80,15 @@ Continue implementation from the live repository. Maintain the development journ
 - Latest APK artifact ID 14433695246 was downloaded and inspected; APK SHA-256 5e3dd973b753f935939f9f0bf64ad70a9f072b556bda9c53b67429a801f79d44. It includes lib/arm64-v8a/libngr_runtime.so.
 - Stale folder staging cleanup is implemented and tested: UUID-only real directories older than 30 days are removed at startup; recent directories are retained.
 - Next: prepare and execute a physical-device test matrix for multi-GB SAF import, low-storage failure, cancellation, process death and rollback. Then continue environment-management work; do not start game execution/recompiler implementation before the Environment Manager completion gate in WINNATIVE_INTEGRATION_PLAN.md.
+
+
+## Active continuation state — 2026-11-21: Xbox 360 + Nintendo Switch only
+- Scope is locked to Xbox 360 and Nintendo Switch. No other console or PC/EXE target may be added.
+- Read README.md, docs/XBOX360_SWITCH_INTEGRATION_PLAN.md, docs/NEXT_ACTIONS.md, docs/DEVELOPMENT_LOG.md and docs/LICENSING_AND_PROVENANCE.md before changing code.
+- Donor source revisions audited: Snap888/XDroid360 commit 6eefb7f738d4e63cb11cb6bb63911f55094e8ada; shirai91/nx2android commit 828ded46adb11722591c4353a2ba88175640d250.
+- Added app/src/main/java/com/ngr/app/recompiler/ConsoleRecompilerTargets.kt and matching JVM tests. Catalog has exactly Xbox 360 and Nintendo Switch and marks both RESEARCHED_NOT_INTEGRATED.
+- Important Switch distinction: nx2android currently builds the APK/data pack on a desktop host; its Android runtime runs the resulting title natively. Do not claim on-device Switch recompilation until the .NET/LibHac, Python rewrite/shader and NDK build pipeline is proven on Android.
+- Important Xbox distinction: XDroid360 uses an on-device XenonRecomp/Clang/LLD pipeline, but game runtime modules are title-specific (DAO/SoD/ME1); compiler output alone does not run arbitrary XEX games.
+- Current code/docs commits are in main. CI for the newly added catalog has not yet been verified; inspect Actions before claiming a passing build or APK.
+- Next task: verify JVM tests and arm64-v8a CI; then build the compiler job contract and start the Xbox 360 PPC fixture vertical slice. Switch work follows with NSO/NRO rewrite fixture and Android Horizon/NVN Vulkan runtime.
+- Never commit user game data, firmware, prod.keys/title keys, generated copyrighted game code or proprietary shader assets. Redact keys and sensitive paths from logs.
