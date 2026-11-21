@@ -1,6 +1,8 @@
 # NGR — Next Actions
 
-Mark complete only when evidence exists.\n\n## Active scope lock — 2026-11-21\n- Active console targets: **Xbox 360 and Nintendo Switch only**.\n- Donor foundations: Snap888/XDroid360 and shirai91/nx2android.\n- N64, Original Xbox, PlayStation, Xbox One, Switch 2 and generic PC/EXE recompilation are out of scope for this workstream.\n- Earlier Wine/Box64/FEX checklist items are legacy foundation and deferred; do not expand them while implementing the two console targets.\n- Full design: [docs/XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md).
+Mark complete only when evidence exists.
+
+## Active scope lock — 2026-11-21\n- Active console targets: **Xbox 360 and Nintendo Switch only**.\n- Donor foundations: Snap888/XDroid360 and shirai91/nx2android.\n- N64, Original Xbox, PlayStation, Xbox One, Switch 2 and generic PC/EXE recompilation are out of scope for this workstream.\n- Earlier Wine/Box64/FEX checklist items are legacy foundation and deferred; do not expand them while implementing the two console targets.\n- Full design: [docs/XBOX360_SWITCH_INTEGRATION_PLAN.md](XBOX360_SWITCH_INTEGRATION_PLAN.md).
 
 ## P0 — Device validation
 - [x] Restore Stage 2 CI: JDK 17, Android SDK, NDK/CMake, Gradle, JVM tests and arm64-v8a APK all pass.
