@@ -322,6 +322,11 @@ This is the durable project memory. Update it in every development session.
 - Added a dedicated GitHub Actions smoke workflow that fetches the pinned donor checkout and builds a profile-only runtime for compile/link validation. Its artifact is not a playable game and contains no commercial game files.
 - CI for the new runtime build and Android NativeActivity loader is pending; do not call this stage build-verified until both workflows pass.
 
+
+- Follow-up hardening: runtime launch now requires the JSON build receipt and checks the actual library SHA-256; malformed title IDs and hash mismatches have regression tests.
+- Added the dedicated smoke workflow at `.github/workflows/switch-runtime-smoke.yml`; it checks out nx2android at the pinned revision and runs the real donor host builder for a profile-only smoke output, without invoking APK packaging.
+- Latest implementation commit at this journal update: `3b44bee839cc93db3c02ed43445c01071a6adbfe`. CI result has not yet been confirmed.
+
 ### Current limitations
 - The builder selects a deterministic likely entry point automatically; a user-facing chooser for multiple executable candidates remains to be implemented.
 - Only ZIP and folders are supported in this stage. 7z/TAR are not implemented.
