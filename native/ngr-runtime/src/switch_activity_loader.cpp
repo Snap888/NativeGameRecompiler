@@ -86,7 +86,7 @@ bool read_launch_args(ANativeActivity* activity, std::string* files_dir,
     } else env->ExceptionClear();
     for (jobject value : {static_cast<jobject>(k1), static_cast<jobject>(k2), static_cast<jobject>(k3),
                           static_cast<jobject>(v1), static_cast<jobject>(v2), static_cast<jobject>(v3),
-                          static_cast<jobject>(root), intent_class, file_class}) {
+                          static_cast<jobject>(root), static_cast<jobject>(intent_class), static_cast<jobject>(file_class)}) {
         if (value) env->DeleteLocalRef(value);
     }
     env->DeleteLocalRef(intent);
