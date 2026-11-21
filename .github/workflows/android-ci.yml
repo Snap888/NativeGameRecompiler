@@ -41,6 +41,8 @@ jobs:
             native/ngr-runtime/tests/backend_registry_test.cpp \
             -o /tmp/ngr-backend-registry-test
           /tmp/ngr-backend-registry-test
+      - name: Validate Switch integration tooling syntax
+        run: python -m py_compile tools/switch/apply_nx2android_patch.py tools/switch/build_runtime.py tools/switch/assemble_port_bundle.py
       - name: Run JVM unit tests
         run: gradle --no-daemon :app:testDebugUnitTest
       - name: Build arm64 debug APK
