@@ -36,6 +36,8 @@ class ConsoleBuildJobStoreTest {
             }
             assertFalse(store.create(job().copy(jobId = "../escape")).success)
             assertFalse(store.create(job().copy(sourceSha256 = "not-sha256")).success)
+            assertFalse(store.create(job().copy(sourceDisplayName = "game.nsp")).success)
+            assertFalse(store.create(job(target = ConsoleTargetId.NINTENDO_SWITCH).copy(sourceDisplayName = "game.iso")).success)
         } finally { root.deleteRecursively() }
     }
 

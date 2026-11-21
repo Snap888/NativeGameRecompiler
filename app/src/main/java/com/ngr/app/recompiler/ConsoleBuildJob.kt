@@ -38,7 +38,11 @@ data class ConsoleBuildJob(
         if (!isSafeContentUri(sourceUri)) errors += "sourceUri must be a content URI"
         if (sourceDisplayName.isBlank() || sourceDisplayName.length > 255 ||
             sourceDisplayName.any { it == '\u0000' || it == '/' || it == '\\' }) errors += "sourceDisplayName is invalid"
-        if (sourceGrantFlags < 0 || sourceGrantFlags and ALLOWED_GRANT_FLAGS.inv() != 0) errors += "sourceGrantFlags is invalid"
+        if (sourceGrantFlags < 0 || (sourceGrantFlags and ALLOWED_GRANT_FLAGS.inv()) != 0) errors += "sourceGrantFlags is invalid"
+        val extension = sourceDisplayName.substringAfterLast('.', "").lowercase()
+        if (extension !in ConsoleRecompilerTargets.find(targetId)?.acceptedExtensions.orEmpty()) {
+            errors += "source file extension is not supported for target"
+        }
         if (!SAFE_ID.matches(profileId) || !SAFE_ID.matches(workspaceId)) errors += "profileId/workspaceId is invalid"
         if (sourceSha256 != null && !SHA256.matches(sourceSha256)) errors += "sourceSha256 is invalid"
         if (profileFingerprint != null && !SHA256.matches(profileFingerprint)) errors += "profileFingerprint is invalid"
