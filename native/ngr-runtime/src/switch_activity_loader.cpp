@@ -1,5 +1,6 @@
 #include <android/log.h>
 #include <android/native_activity.h>
+#include "switch_runtime_lifecycle.h"
 #include <dlfcn.h>
 #include <jni.h>
 #include <limits.h>
@@ -21,14 +22,24 @@ using RuntimeEntry = void (*)(ANativeActivity*, void*, size_t);
 using RuntimeOnDestroy = void (*)(ANativeActivity*);
 void* g_runtime_handle = nullptr;
 RuntimeOnDestroy g_runtime_on_destroy = nullptr;
+ngr::SwitchRuntimeLifecycleState g_runtime_lifecycle{};
 
-void on_runtime_destroy(ANativeActivity* activity) {
+void call_donor_on_destroy(void* activity) {
     RuntimeOnDestroy callback = g_runtime_on_destroy;
     g_runtime_on_destroy = nullptr;
-    if (callback) callback(activity);
-    void* handle = g_runtime_handle;
-    g_runtime_handle = nullptr;
+    if (callback) callback(static_cast<ANativeActivity*>(activity));
+}
+
+void unload_runtime(void* handle) {
     if (handle) dlclose(handle);
+}
+
+void on_runtime_destroy(ANativeActivity* activity) {
+    g_runtime_lifecycle.runtime_handle = g_runtime_handle;
+    g_runtime_lifecycle.donor_on_destroy = g_runtime_on_destroy ? call_donor_on_destroy : nullptr;
+    g_runtime_lifecycle.unload_runtime = unload_runtime;
+    g_runtime_handle = nullptr;
+    ngr::switch_runtime_destroy(&g_runtime_lifecycle, activity);
 }
 
 void log_error(const char* message) { __android_log_write(ANDROID_LOG_ERROR, kTag, message); }
