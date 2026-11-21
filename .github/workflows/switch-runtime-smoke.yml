@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "tools/switch/**"
+      - "patches/nx2android/**"
       - "native/ngr-runtime/**"
       - "app/src/main/AndroidManifest.xml"
       - "app/src/main/java/com/ngr/app/recompiler/SwitchRuntime*.kt"
