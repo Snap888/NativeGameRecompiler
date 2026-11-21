@@ -7,6 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.Locale
 
 data class InstalledSwitchPort(
@@ -54,6 +55,8 @@ class SwitchPortStore(private val context: Context) {
             ?: throw IOException("runtime/libdmhost.so is missing")
         val manifestDoc = dataDir.findFile("nx2a-data.json")?.takeIf { it.isFile }
             ?: throw IOException("data/nx2a-data.json is missing")
+        val runtimeManifestDoc = tree.findFile("runtime-manifest.json")?.takeIf { it.isFile }
+            ?: throw IOException("runtime-manifest.json is missing")
 
         val manifestBytes = context.contentResolver.openInputStream(manifestDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
             ?: throw IOException("Unable to read nx2a-data.json")
@@ -61,6 +64,15 @@ class SwitchPortStore(private val context: Context) {
             .getOrElse { throw IOException("Invalid nx2a-data.json", it) }
         val titleId = manifest.optString("title_id").uppercase(Locale.ROOT)
         if (!titlePattern.matches(titleId)) throw IOException("Data pack has an invalid title_id")
+        val runtimeManifestBytes = context.contentResolver.openInputStream(runtimeManifestDoc.uri)?.use { it.readBytesBounded(maxManifestBytes) }
+            ?: throw IOException("Unable to read runtime-manifest.json")
+        val runtimeManifest = runCatching { JSONObject(String(runtimeManifestBytes, Charsets.UTF_8)) }
+            .getOrElse { throw IOException("Invalid runtime-manifest.json", it) }
+        if (runtimeManifest.optString("target") != "nintendo-switch" ||
+            runtimeManifest.optString("title_id").uppercase(Locale.ROOT) != titleId ||
+            runtimeManifest.optString("runtime") != "runtime/libdmhost.so") throw IOException("Runtime component does not match this Switch title")
+        val expectedHash = runtimeManifest.optString("sha256").lowercase(Locale.ROOT)
+        if (!Regex("^[0-9a-f]{64}$").matches(expectedHash)) throw IOException("Runtime SHA-256 is missing")
         if (dataDir.findFile("mods")?.isDirectory != true) throw IOException("Rewritten modules folder is missing")
         if (dataDir.findFile("env.txt")?.isFile != true) throw IOException("env.txt is missing")
 
@@ -79,6 +91,9 @@ class SwitchPortStore(private val context: Context) {
             runtimeOut.parentFile?.mkdirs()
             copyDocument(runtimeDoc, runtimeOut, maxRuntimeBytes)
             validateElf64Arm64(runtimeOut)
+            if (sha256(runtimeOut) != expectedHash) throw IOException("Switch runtime SHA-256 mismatch")
+            File(runtimeTemp, "runtime-manifest.json").writeBytes(runtimeManifestBytes)
+            tree.findFile("NX2ANDROID-LICENSE")?.takeIf { it.isFile }?.let { copyDocument(it, File(runtimeTemp, "NX2ANDROID-LICENSE"), 1024L * 1024) }
 
             val dataOut = File(dataTemp, "data")
             val copiedFiles = copyTree(dataDir, dataOut, 0, maxFiles)
@@ -153,6 +168,15 @@ class SwitchPortStore(private val context: Context) {
             }
         }
         return total
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1024 * 1024)
+            while (true) { val n = input.read(buffer); if (n < 0) break; digest.update(buffer, 0, n) }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
     private fun validateElf64Arm64(file: File) {
