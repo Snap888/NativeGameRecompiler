@@ -7,8 +7,11 @@ Native Game Recompiler is an Android ARM64 runtime and modular game-recompilatio
 ## Project direction
 
 - Android host application with Kotlin UI and a native C++20 runtime core.
-- ARM64 as the initial Android target.
-- Independent execution modes: Wine compatibility, static recompilation and native ARM64.
+- Console static-recompilation scope is locked to **Xbox 360 and Nintendo Switch only**.
+- Xbox 360 foundation: the user's XDroid360 fork (PowerPC/XEX recompilation, Android toolchain and title-specific runtime modules).
+- Nintendo Switch foundation: nx2android/nxnative (NSO/NRO rewrite, Horizon service host and NVN-to-Vulkan Android runtime).
+- Both targets produce/run Android ARM64 (`arm64-v8a`) code; their CPU, OS-service and graphics runtimes remain separate.
+- Existing generic Wine/environment/package-management code is legacy foundation and is not an active platform-expansion target.
 - NGR Environment Manager foundation: versioned profiles, per-game overrides, component version pins, typed catalog, HTTPS/SHA-256 download, ZIP staging, atomic component store/rollback and dependency resolution.
 - Vulkan graphics-provider abstraction; system Vulkan loader first, optional isolated per-game Turnip integration later.
 - Touch controls and physical gamepad discovery.
@@ -54,10 +57,11 @@ CI workflow: [GitHub Actions](https://github.com/Snap888/NativeGameRecompiler/ac
 
 ## Not implemented yet
 
-No backend plugin loader, static game recompiler, dynamic translator, N64Recomp integration or Windows guest process launch is included yet. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
+Xbox 360 and Nintendo Switch compiler pipelines, console-specific runtimes, title profiles and native game execution are not integrated yet. The new two-target catalog is metadata only. No other console targets are in scope. Wine, Box64, FEXCore, DXVK, VKD3D-Proton, Turnip and vkBasalt/ReShade-compatible effect support currently exist only as profile/catalog/component-management foundations; they are not yet wired into a running game session. Package signing/trust policy and runtime sandboxing are also not implemented; NGRPACK is currently a data-installation mechanism only and package payloads must not be executed. APK is a debug artifact and has not yet been validated on physical Snapdragon/Adreno hardware.
 
 ## Legal
 
 NGR does not distribute copyrighted game data, ROMs, BIOS images, encryption keys or proprietary assets. Users must provide content they are legally entitled to use. Third-party components will be integrated only after license and compatibility review.
 
-- [Static recompiler integration audit](docs/RECOMPILER_INTEGRATION_AUDIT.md) — upstream source review, Android adaptation map, licensing gates and staged implementation plan.
+- [Xbox 360 + Switch integration plan](docs/XBOX360_SWITCH_INTEGRATION_PLAN.md) — source audit, architecture boundaries, licensing gates and staged implementation.
+- [Static recompiler integration audit](docs/RECOMPILER_INTEGRATION_AUDIT.md) — historical research checkpoint.
