@@ -7,9 +7,11 @@ namespace {
 std::vector<int> events;
 void* expected_activity = nullptr;
 void* expected_handle = nullptr;
+ngr::SwitchRuntimeLifecycleState* reentrant_state = nullptr;
 
 void donor_destroy(void* activity) {
     assert(activity == expected_activity);
+    if (reentrant_state != nullptr) ngr::switch_runtime_destroy(reentrant_state, activity);
     events.push_back(1);
 }
 
@@ -31,7 +33,9 @@ int main() {
         unload_runtime,
     };
 
+    reentrant_state = &state;
     ngr::switch_runtime_destroy(&state, &activity_token);
+    reentrant_state = nullptr;
     assert((events == std::vector<int>{1, 2}));
     assert(state.runtime_handle == nullptr);
     assert(state.donor_on_destroy == nullptr);
