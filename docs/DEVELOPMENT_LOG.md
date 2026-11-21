@@ -1424,3 +1424,32 @@ This is the durable project memory. Update it in every development session.
 ### Data-pack path correction
 - The donor writes absolute `DM_AOC_DIR`, `DM_SYSDATA` and optional font paths against `/sdcard/Android/data/com.ngr.app/files`. NGR stores the pack below `switch-ports/<TITLE_ID>/data`, so `port_game.py` now rewrites that base prefix in the generated `env.txt` to the title-specific data root before packaging.
 - Corrected unified-diff hunk counts in all three donor patches and added CI checks for patch application plus adapter CLI help/syntax. The actual workflow result is still pending.
+
+
+## Session 2026-11-21 — Switch integration CI diagnosis
+
+### Verified repository state
+- Main was at `6c4f9169869f28f1a6f4d40dbf73ecb983f1f3a2` before this session's CI fixes.
+- Switch integration source is present: desktop `port_game.py` adapter, three pinned nx2android patches, `libdmhost.so` runtime builder, Kotlin import/store/launcher/receipt verifier, NativeActivity dispatcher, and Switch library UI.
+- The adapter deliberately skips per-game APK creation; NGR imports a runtime/data folder and keeps one NGR APK.
+- The Switch porting pipeline remains desktop-assisted (Python/.NET/NDK and user-owned keys); Android source staging does not run the donor toolchain.
+- No legal title has been ported/launched in NGR. No device test has been performed.
+
+### CI failures found and corrected
+- Android CI run #570 [44935583030](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44935583030) failed during Kotlin compilation, before JVM tests: literal backslash-n sequences were accidentally inserted into the `REQUEST_SWITCH_PORT_FOLDER` callback in `MainActivity.kt` (compiler errors around line 1578).
+- Fixed the callback into normal Kotlin source lines. Commit: `e541e87c596303b9a3f7b497eeb5fdb5ba9be7ca` — `Fix Switch folder picker callback syntax`.
+- Switch smoke run #25 [44935562412](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44935562412) failed in Android SDK setup because `setup-android` attempted to install the removed SDK package `tools`.
+- Added explicit `packages: platform-tools` to the Switch smoke workflow. Commit: `cebee457da31a730b78a33adffc0bc815cd76afb` — `Fix Switch smoke Android SDK setup`.
+- New Android CI run #572 [44938186904](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44938186904) and Switch smoke run #26 [44938186883](https://github.com/Snap888/NativeGameRecompiler/actions/runs/44938186883) started after these fixes. Their results must be checked before marking either path green.
+
+### Current validation boundary
+- Python adapter syntax and native ABI/registry checks passed in run #570, but Android Kotlin compilation failed and no APK was produced.
+- The Switch smoke run failed before donor checkout/build; it did not test patch applicability or compile `libdmhost.so`.
+- Keep README status aligned with this boundary: Switch integration code exists, but it is not yet build-verified or playable in NGR.
+
+### Next actions
+1. Verify runs #571/#572 and #26; fix any Kotlin/CMake/NDK or donor-patch/build failures.
+2. Add a synthetic NativeActivity test library and lifecycle test; validate dlopen/NativeActivity forwarding.
+3. Complete package inventory/hash validation and make the two-root (private runtime + external data) install atomic across crash/restart.
+4. Confirm every asset and dependency needed by the donor runtime is present when the donor APK step is skipped.
+5. Port a user-owned game matching a pinned nx2android Android profile, import the generated folder, and test launch, surface, audio, input, pause/resume and saves on Adreno.
