@@ -98,7 +98,7 @@ The donor's NOTICE.md is the starting point for its exact bundle. Do not describ
 
 ### nx2android / nxnative
 Source: https://github.com/shirai91/nx2android  
-Inspected commit: 828ded46adb11722591c4353a2ba88175640d250
+Inspected commit: 828ded46adb11722591c4353a2ba88175640d250 (initial architecture audit); embedded runtime integration pinned to f32b3d563f0615d0e825747285d4e38d780e4ebb
 
 - nxnative/LICENSE is MIT.
 - nx2android README states MIT for the tool; third-party code retains its own license.
@@ -115,3 +115,11 @@ No donor code was copied during this scope reset. The new NGR target catalog con
 - A separate child executable shipped in the same APK needs a component-specific GPL source/notice compliance review; do not assume it automatically changes the host's license, and do not assume it is automatically mere aggregation.
 - The Switch nxnative core is MIT, but its third-party dependencies retain their own licenses.
 - No source integration is approved until pinned per-file and dependency provenance, exact binary contents, and distribution obligations are documented.
+
+
+### Embedded Switch runtime integration — 2026-11-21
+
+- The NGR runtime build workflow fetches nx2android at immutable commit f32b3d563f0615d0e825747285d4e38d780e4ebb, including recursive submodules, and retains nxnative/LICENSE with the runtime artifact.
+- The root nxnative license is MIT, but this does not cover every vendored dependency. The runtime artifact is not approved for redistribution until its linked/static dependency set and all bundled notices are inventoried for this exact commit.
+- The generated per-title libdmhost.so is a title-profile-specific NativeActivity. NGR uses a separate loader activity and does not install nx2android's generated APK.
+- No prod.keys, firmware, title keys, game data, or user dumps are included in the runtime workflow.
