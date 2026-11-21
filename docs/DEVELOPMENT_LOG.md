@@ -1315,3 +1315,35 @@ This is the durable project memory. Update it in every development session.
 - APK contains lib/arm64-v8a/libngr_runtime.so; archive contains WorkManager runtime metadata.
 - Follow-up fix in commit 2eb0757b84f8288a53d3cbe73c0531b139ba9f85 treats negative SAF size metadata as unknown instead of rejecting the source. Run #484 passed native tests, all JVM tests, ARM64 APK build and artifact upload. Artifact ID 14712008705; ZIP SHA-256 068bfaa3e551f9c7623f331d41e537bd9f59f4e2d8349675210b246c56e35f79. Extracted APK size 4,178,861 bytes; SHA-256 93feb3b6efd730dbbd59a29810480380fb0e18595fd5eb3f912d428fa5d37087.
 - Device behavior remains unverified; this build does not contain a console compiler or playable game runtime.
+
+ 
+## Session 2026-11-21 — Nintendo Switch runtime embedding
+
+### Donor audit
+- Rechecked nx2android at commit `f32b3d563f0615d0e825747285d4e38d780e4ebb`.
+- Confirmed `nxnative/dm/android/build.py` compiles the title-profiled Android host and emits `libdmhost.so`; `nxnative/dm/android/apk/mkapk.py` is only the minimal NativeActivity APK packager/signing step. Game files are a separate data pack.
+- Confirmed the runtime library exports `ANativeActivity_onCreate`, uses a title-specific generated profile header and expects the game's data under its app-private files area.
+- The donor CLI preparation path remains Python + .NET 10 + NDK r27c + user-provided keys. It is not yet an Android-native on-device pipeline.
+
+### NGR implementation
+- Added `native/ngr-runtime/src/switch_activity_loader.cpp`: a NativeActivity dispatcher that reads a library path from the NGR activity intent, restricts it to a canonical regular file under NGR's private `files/switch-ports/` directory, loads it with `dlopen`, and forwards the lifecycle to the title runtime's `ANativeActivity_onCreate`.
+- Added the `ngr_switch_loader` CMake target.
+- Registered an internal `android.app.NativeActivity` in the NGR manifest, backed by `ngr_switch_loader`; added the network, Wi-Fi and vibration permissions required by donor-host features.
+- Added `SwitchRuntimeLauncher.kt` to validate 16-hex title IDs, verify the expected per-title runtime file and launch the NativeActivity in the existing NGR package.
+- Added JVM tests for title-ID validation and runtime file presence/path checks.
+- Added `docs/SWITCH_RUNTIME_INTEGRATION.md` with the per-title package layout, pipeline and security/licensing gates.
+- Updated README status to distinguish this dispatch scaffold from a working Switch runtime.
+
+### Current limitations
+- This is the first in-package dispatch slice; no nx2android runtime C sources have yet been vendored into the NGR tree and no game-specific `libdmhost.so` has been built or launched.
+- NativeActivity lifecycle forwarding is not yet CI-verified or device-tested. A synthetic native runtime fixture is required before attempting a commercial title.
+- The extraction/NSO rewrite/shader pipeline is still desktop/CI-assisted; no claim of on-device Switch recompilation.
+- No per-title NGR Switch package installer/manifest verifier is complete yet.
+
+### Next
+1. Run Android CI and fix compile/link/manifest issues in the loader.
+2. Add a synthetic donor-style NativeActivity library and instrumentation test for create/pause/resume/destroy/surface callbacks.
+3. Implement the Switch Port Package manifest, hash inventory, profile fingerprint and atomic install/rollback.
+4. Vendor/pin nxnative core and dependency revisions with a complete license/SBOM inventory.
+5. Wire donor extraction, NSO rewrite, shader translator and per-title host build into a resumable preparation adapter.
+6. Build and device-test one profile-matched Switch title on Adreno; only then expose a playable status.
